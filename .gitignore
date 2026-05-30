@@ -1,0 +1,25 @@
+# Secrets
+.env
+.streamlit/secrets.toml
+
+# Local data files
+job_applications.xlsx
+cover_letters/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Temp files
+resume_temp.docx
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db

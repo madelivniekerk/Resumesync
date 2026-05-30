@@ -1,0 +1,11 @@
+anthropic
+python-dotenv
+streamlit
+beautifulsoup4
+requests
+python-docx
+PyPDF2
+Pillow
+numpy
+openpyxl
+supabase
