@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>ResumSync — Cover Letter</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Lora:ital,wght@0,400;0,500;1,500&family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<script src="resumsync-store.js"></script>
+<style>
+:root{
+  --bg:#071512;--bg-2:#0a1b16;--panel:#0c2019;--panel-2:#0f271e;
+  --ink:#ecf4ee;--ink2:#9fb6a8;--ink3:#6e8a7b;
+  --mint:#7ad79f;--mint-bright:#94e6b1;--mint-deep:#4fae7a;
+  --mint-dim:rgba(122,215,159,0.10);--mint-dim2:rgba(122,215,159,0.16);--mint-border:rgba(122,215,159,0.22);
+  --amber:#e0a14a;--amber-dim:rgba(224,161,74,0.12);--amber-border:rgba(224,161,74,0.32);
+  --line:rgba(159,182,168,0.12);--line-2:rgba(159,182,168,0.07);
+  --shadow-lg:0 24px 60px rgba(0,0,0,0.45),0 4px 14px rgba(0,0,0,0.35);
+  --paper:#f4f1ea;--paper-ink:#2b2a26;--paper-ink2:#5c5a52;--paper-line:#e0dccf;
+  --mono:'Space Mono',ui-monospace,monospace;--display:'Bricolage Grotesque',system-ui,sans-serif;
+  --serif:'Lora',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(900px 600px at 75% -10%, rgba(122,215,159,0.06), transparent 60%);}
+.wrap{position:relative;z-index:1;max-width:1260px;margin:0 auto;padding:22px 36px 150px;}
+
+/* HEADER */
+.head{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:22px;}
+.head-l{display:flex;align-items:center;gap:16px;}
+.back{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink2);font-size:13px;font-weight:500;padding:9px 14px;border:1px solid var(--line);border-radius:9px;transition:all .15s;}
+.back:hover{border-color:var(--mint-border);background:var(--mint-dim);color:var(--ink);}
+.head-title{font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:-0.02em;line-height:1;}
+.head-sub{font-family:var(--mono);font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink3);margin-top:6px;}
+.job-chip{display:inline-flex;align-items:center;gap:9px;padding:8px 14px;border-radius:99px;background:var(--panel);border:1px solid var(--line);font-size:12.5px;color:var(--ink2);}
+.job-chip b{color:var(--ink);font-weight:600;}
+.job-chip .co{width:22px;height:22px;border-radius:6px;background:linear-gradient(150deg,#27506b,#1a3147);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:11px;color:#cfe6ff;}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start;}
+
+/* PAPER LETTER */
+.paper-wrap{position:relative;border-radius:16px;overflow:hidden;box-shadow:var(--shadow-lg);}
+.paper{background:var(--paper);color:var(--paper-ink);padding:54px 58px;min-height:640px;position:relative;}
+.paper.regenerating::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(122,215,159,0.10) 50%,transparent 70%);background-size:200% 100%;animation:shim 1.1s linear infinite;pointer-events:none;}
+@keyframes shim{to{background-position:-200% 0;}}
+.p-letterhead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1.5px solid var(--paper-line);padding-bottom:22px;margin-bottom:26px;}
+.p-name{font-family:var(--display);font-weight:800;font-size:25px;letter-spacing:-0.02em;color:var(--paper-ink);}
+.p-role{font-size:12.5px;color:var(--paper-ink2);margin-top:3px;letter-spacing:0.01em;}
+.p-contact{text-align:right;font-size:11.5px;color:var(--paper-ink2);line-height:1.7;font-family:var(--mono);}
+.p-date{font-size:12.5px;color:var(--paper-ink2);margin-bottom:22px;}
+.p-body{font-family:var(--serif);font-size:15px;line-height:1.78;color:#36342f;}
+.p-body p{margin-bottom:16px;}
+.p-body .hl{background:rgba(122,215,159,0.26);border-radius:3px;padding:0 2px;}
+.p-sign{margin-top:26px;}
+.p-sign .sg{font-family:var(--serif);font-style:italic;font-size:20px;color:#36342f;}
+.p-sign .nm{font-weight:600;font-size:14px;margin-top:4px;color:var(--paper-ink);}
+
+/* RIGHT RAIL */
+.rail{display:flex;flex-direction:column;gap:16px;}
+.rail-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;}
+.rail-h{font-family:var(--mono);font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3);margin-bottom:16px;}
+.ctrl{margin-bottom:16px;}
+.ctrl:last-child{margin-bottom:0;}
+.ctrl-l{font-size:12px;color:var(--ink2);font-weight:500;margin-bottom:8px;display:flex;justify-content:space-between;}
+.ctrl-l span{color:var(--ink3);font-family:var(--mono);font-size:11px;}
+.seg{display:flex;gap:6px;}
+.seg button{flex:1;font-family:var(--sans);font-size:12px;font-weight:500;color:var(--ink2);padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:transparent;cursor:pointer;transition:all .15s;}
+.seg button.on{border-color:var(--mint-border);background:var(--mint-dim);color:var(--mint);}
+.seg button:hover{border-color:var(--mint-border);}
+.matched{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.matched li{display:flex;gap:10px;font-size:12.5px;color:var(--ink2);line-height:1.45;}
+.matched li .tk{color:var(--mint);flex:0 0 14px;font-size:11px;margin-top:2px;}
+.rail-actions{display:flex;flex-direction:column;gap:9px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:var(--sans);font-size:13.5px;font-weight:600;padding:12px 18px;border-radius:10px;border:none;cursor:pointer;transition:all .15s;width:100%;}
+.btn-mint{background:var(--mint);color:#06140f;box-shadow:0 8px 22px rgba(122,215,159,0.22);}
+.btn-mint:hover{background:var(--mint-bright);transform:translateY(-1px);}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink);}
+.btn-ghost:hover{border-color:var(--mint-border);background:var(--mint-dim);}
+.wordcount{text-align:center;font-family:var(--mono);font-size:10.5px;color:var(--ink3);letter-spacing:0.06em;}
+
+/* PROMPT BAR */
+.promptbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(7,21,18,0.86);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:16px 36px;}
+.pb-inner{max-width:1260px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
+.pb-chips{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.pb-label{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink3);margin-right:4px;}
+.chip{font-family:var(--sans);font-size:12.5px;font-weight:500;color:var(--ink2);padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:transparent;cursor:pointer;transition:all .15s;}
+.chip:hover{border-color:var(--mint-border);background:var(--mint-dim);color:var(--ink);}
+.pb-row{display:flex;align-items:center;gap:12px;}
+.pb-input{flex:1;display:flex;align-items:center;gap:11px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px 16px;transition:border-color .15s;}
+.pb-input:focus-within{border-color:var(--mint-border);}
+.pb-input svg{flex:0 0 17px;width:17px;height:17px;color:var(--mint);}
+.pb-input input{flex:1;background:none;border:none;outline:none;color:var(--ink);font-family:var(--sans);font-size:14px;}
+.pb-input input::placeholder{color:var(--ink3);}
+.pb-row .btn{width:auto;padding:13px 22px;font-size:14px;white-space:nowrap;}
+.btn .spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(6,20,15,0.3);border-top-color:#06140f;animation:spin .7s linear infinite;display:none;}
+.btn.loading .spin{display:block;}.btn.loading .ic{display:none;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:168px;transform:translateX(-50%) translateY(20px);z-index:60;background:var(--panel-2);border:1px solid var(--mint-border);border-radius:12px;padding:14px 22px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast .tk{width:24px;height:24px;border-radius:50%;background:var(--mint-dim2);color:var(--mint);display:grid;place-items:center;font-size:12px;}
+.toast .tt{font-size:13.5px;font-weight:600;color:var(--ink);}
+.toast .ts{font-size:11.5px;color:var(--ink2);}
+.toast a{color:var(--mint);text-decoration:none;font-weight:600;}
+
+@media(max-width:980px){
+  .wrap{padding:18px 20px 180px;}
+  .layout{grid-template-columns:1fr;}
+  .paper{padding:38px 30px;}
+  .promptbar{padding:14px 20px;}
+  .job-chip{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="wrap" data-screen-label="cover-letter">
+
+  <div class="head">
+    <div class="head-l">
+      <a class="back" href="app.html">← Back</a>
+      <div>
+        <div class="head-title">Cover letter</div>
+        <div class="head-sub">Generated from your resume + the posting</div>
+      </div>
+    </div>
+    <div class="job-chip"><span class="co">A</span>For <b>Senior BI Specialist</b> · Atlassian</div>
+  </div>
+
+  <div class="layout">
+    <!-- PAPER -->
+    <div class="paper-wrap">
+      <div class="paper" id="paper">
+        <div class="p-letterhead">
+          <div>
+            <div class="p-name">Madeli Carter</div>
+            <div class="p-role">Senior Business Intelligence Specialist</div>
+          </div>
+          <div class="p-contact">madeli.carter@email.com<br>+61 4XX XXX XXX<br>Sydney, NSW</div>
+        </div>
+        <div class="p-date">30 May 2026</div>
+        <div class="p-body" id="letterBody">
+          <p>Dear Hiring Manager,</p>
+          <p>I'm applying for the <strong>Senior BI Specialist</strong> role at Atlassian. Over the past four years I've turned messy, siloed data into reporting that teams actually use — and your focus on data-informed product decisions is exactly the kind of work I want to do next.</p>
+          <p>At Northwind Retail I <span class="hl">designed and shipped 12 executive Tableau dashboards</span> now used across the sales org, cutting manual reporting by eight hours a week. More recently I <span class="hl">modeled and transformed data with dbt and SQL across a Snowflake warehouse</span>, and partnered closely with stakeholders to define the KPIs behind a 23% lift in pipeline visibility.</p>
+          <p>What draws me to Atlassian is the scale of the question — not just building dashboards, but shaping how thousands of people read the same numbers and trust them. I'd bring rigor, a bias for self-serve tooling, and a habit of translating ambiguous asks into clear metrics.</p>
+          <p>I'd welcome the chance to talk about how I can help your analytics team move faster. Thank you for your consideration.</p>
+        </div>
+        <div class="p-sign">
+          <div class="sg">Madeli Carter</div>
+          <div class="nm">Madeli Carter</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RAIL -->
+    <div class="rail">
+      <div class="rail-card">
+        <div class="rail-h">Letter settings</div>
+        <div class="ctrl">
+          <div class="ctrl-l">Tone</div>
+          <div class="seg" data-seg="tone">
+            <button>Warm</button>
+            <button class="on">Professional</button>
+            <button>Bold</button>
+          </div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-l">Length <span id="lenVal">~250 words</span></div>
+          <div class="seg" data-seg="length">
+            <button>Concise</button>
+            <button class="on">Standard</button>
+            <button>Detailed</button>
+          </div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-l">Greeting</div>
+          <div class="seg" data-seg="greeting">
+            <button class="on">Hiring Manager</button>
+            <button>Team</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-card">
+        <div class="rail-h">Pulled from your match</div>
+        <ul class="matched">
+          <li><span class="tk">✓</span>12 Tableau dashboards · 8 hrs/week saved</li>
+          <li><span class="tk">✓</span>dbt + Snowflake warehouse work</li>
+          <li><span class="tk">✓</span>23% pipeline-visibility lift</li>
+          <li><span class="tk">✓</span>Stakeholder &amp; KPI definition</li>
+        </ul>
+      </div>
+
+      <div class="rail-card">
+        <div class="rail-actions">
+          <button class="btn btn-mint" id="acceptBtn">Accept &amp; save to tracker</button>
+          <button class="btn btn-ghost" id="copyBtn">Copy text</button>
+          <button class="btn btn-ghost" id="dlBtn">Download .docx</button>
+          <div class="wordcount" id="wc">248 words · 1 page</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROMPT BAR -->
+<div class="promptbar">
+  <div class="pb-inner">
+    <div class="pb-chips">
+      <span class="pb-label">Refine:</span>
+      <button class="chip" data-p="Make it warmer">Make it warmer</button>
+      <button class="chip" data-p="More concise">More concise</button>
+      <button class="chip" data-p="Lead with impact">Lead with impact</button>
+      <button class="chip" data-p="More formal">More formal</button>
+      <button class="chip" data-p="Mention remote flexibility">Mention remote flexibility</button>
+    </div>
+    <div class="pb-row">
+      <div class="pb-input">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg>
+        <input id="promptInput" type="text" placeholder="Tell the AI what to change — e.g. 'open with the 23% result'…"/>
+      </div>
+      <button class="btn btn-ghost" id="regenBtn"><span class="spin"></span><span class="ic">↻</span> Regenerate</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="tk">✓</div>
+  <div><div class="tt" id="toastTitle">Saved to tracker</div><div class="ts" id="toastSub">Cover letter attached · <a href="tracker.html">View tracker →</a></div></div>
+</div>
+
+<script>
+(function(){
+  var paper=document.getElementById('paper');
+  var regenBtn=document.getElementById('regenBtn');
+  var promptInput=document.getElementById('promptInput');
+
+  // segmented controls
+  document.querySelectorAll('.seg').forEach(function(seg){
+    seg.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click',function(){
+        seg.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});
+        b.classList.add('on');
+        if(seg.dataset.seg==='length'){
+          var map={Concise:'~160 words',Standard:'~250 words',Detailed:'~340 words'};
+          var wmap={Concise:'162 words · 1 page',Standard:'248 words · 1 page',Detailed:'341 words · 1 page'};
+          document.getElementById('lenVal').textContent=map[b.textContent]||'';
+          document.getElementById('wc').textContent=wmap[b.textContent]||'';
+        }
+        regenerate(seg.dataset.seg+': '+b.textContent);
+      });
+    });
+  });
+
+  function regenerate(label){
+    regenBtn.classList.add('loading');
+    paper.classList.add('regenerating');
+    setTimeout(function(){
+      regenBtn.classList.remove('loading');
+      paper.classList.remove('regenerating');
+      if(label&&label.indexOf(':')<0)showToast('Letter refined',cap(label)+' — applied','');
+    },1200);
+  }
+  function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+  regenBtn.addEventListener('click',function(){regenerate(promptInput.value.trim()||'Regenerated');});
+  document.querySelectorAll('.chip').forEach(function(c){
+    c.addEventListener('click',function(){promptInput.value=c.dataset.p;regenerate(c.dataset.p);});
+  });
+  promptInput.addEventListener('keydown',function(e){if(e.key==='Enter'&&promptInput.value.trim())regenerate(promptInput.value.trim());});
+
+  var toast=document.getElementById('toast'),tt=setTimeout(function(){},0);
+  function showToast(t,s,sub){
+    document.getElementById('toastTitle').textContent=t;
+    if(sub!==undefined&&sub!=='')document.getElementById('toastSub').innerHTML=sub;
+    toast.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('show');},3000);
+  }
+  document.getElementById('acceptBtn').addEventListener('click',function(){
+    if(window.RSStore)RSStore.update('atlassian-sbi',{cover:RSStore.doc('Cover_Atlassian_SeniorBI.docx','Atlassian',false,''),status:'ready'});
+    showToast('Saved to tracker','','Cover letter attached · <a href="tracker.html">View tracker →</a>');
+  });
+  document.getElementById('copyBtn').addEventListener('click',function(){
+    var txt=document.getElementById('letterBody').innerText;
+    if(navigator.clipboard)navigator.clipboard.writeText(txt).catch(function(){});
+    showToast('Copied to clipboard','','Paste it anywhere you need.');
+  });
+  document.getElementById('dlBtn').addEventListener('click',function(){
+    showToast('Preparing .docx','','Your download will start shortly.');
+  });
+})();
+</script>
+</body>
+</html>
