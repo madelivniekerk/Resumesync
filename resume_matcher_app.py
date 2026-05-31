@@ -26,7 +26,7 @@ from supabase import create_client as _supabase_create_client
 load_dotenv()
 
 # Configuration
-MODEL_NAME = "claude-sonnet-4-5-20250929"
+MODEL_NAME = "claude-sonnet-4-6"
 TRACKER_PATH = os.path.join(os.path.dirname(__file__), "job_applications.xlsx")
 COVER_LETTERS_PATH = os.path.join(os.path.dirname(__file__), "cover_letters")
 
@@ -41,20 +41,27 @@ st.set_page_config(
 st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Lora:ital,wght@1,500;1,600&family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap">
 <style>
 
     /* ── Design tokens ── */
     :root {
-        --bg:          #0e2a23;
-        --bg-2:        #082019;
-        --ink:         #f4f8f1;
-        --muted:       #a8c0b0;
-        --gold:        #6dc18a;
-        --gold-soft:   #9fdcb0;
-        --accent:      #4ea872;
-        --line:        rgba(109,193,138,0.18);
-        --line-strong: rgba(109,193,138,0.35);
+        --bg:          #071512;
+        --bg-2:        #0a1b16;
+        --panel:       #0c2019;
+        --panel-2:     #0f271e;
+        --ink:         #ecf4ee;
+        --ink2:        #9fb6a8;
+        --ink3:        #6e8a7b;
+        --mint:        #7ad79f;
+        --mint-bright: #94e6b1;
+        --mint-deep:   #4fae7a;
+        --mint-dim:    rgba(122,215,159,0.10);
+        --mint-dim2:   rgba(122,215,159,0.16);
+        --mint-border: rgba(122,215,159,0.22);
+        --amber:       #e0a14a;
+        --line:        rgba(159,182,168,0.12);
+        --line-2:      rgba(159,182,168,0.07);
     }
 
     /* ── App background ── */
@@ -62,8 +69,8 @@ st.markdown("""
         background: var(--bg) !important;
         background-image:
             radial-gradient(ellipse 80% 60% at 15% 20%, rgba(109,193,138,0.07), transparent 60%),
-            radial-gradient(ellipse 60% 50% at 95% 90%, rgba(109,193,138,0.05), transparent 60%) !important;
-        font-family: 'Manrope', system-ui, sans-serif !important;
+            radial-gradient(ellipse 60% 50% at 95% 90%, rgba(122,215,159,0.04), transparent 60%) !important;
+        font-family: 'DM Sans', system-ui, sans-serif !important;
         color: var(--ink) !important;
     }
 
@@ -79,11 +86,11 @@ st.markdown("""
 
     /* ── Typography ── */
     h1, h2, h3 {
-        font-family: 'Manrope', sans-serif !important;
+        font-family: 'DM Sans', sans-serif !important;
         color: var(--ink) !important;
         font-weight: 700 !important;
     }
-    .stMarkdown { font-family: 'Manrope', sans-serif !important; color: var(--ink) !important; }
+    .stMarkdown { font-family: 'DM Sans', sans-serif !important; color: var(--ink) !important; }
     p, li, label { color: var(--ink) !important; }
 
     /* ── Primary button — sage green fill ── */
@@ -95,7 +102,7 @@ st.markdown("""
         padding: 16px 32px !important;
         font-weight: 600 !important;
         font-size: 15px !important;
-        font-family: 'Manrope', sans-serif !important;
+        font-family: 'DM Sans', sans-serif !important;
         transition: transform .15s, background .2s !important;
         min-height: 52px !important;
     }
@@ -113,7 +120,7 @@ st.markdown("""
         border-radius: 4px !important;
         padding: 12px 28px !important;
         font-weight: 600 !important;
-        font-family: 'Manrope', sans-serif !important;
+        font-family: 'DM Sans', sans-serif !important;
         transition: background .2s, color .2s !important;
     }
     .stDownloadButton > button:hover {
@@ -123,10 +130,10 @@ st.markdown("""
     }
 
     /* ── Form elements ── */
-    .stFileUploader, .stTextArea, .stTextInput { font-family: 'Manrope', sans-serif !important; }
+    .stFileUploader, .stTextArea, .stTextInput { font-family: 'DM Sans', sans-serif !important; }
 
     .stTextInput input, .stTextArea textarea {
-        font-family: 'Manrope', sans-serif !important;
+        font-family: 'DM Sans', sans-serif !important;
         background: var(--bg-2) !important;
         color: #ffffff !important;
         border-radius: 4px !important;
@@ -140,7 +147,7 @@ st.markdown("""
     .stSelectbox [data-baseweb="select"] [role="combobox"],
     .stSelectbox [data-baseweb="select"] input {
         color: #ffffff !important;
-        font-family: 'Manrope', sans-serif !important;
+        font-family: 'DM Sans', sans-serif !important;
     }
     .stSelectbox [data-baseweb="select"] svg { fill: var(--muted) !important; }
     [data-baseweb="popover"] [data-baseweb="menu"] {
@@ -182,10 +189,10 @@ st.markdown("""
     [data-testid="stFileUploaderDropzone"] p,
     [data-testid="stFileUploaderDropzone"] small {
         color: var(--muted) !important;
-        font-family: 'Manrope', sans-serif !important;
+        font-family: 'DM Sans', sans-serif !important;
     }
     [data-testid="stFileUploaderDropzone"] button {
-        background: rgba(109,193,138,0.12) !important;
+        background: rgba(122,215,159,0.10) !important;
         border: 1px solid var(--line-strong) !important;
         border-radius: 4px !important;
         min-width: 120px !important;
@@ -197,7 +204,7 @@ st.markdown("""
         content: "Browse files";
         display: inline !important;
         font-size: 0.875rem !important;
-        font-family: 'Manrope', sans-serif !important;
+        font-family: 'DM Sans', sans-serif !important;
         color: var(--gold) !important;
     }
     [data-testid="stFileUploaderDropzone"] button:hover {
@@ -208,7 +215,7 @@ st.markdown("""
     }
     /* Uploaded file pill */
     [data-testid="uploadedFile"] {
-        background: rgba(109,193,138,0.08) !important;
+        background: rgba(122,215,159,0.07) !important;
         border: 1px solid var(--line) !important;
         border-radius: 4px !important;
     }
@@ -218,17 +225,17 @@ st.markdown("""
 
     /* ── Feedback boxes ── */
     .stSuccess {
-        background-color: rgba(109,193,138,0.08) !important;
+        background-color: rgba(122,215,159,0.07) !important;
         color: var(--gold-soft) !important;
         border-left: 4px solid var(--gold) !important;
     }
     .stInfo {
-        background-color: rgba(109,193,138,0.05) !important;
+        background-color: rgba(122,215,159,0.04) !important;
         border-left: 4px solid var(--line-strong) !important;
         color: var(--muted) !important;
     }
-    .stError { font-family: 'Manrope', sans-serif !important; }
-    .stStatus { font-family: 'Manrope', sans-serif !important; }
+    .stError { font-family: 'DM Sans', sans-serif !important; }
+    .stStatus { font-family: 'DM Sans', sans-serif !important; }
 
     /* ── Spinner ── */
     .stSpinner > div { border-top-color: var(--gold) !important; }
@@ -252,13 +259,13 @@ st.markdown("""
     .stRadio label { color: var(--muted) !important; }
 
     /* ── Checkbox ── */
-    .stCheckbox label { color: var(--ink) !important; font-family: 'Manrope', sans-serif !important; }
+    .stCheckbox label { color: var(--ink) !important; font-family: 'DM Sans', sans-serif !important; }
 
     /* ── Dataframe ── */
     .stDataFrame { border: 1px solid var(--line) !important; border-radius: 8px !important; }
 
     /* ── Cover letter white box — force dark ink ── */
-    .cl-box, .cl-box * { color: #1b1b1b !important; font-family: 'Manrope', sans-serif !important; }
+    .cl-box, .cl-box * { color: #1b1b1b !important; font-family: 'DM Sans', sans-serif !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -266,10 +273,19 @@ st.markdown("""
 # ============= HELPERS =============
 
 def _read_secret(key: str) -> str:
-    """Read a value from .streamlit/secrets.toml if not in env."""
+    """Read a secret: env var → st.secrets → local secrets.toml."""
+    # 1. Environment variable
     val = os.getenv(key, "").strip()
     if val:
         return val
+    # 2. Streamlit Cloud secrets manager
+    try:
+        val = str(st.secrets.get(key, "")).strip()
+        if val:
+            return val
+    except Exception:
+        pass
+    # 3. Local .streamlit/secrets.toml (dev)
     secrets_path = os.path.join(os.path.dirname(__file__), ".streamlit", "secrets.toml")
     if os.path.exists(secrets_path):
         text = open(secrets_path, encoding="utf-8").read()
@@ -846,14 +862,14 @@ def get_vp_logo_b64():
     r, g, b = data[:, :, 0], data[:, :, 1], data[:, :, 2]
     # Purple background mask: #230344 ≈ R<80, G<30, B>30
     mask = (r < 80) & (g < 30) & (b > 30)
-    # Replace background with sidebar green #082019
+    # Replace background with sidebar green #0a1b16
     data[mask, 0] = 8
     data[mask, 1] = 32
     data[mask, 2] = 25
     # Gold/bronze icon mask: warm tone with high R, moderate G, low B
     r2, g2, b2 = data[:, :, 0], data[:, :, 1], data[:, :, 2]
     gold_mask = (r2 > 100) & (g2 > 60) & (b2 < 120) & (r2 > b2) & (~mask)
-    # Replace gold with accent green #6dc18a
+    # Replace gold with accent green #7ad79f
     data[gold_mask, 0] = 109
     data[gold_mask, 1] = 193
     data[gold_mask, 2] = 138
@@ -869,59 +885,58 @@ def get_vp_logo_b64():
 def main():
     # ── Sidebar ─────────────────────────────────────────────────────────────
     with st.sidebar:
-        _logo_b64 = get_vp_logo_b64()
-        _logo_html = (
-            f'<img src="data:image/png;base64,{_logo_b64}" '
-            f'style="width:100%;max-width:200px;display:block;margin:0 auto 1.2rem;" alt="VisualizePro"/>'
-            if _logo_b64 else
-            '<div style="font-family:Manrope,sans-serif;font-weight:700;font-size:18px;color:#f4f8f1;margin-bottom:1.2rem;">VisualizePro</div>'
-        )
         tracker_data = load_tracker_data()
         count = len(tracker_data)
         st.markdown(f"""
         <div style="padding: 1.5rem 1rem 0;">
-          {_logo_html}
 
-          <!-- Tagline -->
-          <div style="border-top:1px solid rgba(109,193,138,0.18); padding-top:1rem; margin-bottom:1.2rem;">
-            <p style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; color:#6dc18a; text-transform:lowercase; margin:0;">— resume sync —</p>
+          <!-- Brand mark -->
+          <div style="display:flex;align-items:center;gap:11px;margin-bottom:1.4rem;">
+            <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(150deg,#7ad79f,#4fae7a);display:grid;place-items:center;font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;font-size:16px;color:#06140f;box-shadow:0 4px 12px rgba(122,215,159,0.28);flex-shrink:0;">R</div>
+            <div>
+              <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;line-height:1.1;">ResumSync</div>
+              <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#6e8a7b;margin-top:3px;">by VisualizePro</div>
+            </div>
           </div>
 
+          <!-- Divider -->
+          <div style="border-top:1px solid rgba(159,182,168,0.12); margin-bottom:1.2rem;"></div>
+
           <!-- What you get -->
-          <div style="border-top:1px solid rgba(109,193,138,0.18); padding-top:1rem; margin-bottom:1.2rem;">
-            <p style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.16em; color:#6dc18a; text-transform:uppercase; margin:0 0 0.8rem;">What you get</p>
+          <div style="border-top:1px solid rgba(159,182,168,0.12); padding-top:1rem; margin-bottom:1.2rem;">
+            <p style="font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.16em; color:#7ad79f; text-transform:uppercase; margin:0 0 0.8rem;">What you get</p>
             <div style="display:flex; flex-direction:column; gap:0.6rem;">
               <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="color:#6dc18a; font-size:14px; flex-shrink:0; margin-top:1px;">📊</span>
-                <span style="font-family:'Manrope',sans-serif; font-size:0.8rem; color:#f4f8f1; line-height:1.4;"><b>Match % score</b> <span style="color:#a8c0b0;">— see your fit before you apply</span></span>
+                <span style="color:#7ad79f; font-size:14px; flex-shrink:0; margin-top:1px;">📊</span>
+                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;"><b>Match % score</b> <span style="color:#9fb6a8;">— see your fit before you apply</span></span>
               </div>
               <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="color:#6dc18a; font-size:14px; flex-shrink:0; margin-top:1px;">🎯</span>
-                <span style="font-family:'Manrope',sans-serif; font-size:0.8rem; color:#f4f8f1; line-height:1.4;"><b>Skills &amp; keyword gaps</b> <span style="color:#a8c0b0;">— exactly what's missing</span></span>
+                <span style="color:#7ad79f; font-size:14px; flex-shrink:0; margin-top:1px;">🎯</span>
+                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;"><b>Skills &amp; keyword gaps</b> <span style="color:#9fb6a8;">— exactly what's missing</span></span>
               </div>
               <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="color:#6dc18a; font-size:14px; flex-shrink:0; margin-top:1px;">🤖</span>
-                <span style="font-family:'Manrope',sans-serif; font-size:0.8rem; color:#f4f8f1; line-height:1.4;"><b>ATS optimisation</b> <span style="color:#a8c0b0;">— get past the robot screeners</span></span>
+                <span style="color:#7ad79f; font-size:14px; flex-shrink:0; margin-top:1px;">🤖</span>
+                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;"><b>ATS optimisation</b> <span style="color:#9fb6a8;">— get past the robot screeners</span></span>
               </div>
               <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="color:#6dc18a; font-size:14px; flex-shrink:0; margin-top:1px;">✍️</span>
-                <span style="font-family:'Manrope',sans-serif; font-size:0.8rem; color:#f4f8f1; line-height:1.4;"><b>Tailored cover letter</b> <span style="color:#a8c0b0;">— ready to send in seconds</span></span>
+                <span style="color:#7ad79f; font-size:14px; flex-shrink:0; margin-top:1px;">✍️</span>
+                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;"><b>Tailored cover letter</b> <span style="color:#9fb6a8;">— ready to send in seconds</span></span>
               </div>
               <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span style="color:#6dc18a; font-size:14px; flex-shrink:0; margin-top:1px;">✨</span>
-                <span style="font-family:'Manrope',sans-serif; font-size:0.8rem; color:#f4f8f1; line-height:1.4;"><b>Resume auto-updater</b> <span style="color:#a8c0b0;">— stronger words, same facts</span></span>
+                <span style="color:#7ad79f; font-size:14px; flex-shrink:0; margin-top:1px;">✨</span>
+                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;"><b>Resume auto-updater</b> <span style="color:#9fb6a8;">— stronger words, same facts</span></span>
               </div>
             </div>
           </div>
 
           <!-- Job tracker count -->
-          <div style="border-top:1px solid rgba(109,193,138,0.18); padding-top:1rem;">
-            <p style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.16em; color:#6dc18a; text-transform:uppercase; margin:0 0 0.5rem;">Applications tracked</p>
-            <p style="font-family:'Fraunces',serif; font-size:1.6rem; font-weight:600; color:#f4f8f1; margin:0 0 0.2rem; line-height:1;">
+          <div style="background:#0c2019;border:1px solid rgba(159,182,168,0.12);border-radius:12px;padding:16px;">
+            <p style="font-family:'Space Mono',monospace; font-size:9.5px; letter-spacing:0.16em; text-transform:uppercase; color:#6e8a7b; margin:0 0 0.5rem;">Applications tracked</p>
+            <p style="font-family:'Bricolage Grotesque',system-ui,sans-serif; font-size:2rem; font-weight:800; color:#7ad79f; margin:0 0 0.2rem; line-height:1;">
               {count}
             </p>
-            <p style="font-family:'Manrope',sans-serif; font-size:0.75rem; color:#a8c0b0; margin:0;">
-              {'Start tracking your applications below' if count == 0 else 'role(s) saved to your tracker'}
+            <p style="font-family:'Space Mono',monospace; font-size:0.68rem; color:#6e8a7b; margin:0; line-height:1.4;">
+              {'Track your first application below' if count == 0 else 'role(s) in your tracker →'}
             </p>
           </div>
 
@@ -939,12 +954,12 @@ def main():
             )
 
     # ── Hero ─────────────────────────────────────────────────────────────────
-    BADGE = ("font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.16em; "
-             "text-transform:uppercase; color:#6dc18a; background:rgba(8,32,25,0.8); "
-             "padding:5px 9px; border-radius:4px; border:1px solid rgba(109,193,138,0.18); "
+    BADGE = ("font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.16em; "
+             "text-transform:uppercase; color:#7ad79f; background:rgba(7,21,18,0.88); "
+             "padding:5px 9px; border-radius:6px; border:1px solid rgba(122,215,159,0.22); "
              "position:absolute; top:14px; left:14px; z-index:2;")
-    TILE  = ("border-radius:10px; overflow:hidden; position:relative; background:#082019; "
-             "border:1px solid rgba(109,193,138,0.18); box-shadow:0 30px 60px -30px rgba(0,0,0,0.6);")
+    TILE  = ("border-radius:14px; overflow:hidden; position:relative; background:#0c2019; "
+             "border:1px solid rgba(159,182,168,0.12); box-shadow:0 24px 60px rgba(0,0,0,0.45);")
 
     hero_l, hero_r = st.columns([1, 1.1], gap="large")
 
@@ -952,17 +967,17 @@ def main():
         st.markdown(f"""
         <div style="padding:0.75rem 0 1rem;">
           <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
-            <span style="display:inline-block; width:24px; height:1px; background:#6dc18a; opacity:0.6; flex-shrink:0;"></span>
-            <span style="font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.18em; color:#6dc18a; text-transform:lowercase;">— know before you apply —</span>
+            <span style="display:inline-block; width:24px; height:1px; background:#7ad79f; opacity:0.6; flex-shrink:0;"></span>
+            <span style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:0.18em; color:#7ad79f; text-transform:lowercase;">— know before you apply —</span>
           </div>
-          <h1 style="font-family:'Fraunces',serif; font-weight:600; font-size:clamp(28px,3vw,48px);
-                     line-height:1.05; letter-spacing:-0.025em; margin:0 0 16px; color:#f4f8f1;">
+          <h1 style="font-family:'Bricolage Grotesque',serif; font-weight:600; font-size:clamp(28px,3vw,48px);
+                     line-height:1.05; letter-spacing:-0.025em; margin:0 0 16px; color:#ecf4ee;">
             Stop applying blindly,<br/>
-            <em style="font-style:italic; color:#6dc18a; font-weight:500;">Know Your Match</em><br/>
+            <em style="font-style:italic; color:#7ad79f; font-weight:500;">Know Your Match</em><br/>
             Before You Apply.
           </h1>
-          <p style="font-family:'Manrope',sans-serif; font-size:15px; line-height:1.6;
-                    color:#a8c0b0; margin:0 0 24px; max-width:440px;">
+          <p style="font-family:'DM Sans',sans-serif; font-size:15px; line-height:1.6;
+                    color:#9fb6a8; margin:0 0 24px; max-width:440px;">
             Upload your resume, paste any job posting — and in seconds know your exact match score,
             which skills are missing, which keywords will get you past ATS, and walk away
             with a tailored cover letter and resume ready to send.
@@ -982,10 +997,10 @@ def main():
                    style="width:100%; height:100%; object-fit:cover; display:block;" alt="Professional at a laptop" loading="lazy" />
               <div style="position:absolute; left:0; right:0; bottom:0; padding:20px 18px 16px;
                           background:linear-gradient(180deg,transparent,rgba(8,32,25,0.88) 65%); z-index:2;">
-                <div style="font-family:'Fraunces',serif; font-size:19px; font-weight:600;
-                             color:#f4f8f1; letter-spacing:-0.01em;">Madeli, BI Specialist</div>
-                <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em;
-                             text-transform:uppercase; color:#9fdcb0; margin-top:5px;">Currently matching to 12 open roles</div>
+                <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif; font-size:19px; font-weight:700;
+                             color:#ecf4ee; letter-spacing:-0.02em;">Madeli, BI Specialist</div>
+                <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.12em;
+                             text-transform:uppercase; color:#7ad79f; margin-top:5px;">Currently matching to 12 open roles</div>
               </div>
             </div>
             """, unsafe_allow_html=True)
@@ -995,41 +1010,41 @@ def main():
             # r=46, circumference=289, 92% filled = dashoffset 289*(1-0.92)=23
             st.markdown(f"""
             <div style="{TILE} height:172px; margin-bottom:10px;
-                         background:radial-gradient(circle at center,#143d33 0%,#082019 100%);
+                         background:radial-gradient(circle at center,#143d33 0%,#0a1b16 100%);
                          display:flex; align-items:center; justify-content:center;">
               <div style="{BADGE}">Match Score</div>
               <div style="position:relative; width:120px; height:120px; display:flex; align-items:center; justify-content:center;">
                 <svg width="120" height="120" viewBox="0 0 120 120" style="position:absolute; top:0; left:0; transform:rotate(-90deg);">
                   <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="11"/>
-                  <circle cx="60" cy="60" r="46" fill="none" stroke="#6dc18a" stroke-width="11"
+                  <circle cx="60" cy="60" r="46" fill="none" stroke="#7ad79f" stroke-width="11"
                           stroke-dasharray="289" stroke-dashoffset="23" stroke-linecap="round"/>
                 </svg>
                 <div style="text-align:center; position:relative; z-index:1;">
-                  <span style="font-family:'Fraunces',serif; font-size:32px; font-weight:600; color:#6dc18a; line-height:1;">92</span>
-                  <span style="font-family:'Fraunces',serif; font-size:15px; color:#6dc18a;">%</span>
+                  <span style="font-family:'Bricolage Grotesque',serif; font-size:32px; font-weight:600; color:#7ad79f; line-height:1;">92</span>
+                  <span style="font-family:'Bricolage Grotesque',serif; font-size:15px; color:#7ad79f;">%</span>
                 </div>
               </div>
               <div style="position:absolute; bottom:14px; left:0; right:0; text-align:center;
-                          font-family:'JetBrains Mono',monospace; font-size:10px;
-                          letter-spacing:0.2em; text-transform:uppercase; color:#a8c0b0;">Strong Fit</div>
+                          font-family:'Space Mono',monospace; font-size:10px;
+                          letter-spacing:0.2em; text-transform:uppercase; color:#9fb6a8;">Strong Fit</div>
             </div>
             """, unsafe_allow_html=True)
 
             # Skill bars tile — nested divs, no pseudo-elements
             def skill_bar(name, pct):
                 return (
-                    f'<div style="display:flex; align-items:center; gap:8px; font-size:10px; color:#f4f8f1;">'
-                    f'<span style="width:60px; font-weight:500; font-family:Manrope,sans-serif; flex-shrink:0;">{name}</span>'
+                    f'<div style="display:flex; align-items:center; gap:8px; font-size:10px; color:#ecf4ee;">'
+                    f'<span style="width:60px; font-weight:500; font-family:DM Sans,sans-serif; flex-shrink:0;">{name}</span>'
                     f'<div style="flex:1; height:4px; background:rgba(255,255,255,0.07); border-radius:999px;">'
-                    f'<div style="width:{pct}%; height:100%; background:linear-gradient(90deg,#4ea872,#6dc18a); border-radius:999px;"></div>'
+                    f'<div style="width:{pct}%; height:100%; background:linear-gradient(90deg,#4fae7a,#7ad79f); border-radius:999px;"></div>'
                     f'</div>'
-                    f'<span style="font-family:JetBrains Mono,monospace; font-size:9px; color:#6dc18a; min-width:20px; text-align:right;">{pct}</span>'
+                    f'<span style="font-family:Space Mono,monospace; font-size:9px; color:#7ad79f; min-width:20px; text-align:right;">{pct}</span>'
                     f'</div>'
                 )
             bars = skill_bar("Tableau",96) + skill_bar("Power BI",82) + skill_bar("SQL",90) + skill_bar("Snowflake",74)
             st.markdown(f"""
             <div style="{TILE} height:178px; padding:12px 14px;
-                         background:linear-gradient(160deg,#15392f,#082019);
+                         background:linear-gradient(160deg,#15392f,#0a1b16);
                          display:flex; flex-direction:column; justify-content:flex-end; gap:10px;">
               <div style="{BADGE}">Skill alignment</div>
               {bars}
@@ -1040,21 +1055,21 @@ def main():
 
     client = get_client()
     if not client:
-        st.error("⚠️ API Key not configured. Please add your ANTHROPIC_API_KEY to the .env file.")
+        st.error("⚠️ ANTHROPIC_API_KEY not found. On Streamlit Cloud: go to App Settings → Secrets and add your key in TOML format: ANTHROPIC_API_KEY = \"sk-ant-...\"")
         return
 
     # Inputs
     col1, col2 = st.columns([1, 1])
     with col1:
-        st.markdown('<p style="font-family:\'JetBrains Mono\',monospace; font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:#6dc18a; margin:0 0 6px;">① Upload Your Resume</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-family:\'Space Mono\',monospace; font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:#7ad79f; margin:0 0 6px;">① Upload Your Resume</p>', unsafe_allow_html=True)
         resume_file = st.file_uploader(
             "Resume", type=['pdf', 'docx', 'doc', 'txt'], label_visibility="collapsed"
         )
         if resume_file:
-            st.markdown(f'<p style="font-size:0.75rem; color:#6dc18a; margin:4px 0 0; font-family:Manrope,sans-serif;">✅ {resume_file.name}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p style="font-size:0.75rem; color:#7ad79f; margin:4px 0 0; font-family:DM Sans,sans-serif;">✅ {resume_file.name}</p>', unsafe_allow_html=True)
 
     with col2:
-        st.markdown('<p style="font-family:\'JetBrains Mono\',monospace; font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:#6dc18a; margin:0 0 6px;">② Add Job Posting</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-family:\'Space Mono\',monospace; font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:#7ad79f; margin:0 0 6px;">② Add Job Posting</p>', unsafe_allow_html=True)
         input_method = st.radio(
             "Input method", ["Paste URL (auto-scrape)", "Paste job description manually"],
             horizontal=True, label_visibility="collapsed"
@@ -1064,11 +1079,11 @@ def main():
         if input_method == "Paste URL (auto-scrape)":
             job_url = st.text_input("Job URL", placeholder="https://www.seek.com.au/job/...", label_visibility="collapsed")
             if job_url:
-                st.markdown(f'<p style="font-size:0.75rem; color:#6dc18a; margin:4px 0 0; font-family:Manrope,sans-serif;">✅ {job_url[:55]}</p>', unsafe_allow_html=True)
+                st.markdown(f'<p style="font-size:0.75rem; color:#7ad79f; margin:4px 0 0; font-family:DM Sans,sans-serif;">✅ {job_url[:55]}</p>', unsafe_allow_html=True)
         else:
             manual_job_text = st.text_area("Job description", placeholder="Paste the full job description here...", height=100, label_visibility="collapsed")
             if manual_job_text:
-                st.markdown(f'<p style="font-size:0.75rem; color:#6dc18a; margin:4px 0 0; font-family:Manrope,sans-serif;">✅ {len(manual_job_text)} characters</p>', unsafe_allow_html=True)
+                st.markdown(f'<p style="font-size:0.75rem; color:#7ad79f; margin:4px 0 0; font-family:DM Sans,sans-serif;">✅ {len(manual_job_text)} characters</p>', unsafe_allow_html=True)
 
     st.markdown("<div style='margin:0.75rem 0'></div>", unsafe_allow_html=True)
 
@@ -1149,7 +1164,7 @@ def main():
                     st.session_state.pop(key, None)
                 st.rerun()
 
-        st.markdown('<h2 style="color:#f4f8f1; font-size:1.8rem; font-weight:700; text-align:center; margin:2rem 0; font-family:Fraunces,serif; letter-spacing:-0.02em;">📋 Analysis Results</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="color:#ecf4ee; font-size:1.8rem; font-weight:700; text-align:center; margin:2rem 0; font-family:Bricolage Grotesque,serif; letter-spacing:-0.02em;">📋 Analysis Results</h2>', unsafe_allow_html=True)
         st.markdown(result['analysis'])
 
         # Build shared filename parts used across all downloads
@@ -1266,10 +1281,10 @@ def main():
         st.divider()
 
         # ============= COVER LETTER =============
-        st.markdown('<h2 style="color:#f4f8f1; font-size:1.8rem; font-weight:700; text-align:center; margin:2rem 0; font-family:Fraunces,serif; letter-spacing:-0.02em;">✍️ Generate Cover Letter</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="color:#ecf4ee; font-size:1.8rem; font-weight:700; text-align:center; margin:2rem 0; font-family:Bricolage Grotesque,serif; letter-spacing:-0.02em;">✍️ Generate Cover Letter</h2>', unsafe_allow_html=True)
         st.markdown(
-            '<div style="background:rgba(109,193,138,0.06); padding:1.2rem 1.5rem; border-radius:8px; border-left:4px solid #6dc18a; margin-bottom:2rem;">'
-            '<p style="color:#a8c0b0; font-size:0.95rem; margin:0; font-family:Manrope,sans-serif;">🎯 Create a personalised cover letter tailored to this job based on your match analysis</p>'
+            '<div style="background:rgba(109,193,138,0.06); padding:1.2rem 1.5rem; border-radius:8px; border-left:4px solid #7ad79f; margin-bottom:2rem;">'
+            '<p style="color:#9fb6a8; font-size:0.95rem; margin:0; font-family:DM Sans,sans-serif;">🎯 Create a personalised cover letter tailored to this job based on your match analysis</p>'
             '</div>',
             unsafe_allow_html=True
         )
@@ -1334,7 +1349,7 @@ def main():
 
             # ── Regenerate section ─────────────────────────────────────────
             st.markdown(
-                '<p style="color:#a8c0b0; font-size:0.85rem; font-family:Manrope,sans-serif; '
+                '<p style="color:#9fb6a8; font-size:0.85rem; font-family:DM Sans,sans-serif; '
                 'margin:0.5rem 0 0.3rem;">Want changes? Describe what to adjust and regenerate.</p>',
                 unsafe_allow_html=True
             )
@@ -1380,7 +1395,7 @@ def main():
         st.divider()
 
         # ============= JOB TRACKER =============
-        st.markdown('<h2 style="color:#f4f8f1; font-size:1.8rem; font-weight:700; text-align:center; margin:2rem 0; font-family:Fraunces,serif; letter-spacing:-0.02em;">📊 Save to Job Tracker</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="color:#ecf4ee; font-size:1.8rem; font-weight:700; text-align:center; margin:2rem 0; font-family:Bricolage Grotesque,serif; letter-spacing:-0.02em;">📊 Save to Job Tracker</h2>', unsafe_allow_html=True)
 
         t1, t2, t3 = st.columns(3)
         with t1:
@@ -1447,8 +1462,8 @@ def main():
     st.divider()
     st.markdown(
         '<div style="text-align: center; padding: 2rem 0 1rem 0; font-family: Poppins, sans-serif;">'
-        '<p style="color:#6dc18a; font-size:0.85rem; margin-bottom:0.4rem; font-family:JetBrains Mono,monospace; letter-spacing:0.1em;">Powered by Claude AI</p>'
-        '<p style="color:#a8c0b0; font-size:0.8rem; font-family:JetBrains Mono,monospace; letter-spacing:0.08em;">© 2026 ResumeSync by VisualizePro · AI-Powered Career Intelligence</p>'
+        '<p style="color:#7ad79f; font-size:0.85rem; margin-bottom:0.4rem; font-family:Space Mono,monospace; letter-spacing:0.1em;">Powered by Claude AI</p>'
+        '<p style="color:#9fb6a8; font-size:0.8rem; font-family:Space Mono,monospace; letter-spacing:0.08em;">© 2026 ResumeSync by VisualizePro · AI-Powered Career Intelligence</p>'
         '</div>',
         unsafe_allow_html=True
     )
