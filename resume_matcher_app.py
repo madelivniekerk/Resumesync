@@ -938,7 +938,7 @@ def show_landing():
     with nav_r:
         st.markdown('<div style="padding:22px 32px 10px;display:flex;justify-content:flex-end;">', unsafe_allow_html=True)
         if st.button("Try for free →", key="nav_cta", type="primary"):
-            st.session_state.show_app = True
+            st.session_state.page = 'app'
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -972,7 +972,7 @@ def show_landing():
         cta_l, cta_r = st.columns([1, 1], gap="small")
         with cta_l:
             if st.button("Start free →", key="hero_cta", type="primary", use_container_width=True):
-                st.session_state.show_app = True
+                st.session_state.page = 'app'
                 st.rerun()
         with cta_r:
             st.markdown("""
@@ -1154,7 +1154,7 @@ def show_landing():
     _, cta_mid, _ = st.columns([1, 1, 1])
     with cta_mid:
         if st.button("Start for free →", key="bottom_cta", type="primary", use_container_width=True):
-            st.session_state.show_app = True
+            st.session_state.page = 'app'
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1172,12 +1172,219 @@ def show_landing():
     """, unsafe_allow_html=True)
 
 
+# ============= TRACKER PAGE =============
+
+def show_tracker():
+    """Dedicated Applications Tracker page."""
+
+    # Hide Streamlit header
+    st.markdown("""
+    <style>
+    [data-testid="stHeader"]{display:none!important;}
+    #MainMenu{visibility:hidden!important;}
+    footer{visibility:hidden!important;}
+    </style>
+    """, unsafe_allow_html=True)
+
+    tracker_data = load_tracker_data()
+
+    # ── Sidebar ──────────────────────────────────────────────────────────────
+    with st.sidebar:
+        st.markdown("""
+        <div style="padding:1.5rem 1rem 0;">
+          <div style="display:flex;align-items:center;gap:11px;margin-bottom:1.6rem;">
+            <div style="width:34px;height:34px;border-radius:9px;
+                        background:linear-gradient(150deg,#7ad79f,#4fae7a);
+                        display:grid;place-items:center;
+                        font-family:'Bricolage Grotesque',system-ui,sans-serif;
+                        font-weight:800;font-size:16px;color:#06140f;
+                        box-shadow:0 4px 12px rgba(122,215,159,0.28);flex-shrink:0;">R</div>
+            <div>
+              <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;
+                          font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;line-height:1.1;">ResumSync</div>
+              <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;
+                          text-transform:uppercase;color:#6e8a7b;margin-top:3px;">by VisualizePro</div>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid rgba(159,182,168,0.12);margin-bottom:1.2rem;"></div>
+
+          <p style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.16em;
+                    text-transform:uppercase;color:#7ad79f;margin:0 0 0.8rem;">Workspace</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("✦ New Analysis", key="tracker_nav_new", use_container_width=True):
+            st.session_state.page = 'app'
+            st.rerun()
+
+        # Applications — active/current page
+        st.markdown("""
+        <div style="background:rgba(122,215,159,0.10);border:1px solid rgba(122,215,159,0.22);
+                    border-radius:6px;padding:10px 14px;margin:4px 0;
+                    font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;color:#7ad79f;">
+          📋 Applications
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("✍ Resume Rewriter", key="tracker_nav_rewriter", use_container_width=True):
+            st.session_state.page = 'app'
+            st.rerun()
+
+        if st.button("✉ Cover Letters", key="tracker_nav_cl", use_container_width=True):
+            st.session_state.page = 'app'
+            st.rerun()
+
+        st.markdown("<div style='margin-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);padding-top:1rem;'></div>", unsafe_allow_html=True)
+
+        if st.button("← Back to home", key="tracker_back_home", use_container_width=True):
+            st.session_state.page = 'landing'
+            st.rerun()
+
+    # ── Stats computation ─────────────────────────────────────────────────────
+    total = len(tracker_data)
+    applied_count = sum(1 for r in tracker_data if r.get('status') == 'Applied')
+    interview_count = sum(1 for r in tracker_data if r.get('status') == 'Interview')
+    pct_vals = []
+    for r in tracker_data:
+        raw = str(r.get('match_pct', '') or '').replace('%', '').strip()
+        if raw.isdigit():
+            pct_vals.append(int(raw))
+    avg_match = (sum(pct_vals) // len(pct_vals)) if pct_vals else 0
+
+    # ── Page header ───────────────────────────────────────────────────────────
+    hdr_l, hdr_r = st.columns([3, 1])
+    with hdr_l:
+        st.markdown("""
+        <div style="padding:28px 0 8px;">
+          <h1 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;
+                     font-size:clamp(26px,3vw,38px);letter-spacing:-0.025em;color:#ecf4ee;margin:0 0 8px;">
+            Applications
+          </h1>
+          <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:#9fb6a8;margin:0;">
+            Every role you've analysed — resume, cover letter, score and status in one place.
+          </p>
+        </div>
+        """, unsafe_allow_html=True)
+    with hdr_r:
+        st.markdown("<div style='padding-top:32px;'>", unsafe_allow_html=True)
+        if st.button("New analysis →", key="tracker_hdr_new", type="primary", use_container_width=True):
+            st.session_state.page = 'app'
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # ── Stats row ─────────────────────────────────────────────────────────────
+    s1, s2, s3, s4 = st.columns(4)
+    stat_cards = [
+        (s1, str(total), "Tracked", "#7ad79f"),
+        (s2, str(applied_count), "Applied", "#6fb1e0"),
+        (s3, str(interview_count), "Interviews", "#e0a14a"),
+        (s4, (str(avg_match) + "%" if pct_vals else "—"), "Avg Match", "#7ad79f"),
+    ]
+    for col, val, label, color in stat_cards:
+        with col:
+            st.markdown(
+                '<div style="background:#0c2019;border:1px solid rgba(159,182,168,0.12);'
+                'border-radius:14px;padding:20px 18px;text-align:center;margin-bottom:16px;">'
+                '<div style="font-family:\'Bricolage Grotesque\',system-ui,sans-serif;font-weight:800;'
+                'font-size:2rem;color:' + color + ';line-height:1;">' + val + '</div>'
+                '<div style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.16em;'
+                'text-transform:uppercase;color:#6e8a7b;margin-top:6px;">' + label + '</div>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+    # ── Empty state ───────────────────────────────────────────────────────────
+    if total == 0:
+        st.markdown("""
+        <div style="background:#0c2019;border:1px solid rgba(159,182,168,0.12);border-radius:16px;
+                    padding:48px 24px;text-align:center;margin-top:8px;">
+          <div style="font-size:2.4rem;margin-bottom:14px;">📋</div>
+          <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;
+                      font-size:20px;color:#ecf4ee;margin-bottom:8px;">No applications yet</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:#9fb6a8;margin-bottom:24px;">
+            Run your first resume analysis to start tracking your job applications.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+        _, mid_col, _ = st.columns([1, 1, 1])
+        with mid_col:
+            if st.button("Run your first analysis →", key="tracker_empty_cta", type="primary", use_container_width=True):
+                st.session_state.page = 'app'
+                st.rerun()
+    else:
+        # ── Table card ────────────────────────────────────────────────────────
+        st.markdown("""
+        <div style="background:#0c2019;border:1px solid rgba(159,182,168,0.12);
+                    border-radius:16px;padding:20px 20px 8px;margin-top:4px;">
+          <p style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.16em;
+                    text-transform:uppercase;color:#6e8a7b;margin:0 0 16px;">All Applications</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        status_colors = {
+            'Applied':   '#6fb1e0',
+            'Interview': '#e0a14a',
+            'Offer':     '#7ad79f',
+            'Draft':     '#6e8a7b',
+        }
+
+        for row in tracker_data:
+            company = row.get('company', '') or ''
+            job_title = row.get('job_title', '') or ''
+            match_pct = str(row.get('match_pct', '') or '')
+            status = row.get('status', 'Draft') or 'Draft'
+            date_val = str(row.get('date', '') or '')
+            initial = company[0].upper() if company else '?'
+            badge_color = status_colors.get(status, '#6e8a7b')
+
+            st.markdown(
+                '<div style="display:flex;align-items:center;gap:14px;'
+                'padding:14px 20px;border-bottom:1px solid rgba(159,182,168,0.07);'
+                'background:#0c2019;border-radius:8px;margin-bottom:4px;">'
+                '<div style="width:38px;height:38px;border-radius:9px;flex-shrink:0;'
+                'background:rgba(122,215,159,0.12);border:1px solid rgba(122,215,159,0.22);'
+                'display:grid;place-items:center;font-family:\'Bricolage Grotesque\',system-ui,sans-serif;'
+                'font-weight:700;font-size:16px;color:#7ad79f;">' + initial + '</div>'
+                '<div style="flex:1;min-width:0;">'
+                '<div style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:14px;'
+                'color:#ecf4ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + job_title + '</div>'
+                '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:#9fb6a8;margin-top:2px;">' + company + '</div>'
+                '</div>'
+                '<div style="font-family:\'Space Mono\',monospace;font-size:13px;color:#7ad79f;font-weight:700;flex-shrink:0;">' + match_pct + '</div>'
+                '<div style="display:inline-block;font-family:\'Space Mono\',monospace;font-size:9px;'
+                'letter-spacing:0.12em;text-transform:uppercase;padding:3px 9px;border-radius:99px;'
+                'background:rgba(0,0,0,0.25);border:1px solid ' + badge_color + ';'
+                'color:' + badge_color + ';flex-shrink:0;">' + status + '</div>'
+                '<div style="font-family:\'Space Mono\',monospace;font-size:9px;color:#6e8a7b;'
+                'flex-shrink:0;white-space:nowrap;">' + date_val + '</div>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+        # Download tracker Excel from tracker page too
+        st.download_button(
+            label="📥 Download Tracker (Excel)",
+            data=generate_tracker_excel(tracker_data),
+            file_name="job_applications.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="tracker_page_download",
+            use_container_width=False
+        )
+
+
 # ============= STREAMLIT UI =============
 
 def main():
-    # Route to landing page until user clicks "Try for free"
-    if not st.session_state.get('show_app', False):
+    # Route to landing page, tracker, or app workspace
+    page = st.session_state.get('page', 'landing')
+    if page == 'landing':
         show_landing()
+        return
+    if page == 'tracker':
+        show_tracker()
         return
 
     # ── Sidebar ─────────────────────────────────────────────────────────────
@@ -1240,8 +1447,12 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
+        if st.button("📋 View Applications", key="sidebar_view_tracker", use_container_width=True):
+            st.session_state.page = 'tracker'
+            st.rerun()
+
         if st.button("← Back to home", key="back_to_landing", use_container_width=True):
-            st.session_state.show_app = False
+            st.session_state.page = 'landing'
             st.rerun()
 
         if tracker_data:
@@ -1690,7 +1901,10 @@ def main():
         col_save = st.columns([1, 2, 1])[1]
         with col_save:
             if st.session_state.get('tracker_saved'):
-                st.success(f"✅ Saved to tracker! ({TRACKER_PATH})")
+                st.success("✅ Saved to tracker!")
+                if st.button("📋 View Applications →", key="goto_tracker_after_save", use_container_width=True):
+                    st.session_state.page = 'tracker'
+                    st.rerun()
             else:
                 if st.button("💾 Save to Job Tracker", key="save_tracker", use_container_width=True):
                     cover_letter_text = st.session_state.get('cover_letter', '')
