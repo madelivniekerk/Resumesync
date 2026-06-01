@@ -1,0 +1,52 @@
+name: Backup Supabase Data
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'    # every 6 hours
+  workflow_dispatch:           # manual trigger from GitHub UI
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate secrets
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "FAIL: SUPABASE_URL secret is missing or empty"
+            echo "Go to: github.com/madelivniekerk/Resumesync > Settings > Secrets > Actions > New repository secret"
+            exit 1
+          fi
+          if [ -z "$SUPABASE_KEY" ]; then
+            echo "FAIL: SUPABASE_KEY secret is missing or empty"
+            exit 1
+          fi
+          echo "OK: SUPABASE_URL starts with ${SUPABASE_URL:0:15}..."
+          echo "OK: SUPABASE_KEY is set (${#SUPABASE_KEY} chars)"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install supabase
+
+      - name: Export data from Supabase
+        run: python scripts/backup.py
+
+      - name: Commit backup
+        run: |
+          git config user.name "ResumeSync Backup Bot"
+          git config user.email "backup@resumesync.app"
+          git add backup/
+          git diff --staged --quiet || git commit -m "chore: backup $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
