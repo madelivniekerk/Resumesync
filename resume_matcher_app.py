@@ -15,12 +15,16 @@ from bs4 import BeautifulSoup
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-import PyPDF2
+import pypdf
 import io
 import base64
 import openpyxl
 from openpyxl import load_workbook
-from supabase import create_client as _supabase_create_client
+try:
+    from supabase import create_client as _supabase_create_client
+    _SUPABASE_AVAILABLE = True
+except Exception:
+    _SUPABASE_AVAILABLE = False
 
 # Load environment
 load_dotenv()
@@ -304,16 +308,21 @@ def get_client():
 
 @st.cache_resource
 def get_supabase():
+    if not _SUPABASE_AVAILABLE:
+        return None
     url = _read_secret("SUPABASE_URL")
     key = _read_secret("SUPABASE_KEY")
     if url and key:
-        return _supabase_create_client(url, key)
+        try:
+            return _supabase_create_client(url, key)
+        except Exception:
+            return None
     return None
 
 
 def extract_text_from_pdf(file):
     try:
-        pdf_reader = PyPDF2.PdfReader(file)
+        pdf_reader = pypdf.PdfReader(file)
         return "".join(page.extract_text() for page in pdf_reader.pages)
     except Exception as e:
         return f"Error reading PDF: {str(e)}"
