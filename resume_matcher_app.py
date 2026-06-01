@@ -1465,4 +1465,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as _e:
+        import traceback
+        st.error(f"App error: {_e}")
+        st.code(traceback.format_exc())
+else:
+    try:
+        main()
+    except Exception as _e:
+        import traceback
+        st.error(f"App error: {_e}")
+        st.code(traceback.format_exc())
