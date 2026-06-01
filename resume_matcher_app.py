@@ -66,6 +66,11 @@ st.markdown("""
         --amber:       #e0a14a;
         --line:        rgba(159,182,168,0.12);
         --line-2:      rgba(159,182,168,0.07);
+        /* aliases used in component CSS */
+        --gold:        #7ad79f;
+        --gold-soft:   #94e6b1;
+        --muted:       #6e8a7b;
+        --line-strong: rgba(122,215,159,0.22);
     }
 
     /* ── App background ── */
@@ -962,144 +967,116 @@ def main():
                 use_container_width=True
             )
 
-    # ── Hero ─────────────────────────────────────────────────────────────────
-    BADGE = ("font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.16em; "
-             "text-transform:uppercase; color:#7ad79f; background:rgba(7,21,18,0.88); "
-             "padding:5px 9px; border-radius:6px; border:1px solid rgba(122,215,159,0.22); "
-             "position:absolute; top:14px; left:14px; z-index:2;")
-    TILE  = ("border-radius:14px; overflow:hidden; position:relative; background:#0c2019; "
-             "border:1px solid rgba(159,182,168,0.12); box-shadow:0 24px 60px rgba(0,0,0,0.45);")
-
-    hero_l, hero_r = st.columns([1, 1.1], gap="large")
-
-    with hero_l:
-        st.markdown(f"""
-        <div style="padding:0.75rem 0 1rem;">
-          <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
-            <span style="display:inline-block; width:24px; height:1px; background:#7ad79f; opacity:0.6; flex-shrink:0;"></span>
-            <span style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:0.18em; color:#7ad79f; text-transform:lowercase;">— know before you apply —</span>
+    # ── Compact welcome topbar (matches handoff App design — lean workspace, not landing hero) ──
+    st.markdown("""
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;
+                padding:20px 0 22px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:46px;height:46px;border-radius:11px;
+                    background:linear-gradient(150deg,#1d3a31,#11251d);
+                    border:1px solid rgba(122,215,159,0.22);
+                    display:grid;place-items:center;
+                    font-family:'Bricolage Grotesque',system-ui,sans-serif;
+                    font-weight:700;font-size:18px;color:#7ad79f;flex-shrink:0;">M</div>
+        <div>
+          <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;
+                      font-size:22px;letter-spacing:-0.02em;color:#ecf4ee;line-height:1.1;">
+            Let's find your next match.
           </div>
-          <h1 style="font-family:'Bricolage Grotesque',serif; font-weight:600; font-size:clamp(28px,3vw,48px);
-                     line-height:1.05; letter-spacing:-0.025em; margin:0 0 16px; color:#ecf4ee;">
-            Stop applying blindly,<br/>
-            <em style="font-style:italic; color:#7ad79f; font-weight:500;">Know Your Match</em><br/>
-            Before You Apply.
-          </h1>
-          <p style="font-family:'DM Sans',sans-serif; font-size:15px; line-height:1.6;
-                    color:#9fb6a8; margin:0 0 24px; max-width:440px;">
-            Upload your resume, paste any job posting — and in seconds know your exact match score,
-            which skills are missing, which keywords will get you past ATS, and walk away
-            with a tailored cover letter and resume ready to send.
-          </p>
+          <div style="font-size:13px;color:#9fb6a8;margin-top:3px;font-family:'DM Sans',sans-serif;">
+            Upload your resume and a job posting to get your compatibility score.
+          </div>
         </div>
-        """, unsafe_allow_html=True)
-
-
-    with hero_r:
-        tile_l, tile_r = st.columns([1.4, 1], gap="small")
-
-        with tile_l:
-            st.markdown(f"""
-            <div style="{TILE} height:360px;">
-              <div style="{BADGE}">Now hiring · You</div>
-              <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=900&q=80&auto=format&fit=crop"
-                   style="width:100%; height:100%; object-fit:cover; display:block;" alt="Professional at a laptop" loading="lazy" />
-              <div style="position:absolute; left:0; right:0; bottom:0; padding:20px 18px 16px;
-                          background:linear-gradient(180deg,transparent,rgba(8,32,25,0.88) 65%); z-index:2;">
-                <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif; font-size:19px; font-weight:700;
-                             color:#ecf4ee; letter-spacing:-0.02em;">Madeli, BI Specialist</div>
-                <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.12em;
-                             text-transform:uppercase; color:#7ad79f; margin-top:5px;">Currently matching to 12 open roles</div>
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with tile_r:
-            # Match score tile — SVG ring (reliable cross-browser, no CSS pseudo-elements)
-            # r=46, circumference=289, 92% filled = dashoffset 289*(1-0.92)=23
-            st.markdown(f"""
-            <div style="{TILE} height:172px; margin-bottom:10px;
-                         background:radial-gradient(circle at center,#143d33 0%,#0a1b16 100%);
-                         display:flex; align-items:center; justify-content:center;">
-              <div style="{BADGE}">Match Score</div>
-              <div style="position:relative; width:120px; height:120px; display:flex; align-items:center; justify-content:center;">
-                <svg width="120" height="120" viewBox="0 0 120 120" style="position:absolute; top:0; left:0; transform:rotate(-90deg);">
-                  <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="11"/>
-                  <circle cx="60" cy="60" r="46" fill="none" stroke="#7ad79f" stroke-width="11"
-                          stroke-dasharray="289" stroke-dashoffset="23" stroke-linecap="round"/>
-                </svg>
-                <div style="text-align:center; position:relative; z-index:1;">
-                  <span style="font-family:'Bricolage Grotesque',serif; font-size:32px; font-weight:600; color:#7ad79f; line-height:1;">92</span>
-                  <span style="font-family:'Bricolage Grotesque',serif; font-size:15px; color:#7ad79f;">%</span>
-                </div>
-              </div>
-              <div style="position:absolute; bottom:14px; left:0; right:0; text-align:center;
-                          font-family:'Space Mono',monospace; font-size:10px;
-                          letter-spacing:0.2em; text-transform:uppercase; color:#9fb6a8;">Strong Fit</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # Skill bars tile — nested divs, no pseudo-elements
-            def skill_bar(name, pct):
-                return (
-                    f'<div style="display:flex; align-items:center; gap:8px; font-size:10px; color:#ecf4ee;">'
-                    f'<span style="width:60px; font-weight:500; font-family:DM Sans,sans-serif; flex-shrink:0;">{name}</span>'
-                    f'<div style="flex:1; height:4px; background:rgba(255,255,255,0.07); border-radius:999px;">'
-                    f'<div style="width:{pct}%; height:100%; background:linear-gradient(90deg,#4fae7a,#7ad79f); border-radius:999px;"></div>'
-                    f'</div>'
-                    f'<span style="font-family:Space Mono,monospace; font-size:9px; color:#7ad79f; min-width:20px; text-align:right;">{pct}</span>'
-                    f'</div>'
-                )
-            bars = skill_bar("Tableau",96) + skill_bar("Power BI",82) + skill_bar("SQL",90) + skill_bar("Snowflake",74)
-            st.markdown(f"""
-            <div style="{TILE} height:178px; padding:12px 14px;
-                         background:linear-gradient(160deg,#15392f,#0a1b16);
-                         display:flex; flex-direction:column; justify-content:flex-end; gap:10px;">
-              <div style="{BADGE}">Skill alignment</div>
-              {bars}
-            </div>
-            """, unsafe_allow_html=True)
-
-    st.divider()
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;
+                  font-family:'Space Mono',monospace;font-size:10px;
+                  letter-spacing:0.12em;text-transform:uppercase;color:#6e8a7b;white-space:nowrap;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#7ad79f;
+                     box-shadow:0 0 0 3px rgba(122,215,159,0.10);display:inline-block;"></span>
+        <span style="width:7px;height:7px;border-radius:50%;background:rgba(159,182,168,0.22);display:inline-block;"></span>
+        <span style="width:7px;height:7px;border-radius:50%;background:rgba(159,182,168,0.22);display:inline-block;"></span>
+        <span style="margin-left:4px;">Step 1 of 3</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     client = get_client()
     if not client:
         st.error("⚠️ ANTHROPIC_API_KEY not found. On Streamlit Cloud: go to App Settings → Secrets and add your key in TOML format: ANTHROPIC_API_KEY = \"sk-ant-...\"")
         return
 
-    # Inputs
+    # ── Workspace card ────────────────────────────────────────────────────────
+    st.markdown("""
+    <div style="background:#0c2019;border:1px solid rgba(159,182,168,0.12);border-radius:20px;
+                padding:28px 28px 4px;box-shadow:0 24px 60px rgba(0,0,0,0.45),0 4px 14px rgba(0,0,0,0.35);
+                margin-bottom:4px;">
+    </div>
+    """, unsafe_allow_html=True)
+
     col1, col2 = st.columns([1, 1])
     with col1:
-        st.markdown('<p style="font-family:\'Space Mono\',monospace; font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:#7ad79f; margin:0 0 6px;">① Upload Your Resume</p>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style="display:flex;align-items:center;gap:9px;
+                    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;
+                    text-transform:uppercase;color:#7ad79f;margin-bottom:10px;">
+          <span style="width:19px;height:19px;border-radius:50%;background:rgba(122,215,159,0.16);
+                       display:grid;place-items:center;font-size:10px;color:#7ad79f;flex-shrink:0;
+                       text-align:center;line-height:19px;">1</span>
+          Upload your resume
+        </div>
+        """, unsafe_allow_html=True)
         resume_file = st.file_uploader(
             "Resume", type=['pdf', 'docx', 'doc', 'txt'], label_visibility="collapsed"
         )
         if resume_file:
-            st.markdown(f'<p style="font-size:0.75rem; color:#7ad79f; margin:4px 0 0; font-family:DM Sans,sans-serif;">✅ {resume_file.name}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p style="font-size:0.75rem;color:#7ad79f;margin:4px 0 0;font-family:DM Sans,sans-serif;">✅ {resume_file.name}</p>', unsafe_allow_html=True)
 
     with col2:
-        st.markdown('<p style="font-family:\'Space Mono\',monospace; font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:#7ad79f; margin:0 0 6px;">② Add Job Posting</p>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style="display:flex;align-items:center;gap:9px;
+                    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;
+                    text-transform:uppercase;color:#7ad79f;margin-bottom:10px;">
+          <span style="width:19px;height:19px;border-radius:50%;background:rgba(122,215,159,0.16);
+                       display:grid;place-items:center;font-size:10px;color:#7ad79f;flex-shrink:0;
+                       text-align:center;line-height:19px;">2</span>
+          Add the job posting
+        </div>
+        """, unsafe_allow_html=True)
         input_method = st.radio(
-            "Input method", ["Paste URL (auto-scrape)", "Paste job description manually"],
+            "Input method", ["Paste URL · auto-scrape", "Paste manually"],
             horizontal=True, label_visibility="collapsed"
         )
         job_url = None
         manual_job_text = None
-        if input_method == "Paste URL (auto-scrape)":
+        if input_method == "Paste URL · auto-scrape":
             job_url = st.text_input("Job URL", placeholder="https://www.seek.com.au/job/...", label_visibility="collapsed")
             if job_url:
-                st.markdown(f'<p style="font-size:0.75rem; color:#7ad79f; margin:4px 0 0; font-family:DM Sans,sans-serif;">✅ {job_url[:55]}</p>', unsafe_allow_html=True)
+                st.markdown(f'<p style="font-size:0.75rem;color:#7ad79f;margin:4px 0 0;font-family:DM Sans,sans-serif;">✅ {job_url[:55]}</p>', unsafe_allow_html=True)
         else:
             manual_job_text = st.text_area("Job description", placeholder="Paste the full job description here...", height=100, label_visibility="collapsed")
             if manual_job_text:
-                st.markdown(f'<p style="font-size:0.75rem; color:#7ad79f; margin:4px 0 0; font-family:DM Sans,sans-serif;">✅ {len(manual_job_text)} characters</p>', unsafe_allow_html=True)
+                st.markdown(f'<p style="font-size:0.75rem;color:#7ad79f;margin:4px 0 0;font-family:DM Sans,sans-serif;">✅ {len(manual_job_text)} characters</p>', unsafe_allow_html=True)
 
-    st.markdown("<div style='margin:0.75rem 0'></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="border-top:1px solid rgba(159,182,168,0.07);margin:12px 0 4px;"></div>
+    """, unsafe_allow_html=True)
 
-    col_center = st.columns([1, 2, 1])[1]
-    with col_center:
+    col_hint, col_btn = st.columns([2, 1])
+    with col_hint:
+        ready = resume_file and (job_url or manual_job_text)
+        dot_color = "#7ad79f" if ready else "#6e8a7b"
+        hint_text = "Ready to analyze" if ready else "Add both to analyze"
+        st.markdown(f"""
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:{dot_color};
+                    font-family:'DM Sans',sans-serif;padding-top:10px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:{dot_color};
+                       display:inline-block;flex-shrink:0;"></span>
+          {hint_text}
+        </div>
+        """, unsafe_allow_html=True)
+    with col_btn:
         analyze_button = st.button(
-            "🚀 Analyze Compatibility",
+            "Analyze compatibility →",
             type="primary",
             use_container_width=True,
             disabled=not (resume_file and (job_url or manual_job_text))
@@ -1185,15 +1162,15 @@ def main():
         st.divider()
 
         # ============= RESUME UPDATER =============
-        st.markdown('<h2 style="color: rgb(35, 3, 68); font-size: 1.6rem; font-weight: 700; margin: 1rem 0 0.5rem 0; font-family: Poppins, sans-serif;">✨ Update My Resume</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="color:#ecf4ee; font-size:1.6rem; font-weight:700; margin:1rem 0 0.5rem; font-family:\'Bricolage Grotesque\',system-ui,sans-serif; letter-spacing:-0.02em;">✨ Update My Resume</h2>', unsafe_allow_html=True)
 
         if st.session_state.get('resume_is_docx'):
             st.markdown(
-                '<div style="background: linear-gradient(135deg, rgba(35,3,68,0.05) 0%, rgba(170,159,196,0.1) 100%); '
-                'padding: 1rem 1.5rem; border-radius: 8px; border-left: 4px solid rgb(35,3,68); margin-bottom: 1rem;">'
-                '<p style="color: rgb(50,50,50); font-size: 0.95rem; margin: 0; font-family: Poppins, sans-serif;">'
-                '📝 Improves how your existing experience is expressed — stronger verbs, clearer outcomes. '
-                '<strong>Will never add skills or experience you don\'t have.</strong> '
+                '<div style="background:rgba(122,215,159,0.06);padding:1rem 1.5rem;border-radius:12px;'
+                'border-left:4px solid #7ad79f;margin-bottom:1rem;">'
+                '<p style="color:#9fb6a8;font-size:0.9rem;margin:0;font-family:\'DM Sans\',sans-serif;line-height:1.6;">'
+                'Improves how your existing experience is expressed — stronger verbs, clearer outcomes. '
+                '<strong style="color:#ecf4ee;">Will never add skills or experience you don\'t have.</strong> '
                 'You review and approve every change before it\'s applied.</p>'
                 '</div>',
                 unsafe_allow_html=True
@@ -1220,8 +1197,8 @@ def main():
                 proposed = st.session_state['proposed_updates']
 
                 st.markdown(
-                    '<p style="font-family: Poppins, sans-serif; font-weight: 600; color: rgb(35,3,68); '
-                    'margin: 1.5rem 0 0.5rem 0;">Review each proposed change — tick only the ones that are true for you:</p>',
+                    '<p style="font-family:\'DM Sans\',sans-serif;font-weight:600;color:#ecf4ee;'
+                    'margin:1.5rem 0 0.5rem;">Review each proposed change — tick only the ones that are true for you:</p>',
                     unsafe_allow_html=True
                 )
 
@@ -1236,18 +1213,20 @@ def main():
                         col_b, col_a = st.columns(2)
                         with col_b:
                             st.markdown(
-                                f'<div style="background: #fff5f5; border-left: 3px solid #e74c3c; '
-                                f'padding: 0.6rem 0.8rem; border-radius: 4px; font-size: 0.82rem; '
-                                f'font-family: Poppins, sans-serif; color: #555;">'
-                                f'<strong style="color:#e74c3c;">Before</strong><br>{find}</div>',
+                                f'<div style="background:rgba(224,122,95,0.08);border-left:3px solid #e07a5f;'
+                                f'padding:0.6rem 0.8rem;border-radius:10px;font-size:0.82rem;'
+                                f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;">'
+                                f'<strong style="color:#e07a5f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                                f'letter-spacing:0.1em;text-transform:uppercase;">Before</strong><br>{find}</div>',
                                 unsafe_allow_html=True
                             )
                         with col_a:
                             st.markdown(
-                                f'<div style="background: #f0fff4; border-left: 3px solid #2ecc71; '
-                                f'padding: 0.6rem 0.8rem; border-radius: 4px; font-size: 0.82rem; '
-                                f'font-family: Poppins, sans-serif; color: #555;">'
-                                f'<strong style="color:#2ecc71;">After</strong><br>{replace}</div>',
+                                f'<div style="background:rgba(122,215,159,0.08);border-left:3px solid #7ad79f;'
+                                f'padding:0.6rem 0.8rem;border-radius:10px;font-size:0.82rem;'
+                                f'font-family:\'DM Sans\',sans-serif;color:#ecf4ee;">'
+                                f'<strong style="color:#7ad79f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                                f'letter-spacing:0.1em;text-transform:uppercase;">After</strong><br>{replace}</div>',
                                 unsafe_allow_html=True
                             )
                         st.markdown("<div style='margin-bottom:0.8rem'></div>", unsafe_allow_html=True)
@@ -1285,7 +1264,14 @@ def main():
                         key="download_updated_resume"
                     )
         else:
-            st.info("💡 Upload a Word document (.docx) to enable automatic resume updating.")
+            st.markdown(
+                '<div style="background:rgba(122,215,159,0.04);border:1px solid rgba(159,182,168,0.12);'
+                'border-radius:10px;padding:0.75rem 1rem;">'
+                '<p style="color:#6e8a7b;font-size:0.85rem;margin:0;font-family:\'DM Sans\',sans-serif;">'
+                '💡 Upload a Word document (.docx) to enable automatic resume updating.</p>'
+                '</div>',
+                unsafe_allow_html=True
+            )
 
         st.divider()
 
@@ -1470,7 +1456,7 @@ def main():
     # Footer
     st.divider()
     st.markdown(
-        '<div style="text-align: center; padding: 2rem 0 1rem 0; font-family: Poppins, sans-serif;">'
+        '<div style="text-align:center;padding:2rem 0 1rem;font-family:\'DM Sans\',sans-serif;">'
         '<p style="color:#7ad79f; font-size:0.85rem; margin-bottom:0.4rem; font-family:Space Mono,monospace; letter-spacing:0.1em;">Powered by Claude AI</p>'
         '<p style="color:#9fb6a8; font-size:0.8rem; font-family:Space Mono,monospace; letter-spacing:0.08em;">© 2026 ResumeSync by VisualizePro · AI-Powered Career Intelligence</p>'
         '</div>',
