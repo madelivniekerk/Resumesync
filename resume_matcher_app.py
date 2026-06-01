@@ -1113,13 +1113,19 @@ def show_landing():
             border = "rgba(122,215,159,0.35)" if featured else "rgba(159,182,168,0.12)"
             bg = "#0f271e" if featured else "#0c2019"
             badge = '<div style="display:inline-block;font-family:\'Space Mono\',monospace;font-size:9px;padding:3px 8px;border-radius:99px;background:#7ad79f;color:#06140f;font-weight:700;margin-bottom:12px;">Most popular</div>' if featured else ""
-            feat_html = "".join([
-                f'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">'
-                f'<span style="color:{"#7ad79f" if f != "—" else "#6e8a7b"};flex-shrink:0;">{"✓" if f != "—" else "—"}</span>'
-                f'<span style="font-size:13px;color:{"#ecf4ee" if f != "—" else "#6e8a7b"};font-family:DM Sans,sans-serif;">{f}</span>'
-                f'</div>'
-                for f in feats
-            ])
+            feat_rows = []
+            for f in feats:
+                is_avail = f != "—"
+                dot_col = "#7ad79f" if is_avail else "#6e8a7b"
+                txt_col = "#ecf4ee" if is_avail else "#6e8a7b"
+                icon = "✓" if is_avail else "—"
+                feat_rows.append(
+                    '<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">'
+                    '<span style="color:' + dot_col + ';flex-shrink:0;">' + icon + '</span>'
+                    '<span style="font-size:13px;color:' + txt_col + ';font-family:DM Sans,sans-serif;">' + f + '</span>'
+                    '</div>'
+                )
+            feat_html = "".join(feat_rows)
             st.markdown(f"""
             <div style="background:{bg};border:1px solid {border};border-radius:18px;padding:26px;min-height:320px;">
               {badge}
@@ -1518,7 +1524,7 @@ def main():
                 col_apply = st.columns([1, 2, 1])[1]
                 with col_apply:
                     apply_btn = st.button(
-                        f"✅ Apply {n_selected} Selected Change{'s' if n_selected != 1 else ''}",
+                        "✅ Apply " + str(n_selected) + " Selected Change" + ("s" if n_selected != 1 else ""),
                         type="primary",
                         key="apply_selected_btn",
                         disabled=n_selected == 0
