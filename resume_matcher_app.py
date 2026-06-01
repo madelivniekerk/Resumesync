@@ -562,9 +562,21 @@ def parse_analysis_fields(analysis_text: str) -> dict:
     return fields
 
 
+def extract_recommendations_summary(analysis_text: str) -> str:
+    """Pull the SPECIFIC IMPROVEMENT RECOMMENDATIONS section out of the analysis."""
+    m = re.search(
+        r'##\s*SPECIFIC IMPROVEMENT RECOMMENDATIONS\s*\n(.*?)(?=\n##|\Z)',
+        analysis_text, re.DOTALL | re.IGNORECASE
+    )
+    if m:
+        return m.group(1).strip()[:1500]
+    return ""
+
+
 def save_to_tracker(job_title: str, company: str, location: str,
                     resume_filename: str, match_pct: str, job_url: str,
-                    cover_letter: str = '', cover_letter_path: str = ''):
+                    cover_letter: str = '', cover_letter_path: str = '',
+                    notes: str = ''):
     """Insert a job application row into Supabase."""
     sb = get_supabase()
     row = {
@@ -576,7 +588,7 @@ def save_to_tracker(job_title: str, company: str, location: str,
         "match_pct":   match_pct,
         "job_url":     job_url if job_url != 'Manual Input' else '',
         "status":      "Applied",
-        "notes":       "",
+        "notes":       notes,
         "cover_letter": cover_letter_path if cover_letter_path else cover_letter,
     }
     if sb:
@@ -597,7 +609,7 @@ def load_tracker_data():
 
 def generate_tracker_excel(tracker_data: list) -> bytes:
     """Build an in-memory Excel workbook from tracker_data (list of dicts)."""
-    headers  = ['Date', 'Job Title', 'Company', 'Location', 'Resume File', 'Match %', 'Job URL', 'Status', 'Notes', 'Cover Letter']
+    headers  = ['Date', 'Job Title', 'Company', 'Location', 'Resume File', 'Match %', 'Job URL', 'Status', 'Recommendations Summary', 'Cover Letter']
     col_keys = ['date', 'job_title', 'company', 'location', 'resume_file', 'match_pct', 'job_url', 'status', 'notes', 'cover_letter']
 
     wb = openpyxl.Workbook()
@@ -631,11 +643,15 @@ def generate_tracker_excel(tracker_data: list) -> bytes:
 
 # ============= RESUME UPDATER =============
 
-def generate_resume_updates(resume_text: str, analysis_text: str, client):
+def generate_resume_updates(resume_text: str, analysis_text: str, client, user_guidance: str = ""):
     """
     Ask Claude to return targeted find→replace pairs based on recommendations.
     Strictly forbidden from fabricating skills or experience not in the original resume.
     """
+    guidance_block = ""
+    if user_guidance and user_guidance.strip():
+        guidance_block = f"\n**ADDITIONAL GUIDANCE FROM CANDIDATE:**\n{user_guidance.strip()}\n"
+
     prompt = f"""You are a professional resume editor with a strict honesty policy.
 
 **CURRENT RESUME TEXT:**
@@ -643,7 +659,7 @@ def generate_resume_updates(resume_text: str, analysis_text: str, client):
 
 **ANALYSIS & RECOMMENDATIONS:**
 {analysis_text}
-
+{guidance_block}
 Your task is to improve how existing experience is communicated — NOT to add experience that doesn't exist.
 
 ⚠️ HONESTY RULES (non-negotiable):
@@ -651,6 +667,7 @@ Your task is to improve how existing experience is communicated — NOT to add e
 - NEVER invent metrics, numbers, or achievements — only use figures already stated in the resume
 - NEVER add experience with software, frameworks, or industries not mentioned in the resume
 - You MAY: use stronger action verbs, improve sentence structure, make achievements clearer, reframe existing content more powerfully, fix vague language
+- If additional guidance is provided, follow it only where it aligns with existing resume content
 - If a recommendation requires adding something the candidate clearly doesn't have, SKIP that change entirely
 
 Return ONLY a JSON array. Each item must have:
@@ -1677,6 +1694,13 @@ def main():
                 unsafe_allow_html=True
             )
 
+            upd_guidance = st.text_area(
+                "Additional guidance *(optional)*",
+                placeholder="e.g. Emphasise my leadership of the 2023 project. Lead with my Python skills. Make it more senior in tone.",
+                height=80,
+                key="upd_guidance"
+            )
+
             col_upd = st.columns([1, 2, 1])[1]
             with col_upd:
                 update_btn = st.button("✨ Propose Resume Changes", type="primary", key="update_resume_btn", use_container_width=True)
@@ -1684,7 +1708,7 @@ def main():
             if update_btn:
                 with st.spinner("Generating proposed changes..."):
                     with st.status("Analysing what can be improved...", expanded=True) as upd_status:
-                        upd_result = generate_resume_updates(resume_text, result['analysis'], client)
+                        upd_result = generate_resume_updates(resume_text, result['analysis'], client, user_guidance=upd_guidance)
                         if not upd_result['success']:
                             st.error(f"❌ Could not generate changes: {upd_result['error']}")
                         else:
@@ -1926,7 +1950,8 @@ def main():
                         match_pct=fields['match_pct'],
                         job_url=job_url,
                         cover_letter=cover_letter_text,
-                        cover_letter_path=cl_path
+                        cover_letter_path=cl_path,
+                        notes=extract_recommendations_summary(result['analysis'])
                     )
                     st.session_state['tracker_saved'] = True
                     st.rerun()
