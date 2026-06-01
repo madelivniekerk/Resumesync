@@ -576,20 +576,21 @@ def extract_recommendations_summary(analysis_text: str) -> str:
 def save_to_tracker(job_title: str, company: str, location: str,
                     resume_filename: str, match_pct: str, job_url: str,
                     cover_letter: str = '', cover_letter_path: str = '',
-                    notes: str = ''):
+                    notes: str = '', updated_resume_file: str = ''):
     """Insert a job application row into Supabase."""
     sb = get_supabase()
     row = {
-        "date":        datetime.now().strftime('%Y-%m-%d'),
-        "job_title":   job_title,
-        "company":     company,
-        "location":    location,
-        "resume_file": resume_filename,
-        "match_pct":   match_pct,
-        "job_url":     job_url if job_url != 'Manual Input' else '',
-        "status":      "Applied",
-        "notes":       notes,
-        "cover_letter": cover_letter_path if cover_letter_path else cover_letter,
+        "date":                datetime.now().strftime('%Y-%m-%d'),
+        "job_title":           job_title,
+        "company":             company,
+        "location":            location,
+        "resume_file":         resume_filename,
+        "updated_resume_file": updated_resume_file,
+        "match_pct":           match_pct,
+        "job_url":             job_url if job_url != 'Manual Input' else '',
+        "status":              "Applied",
+        "notes":               notes,
+        "cover_letter":        cover_letter_path if cover_letter_path else cover_letter,
     }
     if sb:
         sb.table("applications").insert(row).execute()
@@ -609,8 +610,8 @@ def load_tracker_data():
 
 def generate_tracker_excel(tracker_data: list) -> bytes:
     """Build an in-memory Excel workbook from tracker_data (list of dicts)."""
-    headers  = ['Date', 'Job Title', 'Company', 'Location', 'Resume File', 'Match %', 'Job URL', 'Status', 'Recommendations Summary', 'Cover Letter']
-    col_keys = ['date', 'job_title', 'company', 'location', 'resume_file', 'match_pct', 'job_url', 'status', 'notes', 'cover_letter']
+    headers  = ['Date', 'Job Title', 'Company', 'Location', 'Original Resume', 'Updated Resume', 'Match %', 'Job URL', 'Status', 'Recommendations Summary', 'Cover Letter']
+    col_keys = ['date', 'job_title', 'company', 'location', 'resume_file', 'updated_resume_file', 'match_pct', 'job_url', 'status', 'notes', 'cover_letter']
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -622,7 +623,7 @@ def generate_tracker_excel(tracker_data: list) -> bytes:
         cell.fill      = openpyxl.styles.PatternFill(fill_type="solid", fgColor="230344")
         cell.alignment = openpyxl.styles.Alignment(horizontal="center")
 
-    widths = [14, 30, 25, 20, 35, 10, 45, 15, 30, 80]
+    widths = [14, 30, 25, 20, 35, 35, 10, 45, 15, 80, 30]
     for col, width in enumerate(widths, 1):
         ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
 
@@ -1664,7 +1665,8 @@ def main():
             if st.button("🔄 New Analysis", key="new_analysis"):
                 for key in ['analysis_result', 'resume_text', 'job_content', 'job_url',
                             'resume_filename', 'resume_file_bytes', 'resume_is_docx',
-                            'cover_letter', 'tracker_saved', 'proposed_updates', 'updated_resume_bytes']:
+                            'cover_letter', 'tracker_saved', 'proposed_updates',
+                            'updated_resume_bytes', 'updated_resume_name']:
                     st.session_state.pop(key, None)
                 st.rerun()
 
@@ -1774,11 +1776,13 @@ def main():
                         selected,
                         resume_filename
                     )
+                    new_filename = f"{_fn_person}_Updated_{_fn_role}_{_fn_date}.docx"
                     st.session_state['updated_resume_bytes'] = updated_bytes
+                    st.session_state['updated_resume_name'] = new_filename
                     st.success(f"✅ {applied} change(s) applied to your resume.")
 
             if 'updated_resume_bytes' in st.session_state:
-                new_filename = f"{_fn_person}_Updated_{_fn_role}_{_fn_date}.docx"
+                new_filename = st.session_state.get('updated_resume_name', f"{_fn_person}_Updated_{_fn_role}_{_fn_date}.docx")
                 col_dl_upd = st.columns([1, 2, 1])[1]
                 with col_dl_upd:
                     st.download_button(
@@ -1951,7 +1955,8 @@ def main():
                         job_url=job_url,
                         cover_letter=cover_letter_text,
                         cover_letter_path=cl_path,
-                        notes=extract_recommendations_summary(result['analysis'])
+                        notes=extract_recommendations_summary(result['analysis']),
+                        updated_resume_file=st.session_state.get('updated_resume_name', '')
                     )
                     st.session_state['tracker_saved'] = True
                     st.rerun()
