@@ -1235,11 +1235,14 @@ def show_tracker():
             st.session_state.page = 'app'
             st.rerun()
 
-        st.markdown("<div style='margin-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);padding-top:1rem;'></div>", unsafe_allow_html=True)
-
-        if st.button("← Back to home", key="tracker_back_home", use_container_width=True):
-            st.session_state.page = 'landing'
-            st.rerun()
+        st.markdown("""
+        <div style='margin-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);padding-top:1rem;'>
+          <a href='https://madelivniekerk.github.io/Resumesync/' target='_self'
+             style='display:block;text-align:center;font-family:DM Sans,sans-serif;font-size:13px;
+                    color:#6e8a7b;text-decoration:none;padding:6px 0;'>
+            ← Back to home
+          </a>
+        </div>""", unsafe_allow_html=True)
 
     # ── Stats computation ─────────────────────────────────────────────────────
     total = len(tracker_data)
@@ -1378,11 +1381,8 @@ def show_tracker():
 # ============= STREAMLIT UI =============
 
 def main():
-    # Route to landing page, tracker, or app workspace
-    page = st.session_state.get('page', 'landing')
-    if page == 'landing':
-        show_landing()
-        return
+    # Route to tracker or app workspace (landing is on GitHub Pages, not here)
+    page = st.session_state.get('page', 'app')
     if page == 'tracker':
         show_tracker()
         return
@@ -1451,9 +1451,12 @@ def main():
             st.session_state.page = 'tracker'
             st.rerun()
 
-        if st.button("← Back to home", key="back_to_landing", use_container_width=True):
-            st.session_state.page = 'landing'
-            st.rerun()
+        st.markdown("""
+        <a href='https://madelivniekerk.github.io/Resumesync/' target='_self'
+           style='display:block;text-align:center;font-family:DM Sans,sans-serif;font-size:13px;
+                  color:#6e8a7b;text-decoration:none;padding:6px 0;margin-bottom:6px;'>
+          ← Back to home
+        </a>""", unsafe_allow_html=True)
 
         if tracker_data:
             st.download_button(
