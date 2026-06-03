@@ -1604,11 +1604,15 @@ def main():
             "Analyze compatibility →",
             type="primary",
             use_container_width=True,
-            disabled=not (has_resume and has_job)
         ):
-            st.session_state['_do_analysis'] = True
-            st.session_state['_job_url_snap'] = job_url
-            st.session_state['_manual_job_snap'] = manual_job_text
+            if not has_resume:
+                st.error("❌ Please upload a resume file first.")
+            elif not has_job:
+                st.error("❌ Please add a job posting (URL or paste).")
+            else:
+                st.session_state['_do_analysis'] = True
+                st.session_state['_job_url_snap'] = job_url
+                st.session_state['_manual_job_snap'] = manual_job_text
 
     if st.session_state.get('_do_analysis'):
         st.session_state['_do_analysis'] = False
