@@ -1548,6 +1548,9 @@ def main():
             "Resume", type=['pdf', 'docx', 'doc', 'txt'], label_visibility="collapsed"
         )
         if resume_file:
+            # Cache bytes immediately so they survive all subsequent reruns
+            st.session_state['_resume_bytes'] = resume_file.getvalue()
+            st.session_state['_resume_name'] = resume_file.name
             st.markdown(f'<p style="font-size:0.75rem;color:#7ad79f;margin:4px 0 0;font-family:DM Sans,sans-serif;">✅ {resume_file.name}</p>', unsafe_allow_html=True)
 
     with col2:
@@ -1580,9 +1583,12 @@ def main():
     <div style="border-top:1px solid rgba(159,182,168,0.07);margin:12px 0 4px;"></div>
     """, unsafe_allow_html=True)
 
+    has_resume = bool(st.session_state.get('_resume_bytes'))
+    has_job = bool(job_url or manual_job_text)
+
     col_hint, col_btn = st.columns([2, 1])
     with col_hint:
-        ready = resume_file and (job_url or manual_job_text)
+        ready = has_resume and has_job
         dot_color = "#7ad79f" if ready else "#6e8a7b"
         hint_text = "Ready to analyze" if ready else "Add both to analyze"
         st.markdown(f"""
@@ -1594,19 +1600,23 @@ def main():
         </div>
         """, unsafe_allow_html=True)
     with col_btn:
-        analyze_button = st.button(
+        if st.button(
             "Analyze compatibility →",
             type="primary",
             use_container_width=True,
-            disabled=not (resume_file and (job_url or manual_job_text))
-        )
-
-    if analyze_button:
-        st.session_state['_do_analysis'] = True
+            disabled=not (has_resume and has_job)
+        ):
+            st.session_state['_do_analysis'] = True
+            st.session_state['_job_url_snap'] = job_url
+            st.session_state['_manual_job_snap'] = manual_job_text
 
     if st.session_state.get('_do_analysis'):
         st.session_state['_do_analysis'] = False
-        if not resume_file:
+        resume_bytes = st.session_state.get('_resume_bytes')
+        resume_name  = st.session_state.get('_resume_name', 'resume')
+        job_url      = st.session_state.get('_job_url_snap') or job_url
+        manual_job_text = st.session_state.get('_manual_job_snap') or manual_job_text
+        if not resume_bytes:
             st.error("❌ Please upload a resume file first.")
             return
         if not (job_url or manual_job_text):
@@ -1616,7 +1626,9 @@ def main():
         with st.spinner("🔍 Analyzing your resume against the job posting..."):
 
             with st.status("Extracting text from resume...", expanded=True) as status:
-                resume_text = extract_resume_text(resume_file)
+                resume_file_obj = io.BytesIO(resume_bytes)
+                resume_file_obj.name = resume_name
+                resume_text = extract_resume_text(resume_file_obj)
                 if "Error" in resume_text:
                     st.error(f"❌ {resume_text}")
                     return
@@ -1649,9 +1661,9 @@ def main():
         st.session_state['resume_text'] = resume_text
         st.session_state['job_content'] = job_content
         st.session_state['job_url'] = job_url
-        st.session_state['resume_filename'] = resume_file.name
-        st.session_state['resume_file_bytes'] = resume_file.getvalue()
-        st.session_state['resume_is_docx'] = resume_file.name.lower().endswith(('.docx', '.doc'))
+        st.session_state['resume_filename'] = resume_name
+        st.session_state['resume_file_bytes'] = resume_bytes
+        st.session_state['resume_is_docx'] = resume_name.lower().endswith(('.docx', '.doc'))
         st.session_state['tracker_saved'] = False
 
     # Results
