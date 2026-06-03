@@ -8,9 +8,40 @@
     "resume_file": "Madeli_van_Niekerk_Resume_AISpecialist - Onset_.docx",
     "match_pct": "72%",
     "job_url": "",
-    "status": "Applied",
+    "status": "Interview",
     "notes": "**1. Retitle and reframe the Professional Summary**\n\n*Current:* \"Senior Business Intelligence Specialist with 19+ years' experience delivering end-to-end BI solutions...\"\n\n*Revised:* \"Senior Business Analyst and Analytics Specialist with 19+ years' experience eliciting, documenting, and delivering reporting and analytics solutions across enterprise and regulated environments. Proven ability to translate complex business requirements into functional specifications and dashboard solutions using Tableau and Power BI, working collaboratively with business users, data teams, and technical delivery teams. Experienced in Salesforce-adjacent reporting environments, stakeholder workshop facilitation, and analytics transformation programs.\"\n\n> The word \"Salesforce-adjacent\" only works if you have *any* legitimate exposure. If you truly have none, remove it — but consider completing even 2–3 Salesforce Trailhead modules before applying so you can legitimately reference it.\n\n---\n\n**2. Add explicit BA language to your Foxtel bullets**\n\n*Current:* \"Collaborate with stakeholders to translate business requirements into actionable visualizations.\"\n\n*Revised:* \"Elicited, analysed, and documented reporting requirements from diverse business stakeholder groups, translating needs into functional specifications and Tableau/Power BI dashboard solutions delivered through agile delivery cycles.\"\n\n> This single change maps directly to three of the job's stated requirements simultaneously.\n\n---\n\n**3. R",
     "cover_letter": "/mount/src/resumesync/cover_letters/CoverLetter_Madeli_van_Niekerk_Resume_Business_Analyst_-_Analyt_2026-06-01.docx",
-    "created_at": "2026-06-01T10:36:41.213838+00:00"
+    "created_at": "2026-06-01T10:36:41.213838+00:00",
+    "updated_resume_file": ""
+  },
+  {
+    "id": "2f1d3411-74fb-4588-8bee-0e1493b9a23c",
+    "date": "2026-06-03",
+    "job_title": "Senior Manager, Non-Financial Risk (NFR) Reporting",
+    "company": "Westpac",
+    "location": "Sydney or Adelaide, NSW/SA, Australia",
+    "resume_file": "Madeli_van_Niekerk_Resume_SrAnalyticsManager - Onset.docx",
+    "match_pct": "72%",
+    "job_url": "",
+    "status": "Rejected",
+    "notes": "**1. Rewrite the Professional Summary to target this role directly**\n\n*Current:* \"Senior Business Intelligence Specialist with 19+ years' experience delivering end-to-end BI solutions across complex, regulated, and government environments... AI models and Claude Code.\"\n\n*Revised:* \"Senior BI and Reporting specialist with 19+ years' experience delivering executive-grade reporting and data visualisation solutions within regulated financial services environments. Proven ability to distil complex, multi-source datasets into clear risk and operational insights using Power BI and Tableau, with deep experience engaging senior stakeholders to translate business requirements into actionable Management Information. Track record of building governance frameworks, managing scheduled reporting programs, and driving data-driven decision-making in compliance-sensitive environments.\"\n\nThis rewrite mirrors the job's language directly and removes AI/government content that dilutes relevance.\n\n---\n\n**2. Expand and reframe the Pepper Financial role to emphasise risk and compliance reporting**\n\n*Current:* \"Delivered executive dashboards tracking lending portfolio performance, operational efficiency metrics, and compliance KPIs\"\n\n*Revised:* \"Designed and delivered executive Management Information reporting across lending portfolio performance, compliance KPIs, and operational risk indicators — enabling senior leaders to monitor risk trends, identify emerging issues, and support regulatory obligati",
+    "cover_letter": "/mount/src/resumesync/cover_letters/CoverLetter_Madeli_van_Niekerk_Resume_Senior_Manager__Non-Finan_2026-06-03.docx",
+    "created_at": "2026-06-03T07:49:49.03217+00:00",
+    "updated_resume_file": "Madeli_van_Niekerk_Resume_Updated_Senior_Manager__Non-Finan_2026-06-03.docx"
+  },
+  {
+    "id": "7b87e42d-35db-4bc2-a67e-3d2ecdd49c2f",
+    "date": "2026-06-03",
+    "job_title": "Senior Manager, Non-Financial Risk (NFR) Reporting",
+    "company": "Westpac",
+    "location": "Sydney or Adelaide, NSW/SA, Australia",
+    "resume_file": "Madeli_van_Niekerk_Resume_Updated_Senior_Manager__Non-Finan_2026-06-03.docx",
+    "match_pct": "74%",
+    "job_url": "",
+    "status": "Rejected",
+    "notes": "**1. Rewrite the Professional Summary to lead with NFR and banking risk MI:**\n\n*Before:*\n> \"Senior Business Intelligence Specialist with 19+ years' experience delivering end-to-end BI solutions across complex, regulated, and government environments... AI models and Claude Code.\"\n\n*After (suggested):*\n> \"Senior BI and Risk Reporting specialist with 19+ years' experience delivering Management Information and data-driven risk insights within regulated financial services environments. Proven ability to translate complex risk data — including Key Risk Indicators, compliance metrics, and operational risk signals — into compelling executive visualisations using Tableau and Power BI. Track record partnering with senior risk stakeholders and subject matter experts to surface trends, themes, and patterns that support proactive risk monitoring and informed decision-making. Experienced in regulated environments with strong governance, access control, and reporting cadence disciplines.\"\n\n---\n\n**2. Reframe the Pepper Financial role to use NFR and KRI language:**\n\n*Before:*\n> \"Designed and delivered Management Information reporting for senior leadership, translating compliance KPIs, operational risk indicators, and lending portfolio performance data into executive dashboards\"\n\n*After:*\n> \"Designed and delivered Management Information reporting for senior leadership and risk function owners, translating Key Risk Indicators (KRIs), compliance metrics, and lending portfolio performance data in",
+    "cover_letter": "/mount/src/resumesync/cover_letters/CoverLetter_Madeli_van_Niekerk_Resume_Senior_Manager__Non-Finan_2026-06-03.docx",
+    "created_at": "2026-06-03T07:54:30.131071+00:00",
+    "updated_resume_file": "Madeli_van_Niekerk_Resume_Updated_Senior_Manager__Non-Finan_2026-06-03.docx"
   }
 ]
