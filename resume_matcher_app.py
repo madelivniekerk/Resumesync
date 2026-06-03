@@ -1602,6 +1602,10 @@ def main():
         )
 
     if analyze_button:
+        st.session_state['_do_analysis'] = True
+
+    if st.session_state.get('_do_analysis'):
+        st.session_state['_do_analysis'] = False
         if not resume_file:
             st.error("❌ Please upload a resume file first.")
             return
