@@ -4,6 +4,7 @@ Upload resume + paste job URL → Get compatibility score + recommendations
 """
 
 import streamlit as st
+import streamlit.components.v1 as _components
 import os
 import re
 import json
@@ -1723,6 +1724,7 @@ def main():
                 key="upd_guidance"
             )
 
+            st.markdown('<div id="resume-updater-anchor"></div>', unsafe_allow_html=True)
             col_upd = st.columns([1, 2, 1])[1]
             with col_upd:
                 update_btn = st.button("✨ Propose Resume Changes", type="primary", key="update_resume_btn", use_container_width=True)
@@ -1738,6 +1740,14 @@ def main():
                             upd_status.update(label="Proposals ready — please review below", state="complete")
                             st.session_state['proposed_updates'] = upd_result['updates']
                             st.session_state.pop('updated_resume_bytes', None)
+                # Scroll back to the Resume Updater section, not the bottom of the page
+                _components.html(
+                    '<script>'
+                    'window.parent.document.getElementById("resume-updater-anchor")'
+                    '.scrollIntoView({behavior:"smooth",block:"start"});'
+                    '</script>',
+                    height=0,
+                )
 
             # ── Review step ────────────────────────────────────────────────
             if 'proposed_updates' in st.session_state and st.session_state['proposed_updates']:
