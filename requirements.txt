@@ -10,3 +10,4 @@ Pillow
 numpy
 openpyxl>=3.1.0
 httpx>=0.27.0
+supabase>=2.0.0
