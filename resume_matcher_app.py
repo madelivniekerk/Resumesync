@@ -574,6 +574,14 @@ def extract_recommendations_summary(analysis_text: str) -> str:
     return ""
 
 
+def update_application_status(record_id, new_status: str):
+    """Update the status of a single application row in Supabase."""
+    sb = get_supabase()
+    if sb and record_id:
+        sb.table("applications").update({"status": new_status}).eq("id", record_id).execute()
+        load_tracker_data.clear()
+
+
 def save_to_tracker(job_title: str, company: str, location: str,
                     resume_filename: str, match_pct: str, job_url: str,
                     cover_letter: str = '', cover_letter_path: str = '',
@@ -1344,45 +1352,61 @@ def show_tracker():
         </div>
         """, unsafe_allow_html=True)
 
+        STATUS_OPTIONS = ['Applied', 'Interview', 'Offer', 'Declined', 'Rejected', 'Draft']
         status_colors = {
             'Applied':   '#6fb1e0',
             'Interview': '#e0a14a',
             'Offer':     '#7ad79f',
+            'Declined':  '#e07a5f',
+            'Rejected':  '#ef4444',
             'Draft':     '#6e8a7b',
         }
 
-        for row in tracker_data:
-            company = row.get('company', '') or ''
+        for idx, row in enumerate(tracker_data):
+            record_id = row.get('id')
+            company   = row.get('company', '') or ''
             job_title = row.get('job_title', '') or ''
             match_pct = str(row.get('match_pct', '') or '')
-            status = row.get('status', 'Draft') or 'Draft'
-            date_val = str(row.get('date', '') or '')
-            initial = company[0].upper() if company else '?'
-            badge_color = status_colors.get(status, '#6e8a7b')
+            status    = row.get('status', 'Draft') or 'Draft'
+            date_val  = str(row.get('date', '') or '')
+            initial   = company[0].upper() if company else '?'
 
-            st.markdown(
-                '<div style="display:flex;align-items:center;gap:14px;'
-                'padding:14px 20px;border-bottom:1px solid rgba(159,182,168,0.07);'
-                'background:#0c2019;border-radius:8px;margin-bottom:4px;">'
-                '<div style="width:38px;height:38px;border-radius:9px;flex-shrink:0;'
-                'background:rgba(122,215,159,0.12);border:1px solid rgba(122,215,159,0.22);'
-                'display:grid;place-items:center;font-family:\'Bricolage Grotesque\',system-ui,sans-serif;'
-                'font-weight:700;font-size:16px;color:#7ad79f;">' + initial + '</div>'
-                '<div style="flex:1;min-width:0;">'
-                '<div style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:14px;'
-                'color:#ecf4ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + job_title + '</div>'
-                '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:#9fb6a8;margin-top:2px;">' + company + '</div>'
-                '</div>'
-                '<div style="font-family:\'Space Mono\',monospace;font-size:13px;color:#7ad79f;font-weight:700;flex-shrink:0;">' + match_pct + '</div>'
-                '<div style="display:inline-block;font-family:\'Space Mono\',monospace;font-size:9px;'
-                'letter-spacing:0.12em;text-transform:uppercase;padding:3px 9px;border-radius:99px;'
-                'background:rgba(0,0,0,0.25);border:1px solid ' + badge_color + ';'
-                'color:' + badge_color + ';flex-shrink:0;">' + status + '</div>'
-                '<div style="font-family:\'Space Mono\',monospace;font-size:9px;color:#6e8a7b;'
-                'flex-shrink:0;white-space:nowrap;">' + date_val + '</div>'
-                '</div>',
-                unsafe_allow_html=True
-            )
+            col_info, col_status = st.columns([5, 1.6])
+
+            with col_info:
+                st.markdown(
+                    '<div style="display:flex;align-items:center;gap:14px;'
+                    'padding:12px 16px;background:#0c2019;border-radius:10px;'
+                    'border:1px solid rgba(159,182,168,0.09);margin-bottom:6px;">'
+                    '<div style="width:38px;height:38px;border-radius:9px;flex-shrink:0;'
+                    'background:rgba(122,215,159,0.12);border:1px solid rgba(122,215,159,0.22);'
+                    'display:grid;place-items:center;font-family:\'Bricolage Grotesque\',system-ui,sans-serif;'
+                    'font-weight:700;font-size:16px;color:#7ad79f;">' + initial + '</div>'
+                    '<div style="flex:1;min-width:0;">'
+                    '<div style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:14px;'
+                    'color:#ecf4ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + job_title + '</div>'
+                    '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:#9fb6a8;margin-top:2px;">' + company + '</div>'
+                    '</div>'
+                    '<div style="font-family:\'Space Mono\',monospace;font-size:13px;color:#7ad79f;'
+                    'font-weight:700;flex-shrink:0;padding-right:8px;">' + match_pct + '</div>'
+                    '<div style="font-family:\'Space Mono\',monospace;font-size:9px;color:#6e8a7b;'
+                    'flex-shrink:0;white-space:nowrap;">' + date_val + '</div>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+
+            with col_status:
+                current_idx = STATUS_OPTIONS.index(status) if status in STATUS_OPTIONS else 0
+                new_status = st.selectbox(
+                    "Status",
+                    options=STATUS_OPTIONS,
+                    index=current_idx,
+                    key=f"status_{idx}_{record_id}",
+                    label_visibility="collapsed",
+                )
+                if new_status != status:
+                    update_application_status(record_id, new_status)
+                    st.rerun()
 
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
