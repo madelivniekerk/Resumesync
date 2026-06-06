@@ -1394,8 +1394,8 @@ def show_tracker():
         }
         /* Compact selectbox */
         .stSelectbox [data-baseweb="select"] > div:first-child {
-            background: rgba(10,27,22,0.5) !important;
-            border: 1px solid rgba(159,182,168,0.15) !important;
+            background: #0f271e !important;
+            border: 1px solid rgba(122,215,159,0.22) !important;
             border-radius: 8px !important;
             min-height: 26px !important;
             height: 26px !important;
