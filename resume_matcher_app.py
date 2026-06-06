@@ -1381,26 +1381,65 @@ def show_tracker():
         }
         logo_colors = ['#1d3a31', '#1a2f3e', '#2d2518', '#2a1f35', '#1a2e2a', '#2e1f1f']
 
-        # ── Compact selectbox style for status column ─────────────────────────
+        # ── Compact rows + selectbox styling ─────────────────────────────────
         st.markdown("""<style>
+        /* Strip Streamlit's default element-container margins to shrink row height */
+        [data-testid="stHorizontalBlock"] .element-container {
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        [data-testid="stHorizontalBlock"] [data-testid="stVerticalBlockBorderWrapper"],
+        [data-testid="stHorizontalBlock"] [data-testid="stVerticalBlock"] {
+            gap: 0 !important;
+        }
+        /* Compact selectbox */
         .stSelectbox [data-baseweb="select"] > div:first-child {
             background: rgba(10,27,22,0.5) !important;
             border: 1px solid rgba(159,182,168,0.15) !important;
             border-radius: 8px !important;
-            min-height: 28px !important;
-            padding: 2px 6px !important;
-        }
-        .stSelectbox [data-baseweb="select"] [data-baseweb="value-container"] *,
-        .stSelectbox [data-baseweb="select"] [data-baseweb="value-container"] > div {
-            color: #ecf4ee !important;
-            font-size: 13px !important;
-            font-family: 'Bricolage Grotesque', system-ui, sans-serif !important;
-            font-weight: 800 !important;
+            min-height: 26px !important;
+            height: 26px !important;
+            padding: 0 6px !important;
         }
         .stSelectbox [data-testid="StyledDropdownIconContainer"] svg {
             width: 12px !important; height: 12px !important;
         }
         </style>""", unsafe_allow_html=True)
+
+        # ── JS: directly colour selectbox selected values ─────────────────────
+        _components.html("""<script>
+        (function(){
+          var SC={
+            'Applied':  '#6fb1e0',
+            'Interview':'#e0a14a',
+            'Offer':    '#7ad79f',
+            'Declined': '#e07a5f',
+            'Rejected': '#ef4444',
+            'Draft':    '#9fb6a8'
+          };
+          function paint(){
+            try{
+              var doc=window.parent.document;
+              doc.querySelectorAll('[data-testid="stSelectbox"]').forEach(function(box){
+                var vc=box.querySelector('[data-baseweb="value-container"]');
+                if(!vc)return;
+                var val=(vc.textContent||'').trim();
+                var c=SC[val];
+                if(!c)return;
+                vc.querySelectorAll('*').forEach(function(el){
+                  el.style.setProperty('color',c,'important');
+                  el.style.setProperty('font-family',"'Bricolage Grotesque',system-ui,sans-serif",'important');
+                  el.style.setProperty('font-weight','800','important');
+                  el.style.setProperty('font-size','12px','important');
+                });
+                vc.style.setProperty('color',c,'important');
+              });
+            }catch(e){}
+          }
+          paint();
+          try{new MutationObserver(paint).observe(window.parent.document.body,{childList:true,subtree:true});}catch(e){}
+        })();
+        </script>""", height=0)
 
         # ── Table card header ─────────────────────────────────────────────────
         st.markdown("""
