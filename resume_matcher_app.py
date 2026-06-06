@@ -1381,9 +1381,8 @@ def show_tracker():
         }
         logo_colors = ['#1d3a31', '#1a2f3e', '#2d2518', '#2a1f35', '#1a2e2a', '#2e1f1f']
 
-        # ── Compact rows + selectbox styling ─────────────────────────────────
+        # ── Compact rows + arrow-only selectbox styling ───────────────────────
         st.markdown("""<style>
-        /* Strip Streamlit's default element-container margins to shrink row height */
         [data-testid="stHorizontalBlock"] .element-container {
             margin-bottom: 0 !important;
             padding-bottom: 0 !important;
@@ -1392,53 +1391,30 @@ def show_tracker():
         [data-testid="stHorizontalBlock"] [data-testid="stVerticalBlock"] {
             gap: 0 !important;
         }
-        /* Compact selectbox */
+        /* Hide the selected-value text — the HTML pill shows it instead */
+        .stSelectbox [data-baseweb="value-container"],
+        .stSelectbox [data-baseweb="value-container"] * {
+            color: transparent !important;
+            font-size: 0 !important;
+            line-height: 0 !important;
+        }
+        /* Arrow button: compact and dark */
         .stSelectbox [data-baseweb="select"] > div:first-child {
-            background: #0f271e !important;
-            border: 1px solid rgba(122,215,159,0.22) !important;
+            background: rgba(15,39,30,0.55) !important;
+            border: 1px solid rgba(122,215,159,0.20) !important;
             border-radius: 8px !important;
-            min-height: 42px !important;
-            padding: 0 6px !important;
+            min-height: 30px !important;
+            max-height: 30px !important;
+            padding: 0 4px !important;
+            cursor: pointer !important;
         }
         .stSelectbox [data-testid="StyledDropdownIconContainer"] svg {
-            width: 12px !important; height: 12px !important;
+            width: 13px !important;
+            height: 13px !important;
+            color: #7ad79f !important;
+            fill: #7ad79f !important;
         }
         </style>""", unsafe_allow_html=True)
-
-        # ── JS: directly colour selectbox selected values ─────────────────────
-        _components.html("""<script>
-        (function(){
-          var SC={
-            'Applied':  '#6fb1e0',
-            'Interview':'#e0a14a',
-            'Offer':    '#7ad79f',
-            'Declined': '#e07a5f',
-            'Rejected': '#ef4444',
-            'Draft':    '#9fb6a8'
-          };
-          function paint(){
-            try{
-              var doc=window.parent.document;
-              doc.querySelectorAll('[data-testid="stSelectbox"]').forEach(function(box){
-                var vc=box.querySelector('[data-baseweb="value-container"]');
-                if(!vc)return;
-                var val=(vc.textContent||'').trim();
-                var c=SC[val];
-                if(!c)return;
-                vc.querySelectorAll('*').forEach(function(el){
-                  el.style.setProperty('color',c,'important');
-                  el.style.setProperty('font-family',"'Bricolage Grotesque',system-ui,sans-serif",'important');
-                  el.style.setProperty('font-weight','800','important');
-                  el.style.setProperty('font-size','12px','important');
-                });
-                vc.style.setProperty('color',c,'important');
-              });
-            }catch(e){}
-          }
-          paint();
-          try{new MutationObserver(paint).observe(window.parent.document.body,{childList:true,subtree:true});}catch(e){}
-        })();
-        </script>""", height=0)
 
         # ── Table card header ─────────────────────────────────────────────────
         st.markdown("""
@@ -1503,16 +1479,26 @@ def show_tracker():
                 )
 
             with col_status:
-                st.markdown('<div style="padding-top:4px;">', unsafe_allow_html=True)
                 current_idx = STATUS_OPTIONS.index(status) if status in STATUS_OPTIONS else 0
-                new_status = st.selectbox(
-                    "Status",
-                    options=STATUS_OPTIONS,
-                    index=current_idx,
-                    key=f"status_{idx}_{record_id}",
-                    label_visibility="collapsed",
-                )
-                st.markdown('</div>', unsafe_allow_html=True)
+                sub_pill, sub_arrow = st.columns([3, 1])
+                with sub_pill:
+                    st.markdown(
+                        f'<div style="display:flex;align-items:center;min-height:30px;">'
+                        f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;'
+                        f'font-size:12px;color:{cfg["color"]};background:{cfg["bg"]};'
+                        f'border:1px solid {cfg["border"]};border-radius:20px;padding:3px 10px;'
+                        f'white-space:nowrap;">{status}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+                with sub_arrow:
+                    new_status = st.selectbox(
+                        "Status",
+                        options=STATUS_OPTIONS,
+                        index=current_idx,
+                        key=f"status_{idx}_{record_id}",
+                        label_visibility="collapsed",
+                    )
                 if new_status != status:
                     update_application_status(record_id, new_status)
                     st.rerun()
