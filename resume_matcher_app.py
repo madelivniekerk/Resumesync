@@ -155,10 +155,13 @@ st.markdown("""
     }
     .stSelectbox [data-baseweb="select"] [data-baseweb="value-container"] *,
     .stSelectbox [data-baseweb="select"] [role="combobox"],
-    .stSelectbox [data-baseweb="select"] input {
+    .stSelectbox [data-baseweb="select"] input,
+    .stSelectbox [data-baseweb="single-select"],
+    .stSelectbox [data-baseweb="single-select"] * {
         color: #ecf4ee !important;
         font-family: 'Bricolage Grotesque', system-ui, sans-serif !important;
         font-weight: 800 !important;
+        font-size: 13px !important;
     }
     .stSelectbox [data-baseweb="select"] svg { fill: var(--muted) !important; }
     [data-baseweb="popover"] [data-baseweb="menu"] {
@@ -1281,14 +1284,6 @@ def show_tracker():
           📋 Applications
         </div>
         """, unsafe_allow_html=True)
-
-        if st.button("✍ Resume Rewriter", key="tracker_nav_rewriter", use_container_width=True):
-            st.session_state.page = 'app'
-            st.rerun()
-
-        if st.button("✉ Cover Letters", key="tracker_nav_cl", use_container_width=True):
-            st.session_state.page = 'app'
-            st.rerun()
 
         st.markdown("""
         <div style='margin-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);padding-top:1rem;'>
