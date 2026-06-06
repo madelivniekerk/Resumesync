@@ -1353,25 +1353,56 @@ def show_tracker():
                 st.session_state.page = 'app'
                 st.rerun()
     else:
-        # ── Table card ────────────────────────────────────────────────────────
+        STATUS_OPTIONS = ['Applied', 'Interview', 'Offer', 'Declined', 'Rejected', 'Draft']
+        STATUS_CONFIG = {
+            'Applied':   {'color': '#6fb1e0', 'bg': 'rgba(111,177,224,0.12)', 'border': 'rgba(111,177,224,0.30)'},
+            'Interview': {'color': '#e0a14a', 'bg': 'rgba(224,161,74,0.14)',  'border': 'rgba(224,161,74,0.34)'},
+            'Offer':     {'color': '#7ad79f', 'bg': 'rgba(122,215,159,0.12)', 'border': 'rgba(122,215,159,0.30)'},
+            'Declined':  {'color': '#e07a5f', 'bg': 'rgba(224,122,95,0.12)', 'border': 'rgba(224,122,95,0.30)'},
+            'Rejected':  {'color': '#ef4444', 'bg': 'rgba(239,68,68,0.10)',  'border': 'rgba(239,68,68,0.30)'},
+            'Draft':     {'color': '#6e8a7b', 'bg': 'rgba(110,138,123,0.12)','border': 'rgba(110,138,123,0.28)'},
+        }
+        logo_colors = ['#1d3a31', '#1a2f3e', '#2d2518', '#2a1f35', '#1a2e2a', '#2e1f1f']
+
+        # ── Compact selectbox style for status column ─────────────────────────
+        st.markdown("""<style>
+        .stSelectbox [data-baseweb="select"] > div:first-child {
+            background: rgba(10,27,22,0.5) !important;
+            border: 1px solid rgba(159,182,168,0.15) !important;
+            border-radius: 8px !important;
+            min-height: 28px !important;
+            padding: 2px 6px !important;
+        }
+        .stSelectbox [data-baseweb="value-container"] > div {
+            color: #9fb6a8 !important;
+            font-size: 11.5px !important;
+            font-family: 'DM Sans', sans-serif !important;
+        }
+        .stSelectbox [data-testid="StyledDropdownIconContainer"] svg {
+            width: 12px !important; height: 12px !important;
+        }
+        </style>""", unsafe_allow_html=True)
+
+        # ── Table card header ─────────────────────────────────────────────────
         st.markdown("""
         <div style="background:#0c2019;border:1px solid rgba(159,182,168,0.12);
-                    border-radius:16px;padding:20px 20px 8px;margin-top:4px;">
-          <p style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.16em;
-                    text-transform:uppercase;color:#6e8a7b;margin:0 0 16px;">All Applications</p>
+                    border-radius:14px 14px 0 0;padding:16px 22px 14px;margin-top:4px;
+                    border-bottom:1px solid rgba(159,182,168,0.09);">
+          <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;
+                       font-size:16px;color:#ecf4ee;">All applications</span>
         </div>
         """, unsafe_allow_html=True)
 
-        STATUS_OPTIONS = ['Applied', 'Interview', 'Offer', 'Declined', 'Rejected', 'Draft']
-        status_colors = {
-            'Applied':   '#6fb1e0',
-            'Interview': '#e0a14a',
-            'Offer':     '#7ad79f',
-            'Declined':  '#e07a5f',
-            'Rejected':  '#ef4444',
-            'Draft':     '#6e8a7b',
-        }
+        # ── Column headers ────────────────────────────────────────────────────
+        hc0, hc1, hc2, hc3 = st.columns([3.6, 0.9, 2.2, 1.2])
+        hs = ("font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:0.14em;"
+              "text-transform:uppercase;color:#6e8a7b;padding:10px 0 6px;")
+        with hc0: st.markdown(f'<div style="{hs}">Role</div>', unsafe_allow_html=True)
+        with hc1: st.markdown(f'<div style="{hs}text-align:center;">Match</div>', unsafe_allow_html=True)
+        with hc2: st.markdown(f'<div style="{hs}">Status</div>', unsafe_allow_html=True)
+        with hc3: st.markdown(f'<div style="{hs}text-align:right;">Applied</div>', unsafe_allow_html=True)
 
+        # ── Rows ──────────────────────────────────────────────────────────────
         for idx, row in enumerate(tracker_data):
             record_id = row.get('id')
             company   = row.get('company', '') or ''
@@ -1380,32 +1411,55 @@ def show_tracker():
             status    = row.get('status', 'Draft') or 'Draft'
             date_val  = str(row.get('date', '') or '')
             initial   = company[0].upper() if company else '?'
+            logo_bg   = logo_colors[idx % len(logo_colors)]
+            cfg       = STATUS_CONFIG.get(status, STATUS_CONFIG['Draft'])
 
-            col_info, col_status = st.columns([5, 1.6])
+            st.markdown(
+                '<div style="height:1px;background:rgba(159,182,168,0.08);"></div>',
+                unsafe_allow_html=True
+            )
 
-            with col_info:
+            col_role, col_match, col_status, col_date = st.columns([3.6, 0.9, 2.2, 1.2])
+
+            with col_role:
                 st.markdown(
-                    '<div style="display:flex;align-items:center;gap:14px;'
-                    'padding:12px 16px;background:#0c2019;border-radius:10px;'
-                    'border:1px solid rgba(159,182,168,0.09);margin-bottom:6px;">'
-                    '<div style="width:38px;height:38px;border-radius:9px;flex-shrink:0;'
-                    'background:rgba(122,215,159,0.12);border:1px solid rgba(122,215,159,0.22);'
-                    'display:grid;place-items:center;font-family:\'Bricolage Grotesque\',system-ui,sans-serif;'
-                    'font-weight:700;font-size:16px;color:#7ad79f;">' + initial + '</div>'
-                    '<div style="flex:1;min-width:0;">'
-                    '<div style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:14px;'
-                    'color:#ecf4ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + job_title + '</div>'
-                    '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:#9fb6a8;margin-top:2px;">' + company + '</div>'
-                    '</div>'
-                    '<div style="font-family:\'Space Mono\',monospace;font-size:13px;color:#7ad79f;'
-                    'font-weight:700;flex-shrink:0;padding-right:8px;">' + match_pct + '</div>'
-                    '<div style="font-family:\'Space Mono\',monospace;font-size:9px;color:#6e8a7b;'
-                    'flex-shrink:0;white-space:nowrap;">' + date_val + '</div>'
-                    '</div>',
+                    f'<div style="display:flex;align-items:center;gap:12px;padding:12px 0 8px;">'
+                    f'<div style="width:36px;height:36px;border-radius:9px;flex-shrink:0;'
+                    f'background:{logo_bg};border:1px solid rgba(255,255,255,0.07);'
+                    f'display:grid;place-items:center;font-family:\'Bricolage Grotesque\',sans-serif;'
+                    f'font-weight:800;font-size:14px;color:#ecf4ee;">{initial}</div>'
+                    f'<div style="flex:1;min-width:0;">'
+                    f'<div style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:13.5px;'
+                    f'color:#ecf4ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{job_title}</div>'
+                    f'<div style="font-family:\'DM Sans\',sans-serif;font-size:11.5px;color:#6e8a7b;margin-top:2px;">{company}</div>'
+                    f'</div></div>',
+                    unsafe_allow_html=True
+                )
+
+            with col_match:
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;justify-content:center;min-height:58px;">'
+                    f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;'
+                    f'font-size:18px;color:#ecf4ee;">{match_pct}</span>'
+                    f'</div>',
                     unsafe_allow_html=True
                 )
 
             with col_status:
+                # Colored pill matching handover design
+                st.markdown(
+                    f'<div style="padding:12px 0 3px;">'
+                    f'<span style="display:inline-flex;align-items:center;gap:7px;'
+                    f'background:{cfg["bg"]};border:1px solid {cfg["border"]};'
+                    f'padding:5px 12px;border-radius:99px;'
+                    f'font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;color:{cfg["color"]};">'
+                    f'<span style="width:6px;height:6px;border-radius:50%;background:{cfg["color"]};'
+                    f'display:inline-block;flex-shrink:0;"></span>'
+                    f'{status}'
+                    f'<span style="font-size:9px;opacity:0.55;">▾</span>'
+                    f'</span></div>',
+                    unsafe_allow_html=True
+                )
                 current_idx = STATUS_OPTIONS.index(status) if status in STATUS_OPTIONS else 0
                 new_status = st.selectbox(
                     "Status",
@@ -1418,7 +1472,16 @@ def show_tracker():
                     update_application_status(record_id, new_status)
                     st.rerun()
 
-        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+            with col_date:
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;justify-content:flex-end;min-height:58px;">'
+                    f'<span style="font-family:\'Space Mono\',monospace;font-size:11px;'
+                    f'color:#6e8a7b;white-space:nowrap;">{date_val}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
+        st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
         # Download tracker Excel from tracker page too
         st.download_button(
