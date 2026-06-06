@@ -637,8 +637,8 @@ def load_tracker_data():
 
 def generate_tracker_excel(tracker_data: list) -> bytes:
     """Build an in-memory Excel workbook from tracker_data (list of dicts)."""
-    headers  = ['Date', 'Job Title', 'Company', 'Location', 'Original Resume', 'Updated Resume', 'Match %', 'Job URL', 'Status', 'Recommendations Summary', 'Cover Letter']
-    col_keys = ['date', 'job_title', 'company', 'location', 'resume_file', 'updated_resume_file', 'match_pct', 'job_url', 'status', 'notes', 'cover_letter']
+    headers  = ['Date', 'Job Title', 'Company', 'Location', 'Original Resume', 'Updated Resume', 'Match %', 'Job URL', 'Status', 'Cover Letter']
+    col_keys = ['date', 'job_title', 'company', 'location', 'resume_file', 'updated_resume_file', 'match_pct', 'job_url', 'status', 'cover_letter']
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -650,14 +650,13 @@ def generate_tracker_excel(tracker_data: list) -> bytes:
         cell.fill      = openpyxl.styles.PatternFill(fill_type="solid", fgColor="230344")
         cell.alignment = openpyxl.styles.Alignment(horizontal="center")
 
-    widths = [14, 30, 25, 20, 35, 35, 10, 45, 15, 80, 30]
+    widths = [14, 30, 25, 20, 35, 35, 10, 45, 15, 30]
     for col, width in enumerate(widths, 1):
         ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
 
     for i, item in enumerate(tracker_data, 2):
         for col, key in enumerate(col_keys, 1):
             ws.cell(row=i, column=col, value=item.get(key) or '')
-        ws.cell(row=i, column=10).alignment = openpyxl.styles.Alignment(wrap_text=True, vertical='top')
         if i % 2 == 0:
             fill = openpyxl.styles.PatternFill(fill_type="solid", fgColor="F3F0F8")
             for col in range(1, len(headers) + 1):
@@ -1417,13 +1416,13 @@ def show_tracker():
         """, unsafe_allow_html=True)
 
         # ── Column headers ────────────────────────────────────────────────────
-        hc0, hc1, hc2, hc3 = st.columns([3.2, 0.9, 2.4, 1.3])
+        hc0, hc1, hc2, hc3 = st.columns([3.2, 0.9, 1.3, 2.4])
         hs = ("font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:0.14em;"
               "text-transform:uppercase;color:#6e8a7b;padding:10px 0 6px;")
         with hc0: st.markdown(f'<div style="{hs}">Role</div>', unsafe_allow_html=True)
         with hc1: st.markdown(f'<div style="{hs}text-align:center;">Match</div>', unsafe_allow_html=True)
-        with hc2: st.markdown(f'<div style="{hs}">Status</div>', unsafe_allow_html=True)
-        with hc3: st.markdown(f'<div style="{hs}text-align:right;">Applied</div>', unsafe_allow_html=True)
+        with hc2: st.markdown(f'<div style="{hs}">Applied</div>', unsafe_allow_html=True)
+        with hc3: st.markdown(f'<div style="{hs}">Status</div>', unsafe_allow_html=True)
 
         # ── Rows ──────────────────────────────────────────────────────────────
         for idx, row in enumerate(tracker_data):
@@ -1442,7 +1441,7 @@ def show_tracker():
                 unsafe_allow_html=True
             )
 
-            col_role, col_match, col_status, col_date = st.columns([3.2, 0.9, 2.4, 1.3])
+            col_role, col_match, col_date, col_status = st.columns([3.2, 0.9, 1.3, 2.4])
 
             with col_role:
                 st.markdown(
@@ -1503,7 +1502,7 @@ def show_tracker():
 
             with col_date:
                 st.markdown(
-                    f'<div style="display:flex;align-items:center;justify-content:flex-end;min-height:28px;">'
+                    f'<div style="display:flex;align-items:center;min-height:28px;">'
                     f'<span style="font-family:\'Space Mono\',monospace;font-size:11px;'
                     f'color:#6e8a7b;white-space:nowrap;">{date_val}</span>'
                     f'</div>',
