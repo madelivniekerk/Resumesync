@@ -1414,10 +1414,13 @@ def show_tracker():
             color: #7ad79f !important;
             fill: #7ad79f !important;
         }
-        /* Widen the options panel so full status names are never truncated */
-        [data-baseweb="popover"] [data-baseweb="list"],
-        [data-baseweb="popover"] ul[role="listbox"] {
+        /* Force dropdown options panel wider than the narrow arrow trigger */
+        [data-baseweb="popover"],
+        [data-baseweb="popover"] > div,
+        [data-baseweb="menu"],
+        [data-baseweb="menu"] > ul {
             min-width: 140px !important;
+            width: auto !important;
         }
         </style>""", unsafe_allow_html=True)
 
@@ -1432,13 +1435,14 @@ def show_tracker():
         """, unsafe_allow_html=True)
 
         # ── Column headers ────────────────────────────────────────────────────
-        hc0, hc1, hc2, hc3 = st.columns([3.6, 0.9, 2.2, 1.2])
+        hc0, hc1, hc2, hc3, hc4 = st.columns([3.2, 0.9, 1.8, 0.7, 1.2])
         hs = ("font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:0.14em;"
               "text-transform:uppercase;color:#6e8a7b;padding:10px 0 6px;")
         with hc0: st.markdown(f'<div style="{hs}">Role</div>', unsafe_allow_html=True)
         with hc1: st.markdown(f'<div style="{hs}text-align:center;">Match</div>', unsafe_allow_html=True)
         with hc2: st.markdown(f'<div style="{hs}">Status</div>', unsafe_allow_html=True)
-        with hc3: st.markdown(f'<div style="{hs}text-align:right;">Applied</div>', unsafe_allow_html=True)
+        with hc3: st.markdown(f'<div style="{hs}"></div>', unsafe_allow_html=True)
+        with hc4: st.markdown(f'<div style="{hs}text-align:right;">Applied</div>', unsafe_allow_html=True)
 
         # ── Rows ──────────────────────────────────────────────────────────────
         for idx, row in enumerate(tracker_data):
@@ -1457,7 +1461,8 @@ def show_tracker():
                 unsafe_allow_html=True
             )
 
-            col_role, col_match, col_status, col_date = st.columns([3.6, 0.9, 2.2, 1.2])
+            col_role, col_match, col_pill, col_arrow, col_date = st.columns([3.2, 0.9, 1.8, 0.7, 1.2])
+            current_idx = STATUS_OPTIONS.index(status) if status in STATUS_OPTIONS else 0
 
             with col_role:
                 st.markdown(
@@ -1483,27 +1488,25 @@ def show_tracker():
                     unsafe_allow_html=True
                 )
 
-            with col_status:
-                current_idx = STATUS_OPTIONS.index(status) if status in STATUS_OPTIONS else 0
-                sub_pill, sub_arrow = st.columns([3, 1])
-                with sub_pill:
-                    st.markdown(
-                        f'<div style="display:flex;align-items:center;min-height:30px;">'
-                        f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;'
-                        f'font-size:12px;color:{cfg["color"]};background:{cfg["bg"]};'
-                        f'border:1px solid {cfg["border"]};border-radius:20px;padding:3px 10px;'
-                        f'white-space:nowrap;">{status}</span>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-                with sub_arrow:
-                    new_status = st.selectbox(
-                        "Status",
-                        options=STATUS_OPTIONS,
-                        index=current_idx,
-                        key=f"status_{idx}_{record_id}",
-                        label_visibility="collapsed",
-                    )
+            with col_pill:
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;min-height:30px;">'
+                    f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;'
+                    f'font-size:12px;color:{cfg["color"]};background:{cfg["bg"]};'
+                    f'border:1px solid {cfg["border"]};border-radius:20px;padding:3px 10px;'
+                    f'white-space:nowrap;">{status}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
+            with col_arrow:
+                new_status = st.selectbox(
+                    "Status",
+                    options=STATUS_OPTIONS,
+                    index=current_idx,
+                    key=f"status_{idx}_{record_id}",
+                    label_visibility="collapsed",
+                )
                 if new_status != status:
                     update_application_status(record_id, new_status)
                     st.rerun()
