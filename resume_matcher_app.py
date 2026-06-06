@@ -157,7 +157,11 @@ st.markdown("""
     .stSelectbox [data-baseweb="select"] [role="combobox"],
     .stSelectbox [data-baseweb="select"] input,
     .stSelectbox [data-baseweb="single-select"],
-    .stSelectbox [data-baseweb="single-select"] * {
+    .stSelectbox [data-baseweb="single-select"] *,
+    [data-baseweb="value-container"],
+    [data-baseweb="value-container"] *,
+    [data-baseweb="value-container"] > div,
+    [data-baseweb="value-container"] > div > div {
         color: #ecf4ee !important;
         font-family: 'Bricolage Grotesque', system-ui, sans-serif !important;
         font-weight: 800 !important;
