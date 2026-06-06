@@ -1392,8 +1392,9 @@ def show_tracker():
         }
         .stSelectbox [data-baseweb="value-container"] > div {
             color: #9fb6a8 !important;
-            font-size: 11.5px !important;
-            font-family: 'DM Sans', sans-serif !important;
+            font-size: 13px !important;
+            font-family: 'Bricolage Grotesque', system-ui, sans-serif !important;
+            font-weight: 600 !important;
         }
         .stSelectbox [data-testid="StyledDropdownIconContainer"] svg {
             width: 12px !important; height: 12px !important;
