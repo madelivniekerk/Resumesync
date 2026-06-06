@@ -1239,6 +1239,15 @@ def show_landing():
 def show_tracker():
     """Dedicated Applications Tracker page."""
 
+    # Handle status changes submitted via the HTML select + URL params
+    _p = st.query_params
+    _rid = _p.get('rid', '')
+    _sc  = _p.get('sc', '')
+    if _rid and _sc in ['Applied', 'Interview', 'Offer', 'Declined', 'Rejected', 'Draft']:
+        update_application_status(_rid, _sc)
+        st.query_params.clear()
+        st.rerun()
+
     # Hide Streamlit header
     st.markdown("""
     <style>
@@ -1381,7 +1390,7 @@ def show_tracker():
         }
         logo_colors = ['#1d3a31', '#1a2f3e', '#2d2518', '#2a1f35', '#1a2e2a', '#2e1f1f']
 
-        # ── Compact rows + arrow-only selectbox styling ───────────────────────
+        # ── Compact row styling ────────────────────────────────────────────────
         st.markdown("""<style>
         [data-testid="stHorizontalBlock"] .element-container {
             margin-bottom: 0 !important;
@@ -1391,36 +1400,9 @@ def show_tracker():
         [data-testid="stHorizontalBlock"] [data-testid="stVerticalBlock"] {
             gap: 0 !important;
         }
-        /* Hide the selected-value text — the HTML pill shows it instead */
-        .stSelectbox [data-baseweb="value-container"],
-        .stSelectbox [data-baseweb="value-container"] * {
-            color: transparent !important;
-            font-size: 0 !important;
-            line-height: 0 !important;
-        }
-        /* Arrow button: compact and dark */
-        .stSelectbox [data-baseweb="select"] > div:first-child {
-            background: rgba(15,39,30,0.55) !important;
-            border: 1px solid rgba(122,215,159,0.20) !important;
-            border-radius: 8px !important;
-            min-height: 30px !important;
-            max-height: 30px !important;
-            padding: 0 4px !important;
-            cursor: pointer !important;
-        }
-        .stSelectbox [data-testid="StyledDropdownIconContainer"] svg {
-            width: 13px !important;
-            height: 13px !important;
-            color: #7ad79f !important;
-            fill: #7ad79f !important;
-        }
-        /* Force dropdown options panel wider than the narrow arrow trigger */
-        [data-baseweb="popover"],
-        [data-baseweb="popover"] > div,
-        [data-baseweb="menu"],
-        [data-baseweb="menu"] > ul {
-            min-width: 140px !important;
-            width: auto !important;
+        /* Remove padding around component iframes used for HTML selects */
+        [data-testid="stHorizontalBlock"] iframe {
+            display: block !important;
         }
         </style>""", unsafe_allow_html=True)
 
@@ -1435,14 +1417,13 @@ def show_tracker():
         """, unsafe_allow_html=True)
 
         # ── Column headers ────────────────────────────────────────────────────
-        hc0, hc1, hc2, hc3, hc4 = st.columns([3.2, 0.9, 1.8, 0.7, 1.2])
+        hc0, hc1, hc2, hc3 = st.columns([3.2, 0.9, 2.4, 1.3])
         hs = ("font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:0.14em;"
               "text-transform:uppercase;color:#6e8a7b;padding:10px 0 6px;")
         with hc0: st.markdown(f'<div style="{hs}">Role</div>', unsafe_allow_html=True)
         with hc1: st.markdown(f'<div style="{hs}text-align:center;">Match</div>', unsafe_allow_html=True)
         with hc2: st.markdown(f'<div style="{hs}">Status</div>', unsafe_allow_html=True)
-        with hc3: st.markdown(f'<div style="{hs}"></div>', unsafe_allow_html=True)
-        with hc4: st.markdown(f'<div style="{hs}text-align:right;">Applied</div>', unsafe_allow_html=True)
+        with hc3: st.markdown(f'<div style="{hs}text-align:right;">Applied</div>', unsafe_allow_html=True)
 
         # ── Rows ──────────────────────────────────────────────────────────────
         for idx, row in enumerate(tracker_data):
@@ -1461,8 +1442,7 @@ def show_tracker():
                 unsafe_allow_html=True
             )
 
-            col_role, col_match, col_pill, col_arrow, col_date = st.columns([3.2, 0.9, 1.8, 0.7, 1.2])
-            current_idx = STATUS_OPTIONS.index(status) if status in STATUS_OPTIONS else 0
+            col_role, col_match, col_status, col_date = st.columns([3.2, 0.9, 2.4, 1.3])
 
             with col_role:
                 st.markdown(
@@ -1488,28 +1468,38 @@ def show_tracker():
                     unsafe_allow_html=True
                 )
 
-            with col_pill:
-                st.markdown(
-                    f'<div style="display:flex;align-items:center;min-height:30px;">'
-                    f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;'
-                    f'font-size:12px;color:{cfg["color"]};background:{cfg["bg"]};'
-                    f'border:1px solid {cfg["border"]};border-radius:20px;padding:3px 10px;'
-                    f'white-space:nowrap;">{status}</span>'
-                    f'</div>',
-                    unsafe_allow_html=True
+            with col_status:
+                # Native HTML <select> — full color control, no Base Web conflicts
+                opts_html = ''.join(
+                    f'<option value="{o}" {"selected" if o == status else ""}>{o}</option>'
+                    for o in STATUS_OPTIONS
                 )
-
-            with col_arrow:
-                new_status = st.selectbox(
-                    "Status",
-                    options=STATUS_OPTIONS,
-                    index=current_idx,
-                    key=f"status_{idx}_{record_id}",
-                    label_visibility="collapsed",
-                )
-                if new_status != status:
-                    update_application_status(record_id, new_status)
-                    st.rerun()
+                _components.html(f"""
+                <html><head><style>
+                html,body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
+                select{{
+                    font-family:'Bricolage Grotesque',system-ui,sans-serif;
+                    font-weight:800;font-size:12px;
+                    color:{cfg['color']};
+                    background:{cfg['bg']};
+                    border:1px solid {cfg['border']};
+                    border-radius:20px;
+                    padding:4px 8px 4px 12px;
+                    cursor:pointer;outline:none;
+                    width:100%;max-width:150px;
+                    margin-top:5px;
+                }}
+                </style></head><body>
+                <select onchange="try{{
+                    var u=new URL(window.parent.location.href);
+                    u.searchParams.set('sc',this.value);
+                    u.searchParams.set('rid','{record_id}');
+                    window.parent.location.href=u.href;
+                }}catch(e){{}}">
+                    {opts_html}
+                </select>
+                </body></html>
+                """, height=38)
 
             with col_date:
                 st.markdown(
