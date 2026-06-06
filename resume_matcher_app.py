@@ -1442,7 +1442,7 @@ def show_tracker():
 
             with col_role:
                 st.markdown(
-                    f'<div style="display:flex;align-items:center;gap:12px;padding:12px 0 8px;">'
+                    f'<div style="display:flex;align-items:center;gap:12px;padding:5px 0 4px;">'
                     f'<div style="width:36px;height:36px;border-radius:9px;flex-shrink:0;'
                     f'background:{logo_bg};border:1px solid rgba(255,255,255,0.07);'
                     f'display:grid;place-items:center;font-family:\'Bricolage Grotesque\',sans-serif;'
@@ -1457,7 +1457,7 @@ def show_tracker():
 
             with col_match:
                 st.markdown(
-                    f'<div style="display:flex;align-items:center;justify-content:center;min-height:58px;">'
+                    f'<div style="display:flex;align-items:center;justify-content:center;min-height:28px;">'
                     f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;'
                     f'font-size:18px;color:#ecf4ee;">{match_pct}</span>'
                     f'</div>',
@@ -1465,7 +1465,7 @@ def show_tracker():
                 )
 
             with col_status:
-                st.markdown('<div style="padding-top:14px;">', unsafe_allow_html=True)
+                st.markdown('<div style="padding-top:4px;">', unsafe_allow_html=True)
                 current_idx = STATUS_OPTIONS.index(status) if status in STATUS_OPTIONS else 0
                 new_status = st.selectbox(
                     "Status",
@@ -1481,7 +1481,7 @@ def show_tracker():
 
             with col_date:
                 st.markdown(
-                    f'<div style="display:flex;align-items:center;justify-content:flex-end;min-height:58px;">'
+                    f'<div style="display:flex;align-items:center;justify-content:flex-end;min-height:28px;">'
                     f'<span style="font-family:\'Space Mono\',monospace;font-size:11px;'
                     f'color:#6e8a7b;white-space:nowrap;">{date_val}</span>'
                     f'</div>',
