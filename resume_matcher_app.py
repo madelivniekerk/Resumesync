@@ -1414,6 +1414,11 @@ def show_tracker():
             color: #7ad79f !important;
             fill: #7ad79f !important;
         }
+        /* Widen the options panel so full status names are never truncated */
+        [data-baseweb="popover"] [data-baseweb="list"],
+        [data-baseweb="popover"] ul[role="listbox"] {
+            min-width: 140px !important;
+        }
         </style>""", unsafe_allow_html=True)
 
         # ── Table card header ─────────────────────────────────────────────────
