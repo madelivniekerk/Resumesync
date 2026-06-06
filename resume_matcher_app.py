@@ -497,6 +497,11 @@ You previously wrote the cover letter below. The user has requested specific cha
 - Tone: {tone}
 - Length: {word_target} words
 - Do NOT include placeholder text or generic phrases.
+- Always end the letter with:
+  Kind regards,
+
+  [applicant's full name from the resume]
+  [applicant's phone number from the resume, if present]
 
 Return only the revised cover letter, starting directly with the salutation.
 """
@@ -526,6 +531,11 @@ Based on this resume analysis and job posting, write a compelling cover letter.
 
 Do NOT include placeholder text or generic phrases.
 Start directly with the salutation. Make it ready to copy-paste.
+End the letter with:
+  Kind regards,
+
+  [applicant's full name from the resume]
+  [applicant's phone number from the resume, if present]
 """
     try:
         message = client.messages.create(
