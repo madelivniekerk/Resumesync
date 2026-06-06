@@ -1397,8 +1397,7 @@ def show_tracker():
             background: #0f271e !important;
             border: 1px solid rgba(122,215,159,0.22) !important;
             border-radius: 8px !important;
-            min-height: 26px !important;
-            height: 26px !important;
+            min-height: 42px !important;
             padding: 0 6px !important;
         }
         .stSelectbox [data-testid="StyledDropdownIconContainer"] svg {
