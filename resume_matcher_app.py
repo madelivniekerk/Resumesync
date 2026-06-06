@@ -1255,7 +1255,7 @@ def show_tracker():
                         box-shadow:0 4px 12px rgba(122,215,159,0.28);flex-shrink:0;">R</div>
             <div>
               <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;
-                          font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;line-height:1.1;">ResumSync</div>
+                          font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;line-height:1.1;">ResumeSync</div>
               <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;
                           text-transform:uppercase;color:#6e8a7b;margin-top:3px;">by VisualizePro</div>
             </div>
@@ -1531,7 +1531,7 @@ def main():
           <div style="display:flex;align-items:center;gap:11px;margin-bottom:1.4rem;">
             <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(150deg,#7ad79f,#4fae7a);display:grid;place-items:center;font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;font-size:16px;color:#06140f;box-shadow:0 4px 12px rgba(122,215,159,0.28);flex-shrink:0;">R</div>
             <div>
-              <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;line-height:1.1;">ResumSync</div>
+              <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;line-height:1.1;">ResumeSync</div>
               <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#6e8a7b;margin-top:3px;">by VisualizePro</div>
             </div>
           </div>
