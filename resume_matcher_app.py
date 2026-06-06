@@ -1391,10 +1391,10 @@ def show_tracker():
             padding: 2px 6px !important;
         }
         .stSelectbox [data-baseweb="value-container"] > div {
-            color: #9fb6a8 !important;
+            color: #ecf4ee !important;
             font-size: 13px !important;
             font-family: 'Bricolage Grotesque', system-ui, sans-serif !important;
-            font-weight: 600 !important;
+            font-weight: 800 !important;
         }
         .stSelectbox [data-testid="StyledDropdownIconContainer"] svg {
             width: 12px !important; height: 12px !important;
