@@ -728,6 +728,23 @@ Return only the JSON array, no other text."""
         return {'success': False, 'error': str(e)}
 
 
+def re_score_resume(updated_text: str, job_content: str, client) -> int | None:
+    """Quick re-score of the updated resume. Returns integer % or None on failure."""
+    try:
+        message = client.messages.create(
+            model=MODEL_NAME,
+            max_tokens=10,
+            messages=[{"role": "user", "content":
+                f"Score this resume against the job posting. "
+                f"Return ONLY a single integer 0-100 — the compatibility percentage. No other text.\n\n"
+                f"RESUME:\n{updated_text[:4000]}\n\nJOB POSTING:\n{job_content[:4000]}"}]
+        )
+        val = re.search(r'\d+', message.content[0].text.strip())
+        return min(int(val.group()), 100) if val else None
+    except Exception:
+        return None
+
+
 def apply_updates_to_docx(file_bytes: bytes, updates: list, original_filename: str) -> bytes:
     """
     Apply find→replace pairs to the original DOCX, preserving all formatting.
@@ -1784,7 +1801,7 @@ def main():
                 for key in ['analysis_result', 'resume_text', 'job_content', 'job_url',
                             'resume_filename', 'resume_file_bytes', 'resume_is_docx',
                             'cover_letter', 'tracker_saved', 'proposed_updates',
-                            'updated_resume_bytes', 'updated_resume_name']:
+                            'updated_resume_bytes', 'updated_resume_name', 'updated_match_pct']:
                     st.session_state.pop(key, None)
                 st.rerun()
 
@@ -1907,9 +1924,39 @@ def main():
                     st.session_state['updated_resume_bytes'] = updated_bytes
                     st.session_state['updated_resume_name'] = new_filename
                     st.success(f"✅ {applied} change(s) applied to your resume.")
+                    # Re-score the updated resume
+                    with st.spinner("Calculating updated compatibility score..."):
+                        updated_text = "\n".join(
+                            p.text for p in Document(io.BytesIO(updated_bytes)).paragraphs
+                        )
+                        new_score = re_score_resume(updated_text, job_content, client)
+                        if new_score is not None:
+                            st.session_state['updated_match_pct'] = f"{new_score}%"
 
             if 'updated_resume_bytes' in st.session_state:
                 new_filename = st.session_state.get('updated_resume_name', f"{_fn_person}_Updated_{_fn_role}_{_fn_date}.docx")
+                # Show score lift if re-score is available
+                updated_pct = st.session_state.get('updated_match_pct')
+                if updated_pct:
+                    orig_pct = fields.get('match_pct', '')
+                    orig_num = int(re.search(r'\d+', orig_pct).group()) if re.search(r'\d+', orig_pct) else None
+                    new_num  = int(re.search(r'\d+', updated_pct).group()) if re.search(r'\d+', updated_pct) else None
+                    if orig_num is not None and new_num is not None:
+                        delta = new_num - orig_num
+                        delta_str = f"+{delta}" if delta >= 0 else str(delta)
+                        delta_color = "#7ad79f" if delta >= 0 else "#ef4444"
+                        st.markdown(
+                            f'<div style="text-align:center;margin:8px 0 4px;">'
+                            f'<span style="font-family:\'Space Mono\',monospace;font-size:12px;color:#9fb6a8;">Compatibility: </span>'
+                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#9fb6a8;text-decoration:line-through;">{orig_pct}</span>'
+                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:17px;color:#6e8a7b;margin:0 6px;">→</span>'
+                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#ecf4ee;">{updated_pct}</span>'
+                            f'<span style="font-family:\'Space Mono\',monospace;font-size:11px;color:{delta_color};'
+                            f'background:{"rgba(122,215,159,0.12)" if delta >= 0 else "rgba(239,68,68,0.10)"};'
+                            f'padding:2px 7px;border-radius:5px;margin-left:8px;">{delta_str} pts</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
                 col_dl_upd = st.columns([1, 2, 1])[1]
                 with col_dl_upd:
                     st.download_button(
@@ -2078,7 +2125,7 @@ def main():
                         company=company_input,
                         location=location_input,
                         resume_filename=resume_filename,
-                        match_pct=fields['match_pct'],
+                        match_pct=st.session_state.get('updated_match_pct') or fields['match_pct'],
                         job_url=job_url,
                         cover_letter=cover_letter_text,
                         cover_letter_path=cl_path,
