@@ -156,8 +156,9 @@ st.markdown("""
     .stSelectbox [data-baseweb="select"] [data-baseweb="value-container"] *,
     .stSelectbox [data-baseweb="select"] [role="combobox"],
     .stSelectbox [data-baseweb="select"] input {
-        color: #ffffff !important;
-        font-family: 'DM Sans', sans-serif !important;
+        color: #ecf4ee !important;
+        font-family: 'Bricolage Grotesque', system-ui, sans-serif !important;
+        font-weight: 800 !important;
     }
     .stSelectbox [data-baseweb="select"] svg { fill: var(--muted) !important; }
     [data-baseweb="popover"] [data-baseweb="menu"] {
