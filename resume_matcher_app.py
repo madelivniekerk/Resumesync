@@ -1390,7 +1390,8 @@ def show_tracker():
             min-height: 28px !important;
             padding: 2px 6px !important;
         }
-        .stSelectbox [data-baseweb="value-container"] > div {
+        .stSelectbox [data-baseweb="select"] [data-baseweb="value-container"] *,
+        .stSelectbox [data-baseweb="select"] [data-baseweb="value-container"] > div {
             color: #ecf4ee !important;
             font-size: 13px !important;
             font-family: 'Bricolage Grotesque', system-ui, sans-serif !important;
