@@ -1463,20 +1463,7 @@ def show_tracker():
                 )
 
             with col_status:
-                # Colored pill matching handover design
-                st.markdown(
-                    f'<div style="padding:12px 0 3px;">'
-                    f'<span style="display:inline-flex;align-items:center;gap:7px;'
-                    f'background:{cfg["bg"]};border:1px solid {cfg["border"]};'
-                    f'padding:5px 12px;border-radius:99px;'
-                    f'font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;color:{cfg["color"]};">'
-                    f'<span style="width:6px;height:6px;border-radius:50%;background:{cfg["color"]};'
-                    f'display:inline-block;flex-shrink:0;"></span>'
-                    f'{status}'
-                    f'<span style="font-size:9px;opacity:0.55;">▾</span>'
-                    f'</span></div>',
-                    unsafe_allow_html=True
-                )
+                st.markdown('<div style="padding-top:14px;">', unsafe_allow_html=True)
                 current_idx = STATUS_OPTIONS.index(status) if status in STATUS_OPTIONS else 0
                 new_status = st.selectbox(
                     "Status",
@@ -1485,6 +1472,7 @@ def show_tracker():
                     key=f"status_{idx}_{record_id}",
                     label_visibility="collapsed",
                 )
+                st.markdown('</div>', unsafe_allow_html=True)
                 if new_status != status:
                     update_application_status(record_id, new_status)
                     st.rerun()
