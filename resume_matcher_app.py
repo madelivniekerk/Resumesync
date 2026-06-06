@@ -847,7 +847,7 @@ def create_cover_letter_docx(cover_letter_text: str) -> bytes:
     return buf.getvalue()
 
 
-def create_analysis_docx(analysis_text: str, job_url: str, resume_filename: str) -> bytes:
+def create_analysis_docx(analysis_text: str, job_url: str, resume_filename: str, job_content: str = '') -> bytes:
     doc = Document()
     sec = doc.sections[0]
     sec.top_margin    = Inches(1)
@@ -859,7 +859,7 @@ def create_analysis_docx(analysis_text: str, job_url: str, resume_filename: str)
     title = doc.add_heading('ResumeSync — Compatibility Analysis', 0)
     title.alignment = WD_ALIGN_PARAGRAPH.LEFT
     meta = doc.add_paragraph()
-    meta.add_run(f'Resume: ').bold = True
+    meta.add_run('Resume: ').bold = True
     meta.add_run(resume_filename)
     meta2 = doc.add_paragraph()
     meta2.add_run('Job: ').bold = True
@@ -867,6 +867,19 @@ def create_analysis_docx(analysis_text: str, job_url: str, resume_filename: str)
     meta3 = doc.add_paragraph()
     meta3.add_run('Date: ').bold = True
     meta3.add_run(datetime.now().strftime('%Y-%m-%d'))
+    doc.add_paragraph()
+
+    # Job description section
+    if job_content and job_content.strip():
+        doc.add_heading('Job Description', level=1)
+        for para in job_content.strip().split('\n'):
+            if para.strip():
+                doc.add_paragraph(para.strip())
+            else:
+                doc.add_paragraph()
+        doc.add_page_break()
+
+    doc.add_heading('Analysis', level=1)
     doc.add_paragraph()
 
     lines = analysis_text.split('\n')
@@ -2165,7 +2178,7 @@ def main():
         with col_download:
             st.download_button(
                 label="💾 Download Analysis Report (.docx)",
-                data=create_analysis_docx(result['analysis'], job_url, resume_filename),
+                data=create_analysis_docx(result['analysis'], job_url, resume_filename, job_content),
                 file_name=f"ResumeAnalysis_{_fn_person}_{_fn_role}_{_fn_date}.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 key="download_analysis",
