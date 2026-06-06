@@ -966,7 +966,7 @@ def show_landing():
                       box-shadow:0 4px 12px rgba(122,215,159,0.28);flex-shrink:0;">R</div>
           <div>
             <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;
-                        font-weight:700;font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;">ResumSync</div>
+                        font-weight:700;font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;">ResumeSync</div>
             <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;
                         text-transform:uppercase;color:#6e8a7b;">by VisualizePro</div>
           </div>
@@ -1200,7 +1200,7 @@ def show_landing():
     <div style="border-top:1px solid rgba(159,182,168,0.07);padding:24px 40px;
                 display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
       <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#6e8a7b;">
-        © 2026 ResumSync by VisualizePro
+        © 2026 ResumeSync by VisualizePro
       </span>
       <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#6e8a7b;">
         Powered by Claude AI
