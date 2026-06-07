@@ -337,8 +337,6 @@ def get_supabase():
 
 # ── Auth & subscription helpers ──────────────────────────────────────────────
 
-APP_URL = _read_secret("APP_URL") or "https://resumesync.streamlit.app"
-
 TIER_LIMITS = {"free": 3, "starter": 10, "unlimited": 999999}
 TIER_LABELS  = {
     "free":      {"label": "Free",      "color": "#6e8a7b", "bg": "rgba(110,138,123,0.15)"},
@@ -366,10 +364,11 @@ def send_magic_link(email: str) -> tuple:
     sb = _fresh_supabase()
     if not sb:
         return False, "Supabase not configured."
+    app_url = _read_secret("APP_URL") or "https://resumesync.streamlit.app"
     try:
         sb.auth.sign_in_with_otp({
             "email": email,
-            "options": {"should_create_user": True, "email_redirect_to": APP_URL}
+            "options": {"should_create_user": True, "email_redirect_to": app_url}
         })
         return True, "Sent!"
     except Exception as e:
@@ -771,11 +770,14 @@ def load_tracker_data(user_id: str = None):
     sb = get_supabase()
     if not sb:
         return []
-    query = sb.table("applications").select("*").order("created_at", desc=True)
-    if user_id:
-        query = query.eq("user_id", user_id)
-    rows = query.execute()
-    return rows.data or []
+    try:
+        query = sb.table("applications").select("*").order("created_at", desc=True)
+        if user_id:
+            query = query.eq("user_id", user_id)
+        rows = query.execute()
+        return rows.data or []
+    except Exception:
+        return []
 
 
 def generate_tracker_excel(tracker_data: list) -> bytes:
@@ -1846,7 +1848,7 @@ def main():
               </span>
             </div>
             <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:#6e8a7b;margin-top:6px;">
-              {int(profile.get('analyses_used',0))}/{"3" if profile.get("tier","free")=="free" else "10" if profile.get("tier")=="starter" else "∞"} analyses used
+              {int(profile.get('analyses_used',0))}/{"3" if profile.get("tier","free")=="free" else "10" if profile.get("tier")=="starter" else "No limit"} analyses used
             </div>
           </div>
 
