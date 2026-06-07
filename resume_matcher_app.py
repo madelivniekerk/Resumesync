@@ -334,6 +334,143 @@ def get_supabase():
     return None
 
 
+# ── Auth & subscription helpers ──────────────────────────────────────────────
+
+APP_URL = _read_secret("APP_URL") or "https://resumesync.streamlit.app"
+
+TIER_LIMITS = {"free": 3, "starter": 10, "unlimited": 999999}
+TIER_LABELS  = {
+    "free":      {"label": "Free",      "color": "#6e8a7b", "bg": "rgba(110,138,123,0.15)"},
+    "starter":   {"label": "Starter",   "color": "#6fb1e0", "bg": "rgba(111,177,224,0.15)"},
+    "unlimited": {"label": "Unlimited", "color": "#7ad79f", "bg": "rgba(122,215,159,0.15)"},
+}
+
+
+def _fresh_supabase():
+    """Non-cached client used for auth code exchange (avoids mutating shared state)."""
+    if not _SUPABASE_AVAILABLE:
+        return None
+    url = _read_secret("SUPABASE_URL")
+    key = _read_secret("SUPABASE_KEY")
+    if url and key:
+        try:
+            return _supabase_create_client(url, key)
+        except Exception:
+            pass
+    return None
+
+
+def send_magic_link(email: str) -> tuple:
+    """Ask Supabase Auth to email a magic-link to the user."""
+    sb = _fresh_supabase()
+    if not sb:
+        return False, "Supabase not configured."
+    try:
+        sb.auth.sign_in_with_otp({
+            "email": email,
+            "options": {"should_create_user": True, "email_redirect_to": APP_URL}
+        })
+        return True, "Sent!"
+    except Exception as e:
+        return False, str(e)
+
+
+def exchange_auth_code(code: str) -> dict | None:
+    """Exchange a PKCE auth code for session tokens (returns user dict or None)."""
+    sb = _fresh_supabase()
+    if not sb:
+        return None
+    try:
+        resp = sb.auth.exchange_code_for_session({"auth_code": code})
+        if resp and resp.user and resp.session:
+            return {
+                "user_id":       resp.user.id,
+                "email":         resp.user.email or "",
+                "access_token":  resp.session.access_token,
+                "refresh_token": resp.session.refresh_token,
+            }
+    except Exception:
+        pass
+    return None
+
+
+def validate_access_token(access_token: str) -> dict | None:
+    """Validate an implicit-flow access_token via Supabase REST and return user info."""
+    url = _read_secret("SUPABASE_URL")
+    key = _read_secret("SUPABASE_KEY")
+    if not url or not key or not access_token:
+        return None
+    try:
+        r = requests.get(
+            f"{url}/auth/v1/user",
+            headers={"Authorization": f"Bearer {access_token}", "apikey": key},
+            timeout=8,
+        )
+        if r.status_code == 200:
+            d = r.json()
+            return {"user_id": d["id"], "email": d.get("email", "")}
+    except Exception:
+        pass
+    return None
+
+
+def get_or_create_profile(user_id: str, email: str) -> dict:
+    """Load user profile from Supabase, creating it on first login."""
+    sb = get_supabase()
+    if not sb:
+        return {"id": user_id, "email": email, "tier": "free", "analyses_used": 0, "analyses_month": ""}
+    try:
+        res = sb.table("profiles").select("*").eq("id", user_id).execute()
+        if res.data:
+            profile = res.data[0]
+            current_month = datetime.now().strftime("%Y-%m")
+            if profile.get("tier") == "starter" and profile.get("analyses_month") != current_month:
+                sb.table("profiles").update({
+                    "analyses_used": 0, "analyses_month": current_month
+                }).eq("id", user_id).execute()
+                profile["analyses_used"] = 0
+                profile["analyses_month"] = current_month
+            return profile
+        new_profile = {
+            "id": user_id, "email": email, "tier": "free",
+            "analyses_used": 0, "analyses_month": datetime.now().strftime("%Y-%m"),
+        }
+        sb.table("profiles").insert(new_profile).execute()
+        return new_profile
+    except Exception:
+        return {"id": user_id, "email": email, "tier": "free", "analyses_used": 0, "analyses_month": ""}
+
+
+def can_run_analysis(profile: dict) -> tuple:
+    """Returns (allowed: bool, reason: str)."""
+    tier  = profile.get("tier", "free")
+    used  = int(profile.get("analyses_used", 0))
+    limit = TIER_LIMITS.get(tier, 3)
+    if used < limit:
+        return True, ""
+    if tier == "free":
+        return False, "You've used all 3 free analyses."
+    if tier == "starter":
+        return False, "You've used all 10 analyses this month. Resets next month."
+    return True, ""
+
+
+def increment_usage(user_id: str):
+    """Increment analyses_used by 1."""
+    sb = get_supabase()
+    if not sb or not user_id:
+        return
+    try:
+        res = sb.table("profiles").select("analyses_used").eq("id", user_id).execute()
+        if res.data:
+            new_count = int(res.data[0].get("analyses_used", 0)) + 1
+            sb.table("profiles").update({"analyses_used": new_count}).eq("id", user_id).execute()
+            if "user_profile" in st.session_state:
+                st.session_state["user_profile"]["analyses_used"] = new_count
+    except Exception:
+        pass
+
+
 def extract_text_from_pdf(file):
     try:
         pdf_reader = pypdf.PdfReader(file)
@@ -603,7 +740,8 @@ def update_application_status(record_id, new_status: str):
 def save_to_tracker(job_title: str, company: str, location: str,
                     resume_filename: str, match_pct: str, job_url: str,
                     cover_letter: str = '', cover_letter_path: str = '',
-                    notes: str = '', updated_resume_file: str = ''):
+                    notes: str = '', updated_resume_file: str = '',
+                    user_id: str = None):
     """Insert a job application row into Supabase."""
     sb = get_supabase()
     row = {
@@ -618,6 +756,7 @@ def save_to_tracker(job_title: str, company: str, location: str,
         "status":              "Applied",
         "notes":               notes,
         "cover_letter":        cover_letter_path if cover_letter_path else cover_letter,
+        "user_id":             user_id,
     }
     if sb:
         sb.table("applications").insert(row).execute()
@@ -626,12 +765,15 @@ def save_to_tracker(job_title: str, company: str, location: str,
 
 
 @st.cache_data(ttl=30)
-def load_tracker_data():
-    """Load all applications from Supabase, newest first."""
+def load_tracker_data(user_id: str = None):
+    """Load applications from Supabase for the given user, newest first."""
     sb = get_supabase()
     if not sb:
         return []
-    rows = sb.table("applications").select("*").order("created_at", desc=True).execute()
+    query = sb.table("applications").select("*").order("created_at", desc=True)
+    if user_id:
+        query = query.eq("user_id", user_id)
+    rows = query.execute()
     return rows.data or []
 
 
@@ -1246,6 +1388,72 @@ def show_landing():
     """, unsafe_allow_html=True)
 
 
+# ============= LOGIN PAGE =============
+
+def show_login_page():
+    """Magic-link login screen."""
+    _, col, _ = st.columns([1, 1.6, 1])
+    with col:
+        st.markdown("""
+        <div style="padding:3rem 0 1.5rem;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:2.5rem;">
+            <div style="width:44px;height:44px;border-radius:12px;
+                        background:linear-gradient(150deg,#7ad79f,#4fae7a);
+                        display:grid;place-items:center;
+                        font-family:'Bricolage Grotesque',sans-serif;
+                        font-weight:800;font-size:22px;color:#06140f;
+                        box-shadow:0 4px 16px rgba(122,215,159,0.30);">R</div>
+            <div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;
+                          font-size:20px;color:#ecf4ee;letter-spacing:-0.02em;">ResumeSync</div>
+              <div style="font-family:'Space Mono',monospace;font-size:9px;
+                          letter-spacing:0.18em;text-transform:uppercase;color:#6e8a7b;">by VisualizePro</div>
+            </div>
+          </div>
+          <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+                     font-size:30px;color:#ecf4ee;margin:0 0 0.4rem;letter-spacing:-0.02em;">Sign in</h1>
+          <p style="font-family:'DM Sans',sans-serif;font-size:15px;color:#9fb6a8;margin:0 0 2rem;">
+            Enter your email — we'll send a one-click login link. No password needed.
+          </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.session_state.get("magic_link_sent"):
+            st.success("📬 Check your inbox and click the link to sign in.")
+            st.caption("Didn't receive it? Check spam, or try again.")
+            if st.button("← Use a different email", key="reset_login"):
+                st.session_state.pop("magic_link_sent", None)
+                st.rerun()
+        else:
+            email_input = st.text_input(
+                "Email address",
+                placeholder="you@example.com",
+                label_visibility="collapsed",
+                key="login_email_input",
+            )
+            if st.button("Send Magic Link →", type="primary", use_container_width=True, key="send_magic_link"):
+                email_val = (email_input or "").strip().lower()
+                if not email_val or "@" not in email_val:
+                    st.error("Please enter a valid email address.")
+                else:
+                    ok, msg = send_magic_link(email_val)
+                    if ok:
+                        st.session_state["magic_link_sent"] = True
+                        st.rerun()
+                    else:
+                        st.error(f"Could not send link: {msg}")
+
+        st.markdown("""
+        <div style="margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);">
+          <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#6e8a7b;margin:0;">
+            <b style="color:#9fb6a8;">Free tier:</b> 3 analyses ·
+            <b style="color:#9fb6a8;">Starter $10/mo:</b> 10/month ·
+            <b style="color:#9fb6a8;">Unlimited $15/mo:</b> no limits
+          </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+
 # ============= TRACKER PAGE =============
 
 def show_tracker():
@@ -1269,7 +1477,8 @@ def show_tracker():
     </style>
     """, unsafe_allow_html=True)
 
-    tracker_data = load_tracker_data()
+    _tracker_uid = st.session_state.get('auth_user_id')
+    tracker_data = load_tracker_data(user_id=_tracker_uid)
 
     # ── Sidebar ──────────────────────────────────────────────────────────────
     with st.sidebar:
@@ -1538,7 +1747,62 @@ def show_tracker():
 # ============= STREAMLIT UI =============
 
 def main():
-    # Route to tracker or app workspace (landing is on GitHub Pages, not here)
+    # ── Magic-link hash → query-param bridge (runs in parent window) ──────────
+    _components.html("""<script>
+    (function(){
+      try{
+        var h=window.parent.location.hash;
+        if(h&&h.indexOf('access_token')!==-1){
+          var p=new URLSearchParams(h.substring(1));
+          var at=p.get('access_token'),rt=p.get('refresh_token')||'';
+          if(at){
+            var u=new URL(window.parent.location.href);
+            u.hash='';
+            u.searchParams.set('access_token',at);
+            if(rt)u.searchParams.set('refresh_token',rt);
+            window.parent.location.replace(u.href);
+          }
+        }
+      }catch(e){}
+    })();
+    </script>""", height=0)
+
+    # ── Handle PKCE code (query param ?code=...) ──────────────────────────────
+    _qp = st.query_params
+    if _qp.get('code') and 'auth_user_id' not in st.session_state:
+        info = exchange_auth_code(_qp['code'])
+        if info:
+            st.session_state['auth_user_id']   = info['user_id']
+            st.session_state['auth_email']      = info['email']
+            st.session_state['auth_token']      = info['access_token']
+            st.session_state['auth_refresh']    = info['refresh_token']
+            st.session_state['user_profile']    = get_or_create_profile(info['user_id'], info['email'])
+        st.query_params.clear()
+        st.rerun()
+
+    # ── Handle implicit-flow token (query param ?access_token=...) ────────────
+    if _qp.get('access_token') and 'auth_user_id' not in st.session_state:
+        info = validate_access_token(_qp['access_token'])
+        if info:
+            st.session_state['auth_user_id']   = info['user_id']
+            st.session_state['auth_email']      = info['email']
+            st.session_state['auth_token']      = _qp['access_token']
+            st.session_state['auth_refresh']    = _qp.get('refresh_token', '')
+            st.session_state['user_profile']    = get_or_create_profile(info['user_id'], info['email'])
+        st.query_params.clear()
+        st.rerun()
+
+    # ── Auth gate ─────────────────────────────────────────────────────────────
+    if 'auth_user_id' not in st.session_state:
+        show_login_page()
+        return
+
+    auth_user_id = st.session_state['auth_user_id']
+    auth_email   = st.session_state.get('auth_email', '')
+    profile      = st.session_state.get('user_profile') or get_or_create_profile(auth_user_id, auth_email)
+    st.session_state['user_profile'] = profile
+
+    # ── Route to tracker or app workspace ─────────────────────────────────────
     page = st.session_state.get('page', 'app')
     if page == 'tracker':
         show_tracker()
@@ -1546,7 +1810,7 @@ def main():
 
     # ── Sidebar ─────────────────────────────────────────────────────────────
     with st.sidebar:
-        tracker_data = load_tracker_data()
+        tracker_data = load_tracker_data(user_id=auth_user_id)
         count = len(tracker_data)
         st.markdown(f"""
         <div style="padding: 1.5rem 1rem 0;">
@@ -1562,6 +1826,28 @@ def main():
 
           <!-- Divider -->
           <div style="border-top:1px solid rgba(159,182,168,0.12); margin-bottom:1.2rem;"></div>
+
+          <!-- User / tier block -->
+          <div style="background:#0c2019;border:1px solid rgba(159,182,168,0.10);
+                      border-radius:10px;padding:12px 14px;margin-bottom:1.2rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="min-width:0;">
+                <div style="font-family:'DM Sans',sans-serif;font-size:12px;
+                            color:#9fb6a8;white-space:nowrap;overflow:hidden;
+                            text-overflow:ellipsis;">{auth_email}</div>
+              </div>
+              <span style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
+                           letter-spacing:0.10em;text-transform:uppercase;
+                           color:{TIER_LABELS.get(profile.get('tier','free'))['color']};
+                           background:{TIER_LABELS.get(profile.get('tier','free'))['bg']};
+                           border-radius:20px;padding:2px 8px;white-space:nowrap;">
+                {TIER_LABELS.get(profile.get('tier','free'))['label']}
+              </span>
+            </div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:#6e8a7b;margin-top:6px;">
+              {int(profile.get('analyses_used',0))}/{"3" if profile.get("tier","free")=="free" else "10" if profile.get("tier")=="starter" else "∞"} analyses used
+            </div>
+          </div>
 
           <!-- What you get -->
           <div style="border-top:1px solid rgba(159,182,168,0.12); padding-top:1rem; margin-bottom:1.2rem;">
@@ -1624,6 +1910,12 @@ def main():
                 key="sidebar_download_tracker",
                 use_container_width=True
             )
+
+        st.markdown("<div style='height:1rem;'></div>", unsafe_allow_html=True)
+        if st.button("Sign out", key="sign_out_btn", use_container_width=True):
+            for _k in ['auth_user_id','auth_email','auth_token','auth_refresh','user_profile','magic_link_sent']:
+                st.session_state.pop(_k, None)
+            st.rerun()
 
     # ── Compact welcome topbar (matches handoff App design — lean workspace, not landing hero) ──
     st.markdown("""
@@ -1766,6 +2058,17 @@ def main():
             st.error("❌ Please add a job posting.")
             return
 
+        # ── Usage limit check ─────────────────────────────────────────────────
+        _allowed, _reason = can_run_analysis(profile)
+        if not _allowed:
+            tier_name = profile.get('tier', 'free')
+            st.error(f"🔒 {_reason}")
+            if tier_name == 'free':
+                st.info("Upgrade to **Starter ($10/mo)** for 10 analyses/month, or **Unlimited ($15/mo)** for no limits. Contact madelivniekerk@gmail.com to upgrade.")
+            else:
+                st.info("Contact madelivniekerk@gmail.com to upgrade to Unlimited.")
+            return
+
         with st.spinner("🔍 Analyzing your resume against the job posting..."):
 
             with st.status("Extracting text from resume...", expanded=True) as status:
@@ -1808,6 +2111,7 @@ def main():
         st.session_state['resume_file_bytes'] = resume_bytes
         st.session_state['resume_is_docx'] = resume_name.lower().endswith(('.docx', '.doc'))
         st.session_state['tracker_saved'] = False
+        increment_usage(auth_user_id)
 
     # Results
     if 'analysis_result' in st.session_state:
@@ -2154,7 +2458,8 @@ def main():
                         cover_letter=cover_letter_text,
                         cover_letter_path=cl_path,
                         notes=extract_recommendations_summary(result['analysis']),
-                        updated_resume_file=st.session_state.get('updated_resume_name', '')
+                        updated_resume_file=st.session_state.get('updated_resume_name', ''),
+                        user_id=st.session_state.get('auth_user_id'),
                     )
                     st.session_state['tracker_saved'] = True
                     st.rerun()
