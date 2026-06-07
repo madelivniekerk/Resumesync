@@ -346,7 +346,7 @@ TIER_LABELS  = {
 
 
 def _fresh_supabase():
-    """Non-cached client used for auth code exchange (avoids mutating shared state)."""
+    """Non-cached Supabase client used for auth calls."""
     if not _SUPABASE_AVAILABLE:
         return None
     url = _read_secret("SUPABASE_URL")
@@ -359,56 +359,32 @@ def _fresh_supabase():
     return None
 
 
-def send_magic_link(email: str) -> tuple:
-    """Ask Supabase Auth to email a magic-link to the user."""
+def send_otp(email: str) -> tuple:
+    """Send a 6-digit OTP code to the user's email (no redirect URL needed)."""
     sb = _fresh_supabase()
     if not sb:
-        return False, "Supabase not configured."
-    app_url = _read_secret("APP_URL") or "https://resumesync.streamlit.app"
+        return False, "Supabase not configured. Check your SUPABASE_URL and SUPABASE_KEY secrets."
     try:
-        sb.auth.sign_in_with_otp({
-            "email": email,
-            "options": {"should_create_user": True, "email_redirect_to": app_url}
-        })
+        sb.auth.sign_in_with_otp({"email": email, "options": {"should_create_user": True}})
         return True, "Sent!"
     except Exception as e:
         return False, str(e)
 
 
-def exchange_auth_code(code: str) -> Optional[dict]:
-    """Exchange a PKCE auth code for session tokens (returns user dict or None)."""
+def verify_otp(email: str, token: str) -> Optional[dict]:
+    """Verify a 6-digit OTP token; returns user dict or None."""
     sb = _fresh_supabase()
     if not sb:
         return None
     try:
-        resp = sb.auth.exchange_code_for_session({"auth_code": code})
+        resp = sb.auth.verify_otp({"email": email, "token": token, "type": "email"})
         if resp and resp.user and resp.session:
             return {
                 "user_id":       resp.user.id,
-                "email":         resp.user.email or "",
+                "email":         resp.user.email or email,
                 "access_token":  resp.session.access_token,
                 "refresh_token": resp.session.refresh_token,
             }
-    except Exception:
-        pass
-    return None
-
-
-def validate_access_token(access_token: str) -> Optional[dict]:
-    """Validate an implicit-flow access_token via Supabase REST and return user info."""
-    url = _read_secret("SUPABASE_URL")
-    key = _read_secret("SUPABASE_KEY")
-    if not url or not key or not access_token:
-        return None
-    try:
-        r = requests.get(
-            f"{url}/auth/v1/user",
-            headers={"Authorization": f"Bearer {access_token}", "apikey": key},
-            timeout=8,
-        )
-        if r.status_code == 200:
-            d = r.json()
-            return {"user_id": d["id"], "email": d.get("email", "")}
     except Exception:
         pass
     return None
@@ -1421,11 +1397,35 @@ def show_login_page():
         </div>
         """, unsafe_allow_html=True)
 
-        if st.session_state.get("magic_link_sent"):
-            st.success("📬 Check your inbox and click the link to sign in.")
-            st.caption("Didn't receive it? Check spam, or try again.")
+        if st.session_state.get("otp_sent_email"):
+            sent_email = st.session_state["otp_sent_email"]
+            st.success(f"Code sent to **{sent_email}** — check your inbox (and spam).")
+            st.markdown("<div style='height:0.5rem;'></div>", unsafe_allow_html=True)
+            otp_input = st.text_input(
+                "6-digit code",
+                placeholder="123456",
+                max_chars=6,
+                label_visibility="collapsed",
+                key="otp_code_input",
+            )
+            if st.button("Sign in →", type="primary", use_container_width=True, key="verify_otp_btn"):
+                code_val = (otp_input or "").strip()
+                if len(code_val) != 6 or not code_val.isdigit():
+                    st.error("Please enter the 6-digit code from your email.")
+                else:
+                    info = verify_otp(sent_email, code_val)
+                    if info:
+                        st.session_state["auth_user_id"]  = info["user_id"]
+                        st.session_state["auth_email"]    = info["email"]
+                        st.session_state["auth_token"]    = info["access_token"]
+                        st.session_state["auth_refresh"]  = info["refresh_token"]
+                        st.session_state["user_profile"]  = get_or_create_profile(info["user_id"], info["email"])
+                        st.session_state.pop("otp_sent_email", None)
+                        st.rerun()
+                    else:
+                        st.error("Invalid or expired code. Please try again or request a new one.")
             if st.button("← Use a different email", key="reset_login"):
-                st.session_state.pop("magic_link_sent", None)
+                st.session_state.pop("otp_sent_email", None)
                 st.rerun()
         else:
             email_input = st.text_input(
@@ -1434,17 +1434,17 @@ def show_login_page():
                 label_visibility="collapsed",
                 key="login_email_input",
             )
-            if st.button("Send Magic Link →", type="primary", use_container_width=True, key="send_magic_link"):
+            if st.button("Send Code →", type="primary", use_container_width=True, key="send_otp_btn"):
                 email_val = (email_input or "").strip().lower()
                 if not email_val or "@" not in email_val:
                     st.error("Please enter a valid email address.")
                 else:
-                    ok, msg = send_magic_link(email_val)
+                    ok, msg = send_otp(email_val)
                     if ok:
-                        st.session_state["magic_link_sent"] = True
+                        st.session_state["otp_sent_email"] = email_val
                         st.rerun()
                     else:
-                        st.error(f"Could not send link: {msg}")
+                        st.error(f"Could not send code: {msg}")
 
         st.markdown("""
         <div style="margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);">
@@ -1750,51 +1750,6 @@ def show_tracker():
 # ============= STREAMLIT UI =============
 
 def main():
-    # ── Magic-link hash → query-param bridge (runs in parent window) ──────────
-    _components.html("""<script>
-    (function(){
-      try{
-        var h=window.parent.location.hash;
-        if(h&&h.indexOf('access_token')!==-1){
-          var p=new URLSearchParams(h.substring(1));
-          var at=p.get('access_token'),rt=p.get('refresh_token')||'';
-          if(at){
-            var u=new URL(window.parent.location.href);
-            u.hash='';
-            u.searchParams.set('access_token',at);
-            if(rt)u.searchParams.set('refresh_token',rt);
-            window.parent.location.replace(u.href);
-          }
-        }
-      }catch(e){}
-    })();
-    </script>""", height=0)
-
-    # ── Handle PKCE code (query param ?code=...) ──────────────────────────────
-    _qp = st.query_params
-    if _qp.get('code') and 'auth_user_id' not in st.session_state:
-        info = exchange_auth_code(_qp['code'])
-        if info:
-            st.session_state['auth_user_id']   = info['user_id']
-            st.session_state['auth_email']      = info['email']
-            st.session_state['auth_token']      = info['access_token']
-            st.session_state['auth_refresh']    = info['refresh_token']
-            st.session_state['user_profile']    = get_or_create_profile(info['user_id'], info['email'])
-        st.query_params.clear()
-        st.rerun()
-
-    # ── Handle implicit-flow token (query param ?access_token=...) ────────────
-    if _qp.get('access_token') and 'auth_user_id' not in st.session_state:
-        info = validate_access_token(_qp['access_token'])
-        if info:
-            st.session_state['auth_user_id']   = info['user_id']
-            st.session_state['auth_email']      = info['email']
-            st.session_state['auth_token']      = _qp['access_token']
-            st.session_state['auth_refresh']    = _qp.get('refresh_token', '')
-            st.session_state['user_profile']    = get_or_create_profile(info['user_id'], info['email'])
-        st.query_params.clear()
-        st.rerun()
-
     # ── Auth gate ─────────────────────────────────────────────────────────────
     if 'auth_user_id' not in st.session_state:
         show_login_page()
@@ -1916,7 +1871,7 @@ def main():
 
         st.markdown("<div style='height:1rem;'></div>", unsafe_allow_html=True)
         if st.button("Sign out", key="sign_out_btn", use_container_width=True):
-            for _k in ['auth_user_id','auth_email','auth_token','auth_refresh','user_profile','magic_link_sent']:
+            for _k in ['auth_user_id','auth_email','auth_token','auth_refresh','user_profile','otp_sent_email']:
                 st.session_state.pop(_k, None)
             st.rerun()
 
