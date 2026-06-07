@@ -9,6 +9,7 @@ import os
 import re
 import json
 from datetime import datetime
+from typing import Optional
 from dotenv import load_dotenv
 from anthropic import Anthropic
 import requests
@@ -375,7 +376,7 @@ def send_magic_link(email: str) -> tuple:
         return False, str(e)
 
 
-def exchange_auth_code(code: str) -> dict | None:
+def exchange_auth_code(code: str) -> Optional[dict]:
     """Exchange a PKCE auth code for session tokens (returns user dict or None)."""
     sb = _fresh_supabase()
     if not sb:
@@ -394,7 +395,7 @@ def exchange_auth_code(code: str) -> dict | None:
     return None
 
 
-def validate_access_token(access_token: str) -> dict | None:
+def validate_access_token(access_token: str) -> Optional[dict]:
     """Validate an implicit-flow access_token via Supabase REST and return user info."""
     url = _read_secret("SUPABASE_URL")
     key = _read_secret("SUPABASE_KEY")
@@ -1838,10 +1839,10 @@ def main():
               </div>
               <span style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
                            letter-spacing:0.10em;text-transform:uppercase;
-                           color:{TIER_LABELS.get(profile.get('tier','free'))['color']};
-                           background:{TIER_LABELS.get(profile.get('tier','free'))['bg']};
+                           color:{TIER_LABELS.get(profile.get('tier','free'), TIER_LABELS['free'])['color']};
+                           background:{TIER_LABELS.get(profile.get('tier','free'), TIER_LABELS['free'])['bg']};
                            border-radius:20px;padding:2px 8px;white-space:nowrap;">
-                {TIER_LABELS.get(profile.get('tier','free'))['label']}
+                {TIER_LABELS.get(profile.get('tier','free'), TIER_LABELS['free'])['label']}
               </span>
             </div>
             <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:#6e8a7b;margin-top:6px;">
