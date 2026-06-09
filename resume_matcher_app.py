@@ -4,44 +4,51 @@ Upload resume + paste job URL → Get compatibility score + recommendations
 """
 
 import streamlit as st
-import streamlit.components.v1 as _components
-import os
-import re
-import json
-from datetime import datetime
-from typing import Optional
-from dotenv import load_dotenv
-from anthropic import Anthropic
-import requests
-from bs4 import BeautifulSoup
-from docx import Document
-from docx.shared import Pt, RGBColor, Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-import pypdf
-import io
-import base64
-import openpyxl
-from openpyxl import load_workbook
-try:
-    from supabase import create_client as _supabase_create_client
-    _SUPABASE_AVAILABLE = True
-except Exception:
-    _SUPABASE_AVAILABLE = False
+import traceback as _tb
 
-# Load environment
-load_dotenv()
-
-# Configuration
-MODEL_NAME = "claude-sonnet-4-6"
-TRACKER_PATH = os.path.join(os.path.dirname(__file__), "job_applications.xlsx")
-COVER_LETTERS_PATH = os.path.join(os.path.dirname(__file__), "cover_letters")
-
-# Page config
+# Page config must be first Streamlit call
 st.set_page_config(
     page_title="ResumeSync - AI-Powered Job Matching",
     page_icon="🔄",
     layout="wide"
 )
+
+try:
+    import streamlit.components.v1 as _components
+    import os
+    import re
+    import json
+    from datetime import datetime
+    from typing import Optional
+    from dotenv import load_dotenv
+    from anthropic import Anthropic
+    import requests
+    from bs4 import BeautifulSoup
+    from docx import Document
+    from docx.shared import Pt, RGBColor, Inches
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    import pypdf
+    import io
+    import base64
+    import openpyxl
+    from openpyxl import load_workbook
+    try:
+        from supabase import create_client as _supabase_create_client
+        _SUPABASE_AVAILABLE = True
+    except Exception:
+        _SUPABASE_AVAILABLE = False
+
+    # Load environment
+    load_dotenv()
+
+    # Configuration
+    MODEL_NAME = "claude-sonnet-4-6"
+    TRACKER_PATH = os.path.join(os.path.dirname(__file__), "job_applications.xlsx")
+    COVER_LETTERS_PATH = os.path.join(os.path.dirname(__file__), "cover_letters")
+
+    _IMPORT_ERROR = None
+except Exception as _ie:
+    _IMPORT_ERROR = _ie
 
 # Custom CSS — VisualizePro · Forest + Sage design system
 st.markdown("""
@@ -2460,11 +2467,17 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as _e:
-        import traceback
-        st.error(f"App error: {_e}")
+    if _IMPORT_ERROR:
+        st.error(f"**Startup import error:** {_IMPORT_ERROR}")
+        st.code(_tb.format_exc(), language="python")
+        st.info("Check Streamlit Cloud → App Settings → Secrets for ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY.")
+    else:
+        try:
+            main()
+        except Exception as _e:
+            st.error(f"**App error:** {_e}")
+            st.code(_tb.format_exc(), language="python")
+            st.info("Check Streamlit Cloud → App Settings → Secrets for ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY.")
         st.code(traceback.format_exc())
 else:
     try:
