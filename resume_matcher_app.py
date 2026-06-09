@@ -2466,23 +2466,14 @@ def main():
     )
 
 
-if __name__ == "__main__":
-    if _IMPORT_ERROR:
-        st.error(f"**Startup import error:** {_IMPORT_ERROR}")
-        st.code(_tb.format_exc(), language="python")
-        st.info("Check Streamlit Cloud → App Settings → Secrets for ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY.")
-    else:
-        try:
-            main()
-        except Exception as _e:
-            st.error(f"**App error:** {_e}")
-            st.code(_tb.format_exc(), language="python")
-            st.info("Check Streamlit Cloud → App Settings → Secrets for ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY.")
-        st.code(traceback.format_exc())
+if _IMPORT_ERROR:
+    st.error(f"**Startup import error:** {_IMPORT_ERROR}")
+    st.code(_tb.format_exc(), language="python")
+    st.info("Check Streamlit Cloud → App Settings → Secrets for ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY.")
 else:
     try:
         main()
     except Exception as _e:
-        import traceback
-        st.error(f"App error: {_e}")
-        st.code(traceback.format_exc())
+        st.error(f"**App error:** {_e}")
+        st.code(_tb.format_exc(), language="python")
+        st.info("Check Streamlit Cloud → App Settings → Secrets for ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY.")
