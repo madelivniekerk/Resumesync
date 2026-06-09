@@ -1454,11 +1454,19 @@ def show_login_page():
 
         st.markdown("""
         <div style="margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);">
-          <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#6e8a7b;margin:0;">
+          <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#6e8a7b;margin:0 0 1.2rem;">
             <b style="color:#9fb6a8;">Free tier:</b> 3 analyses ·
             <b style="color:#9fb6a8;">Starter $10/mo:</b> 10/month ·
             <b style="color:#9fb6a8;">Unlimited $15/mo:</b> no limits
           </p>
+          <a href="https://madelivniekerk.github.io/Resumesync"
+             style="font-family:'DM Sans',sans-serif;font-size:13px;color:#6e8a7b;
+                    text-decoration:none;display:inline-flex;align-items:center;gap:4px;
+                    transition:color 0.2s;"
+             onmouseover="this.style.color='#9fb6a8'"
+             onmouseout="this.style.color='#6e8a7b'">
+            ← Back to main page
+          </a>
         </div>
         """, unsafe_allow_html=True)
 
