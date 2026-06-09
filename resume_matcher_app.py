@@ -1409,16 +1409,15 @@ def show_login_page():
             st.success(f"Code sent to **{sent_email}** — check your inbox (and spam).")
             st.markdown("<div style='height:0.5rem;'></div>", unsafe_allow_html=True)
             otp_input = st.text_input(
-                "6-digit code",
-                placeholder="123456",
-                max_chars=6,
+                "Login code",
+                placeholder="Paste your code here",
                 label_visibility="collapsed",
                 key="otp_code_input",
             )
             if st.button("Sign in →", type="primary", use_container_width=True, key="verify_otp_btn"):
                 code_val = (otp_input or "").strip()
-                if len(code_val) != 6 or not code_val.isdigit():
-                    st.error("Please enter the 6-digit code from your email.")
+                if not code_val:
+                    st.error("Please enter the login code from your email.")
                 else:
                     info = verify_otp(sent_email, code_val)
                     if info:
