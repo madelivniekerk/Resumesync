@@ -110,5 +110,21 @@
     "created_at": "2026-06-06T12:06:25.501528+00:00",
     "updated_resume_file": "Madeli_van_Niekerk_Resume_Updated_Analytics___Insights_Mana_2026-06-06.docx",
     "user_id": null
+  },
+  {
+    "id": "84bc585a-b62d-4eab-b2af-fcc8edae873c",
+    "date": "2026-06-09",
+    "job_title": "Customer Insights & Data Analyst",
+    "company": "Mirvac",
+    "location": "Sydney NSW (Hybrid)",
+    "resume_file": "Madeli_van_Niekerk_Resume_insights.docx",
+    "match_pct": "88%",
+    "job_url": "",
+    "status": "Applied",
+    "notes": "**1. Rewrite the Professional Summary to lead with customer insights and analytical depth**\n\n*Current:* \"Senior Visualization Lead and BI Specialist with 19 years delivering end-to-end analytics across enterprise, government, and regulated financial services environments.\"\n\n*Revised:* \"Senior Data & Customer Insights Analyst with 19 years turning complex data into actionable business intelligence across enterprise, government, and financial services environments. Skilled in uncovering customer behaviours and trends through Tableau, Power BI, and Snowflake, with hands-on experience in AI adoption, self-service analytics, and stakeholder-facing insight storytelling from frontline teams through to Board level.\"\n\nThis reframe keeps your core identity but bridges to the customer insights language Mirvac is screening for.\n\n---\n\n**2. Add a VOC/customer experience bullet — or reframe an existing one**\n\nThe Foxtel AI initiative bullet is your strongest candidate. Currently: *\"Led the organisation's AI adoption initiative: built the business case, managed stakeholder engagement, and ran the pilot program that significantly improved decision-making speed.\"*\n\nThis is vague. If the AI initiative touched customer data or customer decision-making, say so explicitly. Revised example: *\"Led Foxtel's AI adoption initiative — built the business case, ran the pilot program, and delivered Gen AI-assisted analysis that reduced customer insight turnaround time by [X]%, directly improving the speed ",
+    "cover_letter": "/mount/src/resumesync/cover_letters/CoverLetter_Madeli_van_Niekerk_Resume_Customer_Insights___Data_2026-06-09.docx",
+    "created_at": "2026-06-09T10:29:36.783025+00:00",
+    "updated_resume_file": "Madeli_van_Niekerk_Resume_Updated_Customer_Insights___Data_2026-06-09.docx",
+    "user_id": "5c425ee1-959f-45b5-8709-006d5057027c"
   }
 ]
