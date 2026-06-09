@@ -367,7 +367,7 @@ def _fresh_supabase():
 
 
 def send_otp(email: str) -> tuple:
-    """Send a 6-digit OTP code to the user's email (no redirect URL needed)."""
+    """Send a 9-digit OTP code to the user's email."""
     sb = _fresh_supabase()
     if not sb:
         return False, "Supabase not configured. Check your SUPABASE_URL and SUPABASE_KEY secrets."
@@ -379,7 +379,7 @@ def send_otp(email: str) -> tuple:
 
 
 def verify_otp(email: str, token: str) -> Optional[dict]:
-    """Verify a 6-digit OTP token; returns user dict or None."""
+    """Verify a 9-digit OTP token; returns user dict or None."""
     sb = _fresh_supabase()
     if not sb:
         return None
@@ -1399,7 +1399,7 @@ def show_login_page():
           <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
                      font-size:30px;color:#ecf4ee;margin:0 0 0.4rem;letter-spacing:-0.02em;">Sign in</h1>
           <p style="font-family:'DM Sans',sans-serif;font-size:15px;color:#9fb6a8;margin:0 0 2rem;">
-            Enter your email — we'll send a 6-digit code. No password needed.
+            Enter your email — we'll send a 9-digit code. No password needed.
           </p>
         </div>
         """, unsafe_allow_html=True)
