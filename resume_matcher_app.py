@@ -1140,7 +1140,7 @@ def show_landing():
     with nav_r:
         st.markdown('<div style="padding:22px 32px 10px;display:flex;justify-content:flex-end;">', unsafe_allow_html=True)
         if st.button("Try for free →", key="nav_cta", type="primary"):
-            st.session_state.page = 'app'
+            st.session_state.show_login = True
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1356,7 +1356,7 @@ def show_landing():
     _, cta_mid, _ = st.columns([1, 1, 1])
     with cta_mid:
         if st.button("Start for free →", key="bottom_cta", type="primary", use_container_width=True):
-            st.session_state.page = 'app'
+            st.session_state.show_login = True
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1524,7 +1524,7 @@ def show_tracker():
         """, unsafe_allow_html=True)
 
         if st.button("✦ New Analysis", key="tracker_nav_new", use_container_width=True):
-            st.session_state.page = 'app'
+            st.session_state.show_login = True
             st.rerun()
 
         # Applications — active/current page
@@ -1573,7 +1573,7 @@ def show_tracker():
     with hdr_r:
         st.markdown("<div style='padding-top:32px;'>", unsafe_allow_html=True)
         if st.button("New analysis →", key="tracker_hdr_new", type="primary", use_container_width=True):
-            st.session_state.page = 'app'
+            st.session_state.show_login = True
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1766,7 +1766,10 @@ def show_tracker():
 def main():
     # ── Auth gate ─────────────────────────────────────────────────────────────
     if 'auth_user_id' not in st.session_state:
-        show_login_page()
+        if st.session_state.get('show_login'):
+            show_login_page()
+        else:
+            show_landing()
         return
 
     auth_user_id = st.session_state['auth_user_id']
