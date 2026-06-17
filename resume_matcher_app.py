@@ -46,12 +46,6 @@ try:
     TRACKER_PATH = os.path.join(os.path.dirname(__file__), "job_applications.xlsx")
     COVER_LETTERS_PATH = os.path.join(os.path.dirname(__file__), "cover_letters")
 
-    # Bidirectional landing page component — lets CTA buttons signal Python
-    _landing_comp = _components.declare_component(
-        "landing_component",
-        path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "landing_component")
-    )
-
     _IMPORT_ERROR = None
 except Exception as _ie:
     _IMPORT_ERROR = _ie
@@ -1105,23 +1099,319 @@ def get_vp_logo_b64():
 # ============= LANDING PAGE =============
 
 def show_landing():
-    """Marketing landing page — rendered via a declared component for working CTA navigation."""
+    """Marketing landing page — full backup HTML design via st.markdown with blank-line fix."""
 
-    # Hide all Streamlit chrome so the landing page fills the viewport
-    st.markdown("""<style>
-    section[data-testid="stSidebar"]{display:none!important;}
-    [data-testid="collapsedControl"]{display:none!important;}
-    .block-container{padding:0!important;max-width:100%!important;margin:0!important;}
-    header[data-testid="stHeader"]{display:none!important;}
-    #MainMenu{display:none!important;}
-    footer{display:none!important;}
-    .stApp{overflow:hidden!important;}
-    </style>""", unsafe_allow_html=True)
+    # Fonts + hide all Streamlit chrome
+    st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Lora:ital,wght@1,500;1,600&family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+section[data-testid="stSidebar"]{display:none!important;}
+[data-testid="collapsedControl"]{display:none!important;}
+.block-container{padding:0!important;max-width:100%!important;margin:0!important;}
+header[data-testid="stHeader"]{display:none!important;}
+#MainMenu{display:none!important;}
+footer[data-testid="stFooter"]{display:none!important;}
+</style>""", unsafe_allow_html=True)
 
-    result = _landing_comp(key="landing")
-    if result == 'login':
-        st.session_state.show_login = True
-        st.rerun()
+    # Full landing page HTML — blank lines removed before render so CommonMark
+    # does not terminate the type-6 HTML block early (the root cause of the blank page).
+    _html = """<style>
+:root{
+--bg:#071512;--bg-2:#0a1b16;--panel:#0c2019;--panel-2:#0f271e;
+--ink:#ecf4ee;--ink2:#9fb6a8;--ink3:#6e8a7b;
+--mint:#7ad79f;--mint-bright:#94e6b1;--mint-deep:#4fae7a;
+--mint-dim:rgba(122,215,159,0.10);--mint-dim2:rgba(122,215,159,0.16);
+--mint-border:rgba(122,215,159,0.22);--amber:#e0a14a;
+--line:rgba(159,182,168,0.12);--line-2:rgba(159,182,168,0.07);
+--shadow-lg:0 24px 60px rgba(0,0,0,0.45),0 4px 14px rgba(0,0,0,0.35);
+--mono:'Space Mono',ui-monospace,monospace;
+--display:'Bricolage Grotesque',system-ui,sans-serif;
+--serif:'Lora',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;position:relative;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(900px 600px at 78% -8%,rgba(122,215,159,0.10),transparent 60%),radial-gradient(700px 700px at 6% 4%,rgba(122,215,159,0.05),transparent 55%);}
+body>*{position:relative;z-index:1;}
+.eyebrow{font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:0.22em;text-transform:uppercase;color:var(--mint);display:inline-flex;align-items:center;gap:14px;}
+.eyebrow::before,.eyebrow::after{content:'';width:26px;height:1px;background:var(--mint);opacity:0.5;}
+.eyebrow.one::after{display:none;}
+.nav{position:fixed;top:0;left:0;right:0;z-index:9999;display:flex;align-items:center;justify-content:space-between;padding:18px 56px;background:rgba(7,21,18,0.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line-2);}
+body{padding-top:74px;}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;}
+.logo-mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(150deg,var(--mint),var(--mint-deep));display:grid;place-items:center;font-family:var(--display);font-size:18px;font-weight:800;color:#06140f;box-shadow:0 4px 14px rgba(122,215,159,0.30);}
+.logo-txt{display:flex;flex-direction:column;line-height:1;}
+.logo-name{font-family:var(--display);font-size:19px;font-weight:700;letter-spacing:-0.02em;color:var(--ink);}
+.logo-name span{color:var(--mint);}
+.logo-by{font-family:var(--mono);font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink3);margin-top:3px;}
+.nav-links{display:flex;align-items:center;gap:30px;}
+.nav-link{font-size:14px;color:var(--ink2);text-decoration:none;font-weight:500;transition:color .15s;}
+.nav-link:hover{color:var(--ink);}
+.nav-cta{font-size:13.5px;font-weight:600;padding:10px 20px;border-radius:9px;background:var(--mint);color:#06140f;text-decoration:none;transition:background .15s,transform .15s;box-shadow:0 4px 14px rgba(122,215,159,0.22);}
+.nav-cta:hover{background:var(--mint-bright);transform:translateY(-1px);}
+.hero{padding:78px 56px 96px;max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 472px;gap:60px;align-items:center;}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(38px,4.1vw,60px);line-height:1.0;letter-spacing:-0.03em;color:var(--ink);margin:22px 0 24px;}
+h1 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(--mint);letter-spacing:-0.01em;}
+.hero-lede{font-size:18px;line-height:1.66;color:var(--ink2);max-width:50ch;margin-bottom:36px;}
+.hero-lede strong{color:var(--ink);font-weight:500;}
+.hero-btns{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:34px;}
+.btn-primary{font-size:15px;font-weight:600;padding:15px 28px;border-radius:11px;background:var(--mint);color:#06140f;text-decoration:none;box-shadow:0 10px 30px rgba(122,215,159,0.26);transition:background .15s,transform .15s;display:inline-block;}
+.btn-primary:hover{background:var(--mint-bright);transform:translateY(-1px);}
+.btn-ghost{font-size:15px;font-weight:500;padding:15px 26px;border-radius:11px;border:1px solid var(--line);color:var(--ink);text-decoration:none;background:rgba(255,255,255,0.015);transition:border-color .15s,background .15s;display:inline-block;}
+.btn-ghost:hover{border-color:var(--mint-border);background:var(--mint-dim);}
+.hero-social{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.social-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink3);}
+.social-item b{color:var(--ink2);font-weight:600;}
+.social-item .tick{color:var(--mint);}
+.social-div{width:1px;height:14px;background:var(--line);}
+.hero-visual{position:relative;}
+.photo-frame{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow-lg);aspect-ratio:5/6;background:#0b1e18 center/cover no-repeat;}
+.photo-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+.photo-frame::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(to top,rgba(6,17,13,0.92) 0%,rgba(6,17,13,0.55) 22%,rgba(6,17,13,0) 46%);z-index:2;}
+.photo-badge{position:absolute;top:18px;left:18px;z-index:3;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:7px 12px;border-radius:7px;background:rgba(6,17,13,0.78);color:var(--mint);border:1px solid var(--mint-border);backdrop-filter:blur(4px);display:inline-flex;align-items:center;gap:8px;}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--mint);animation:pulse 2.2s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(122,215,159,0.5);}70%{box-shadow:0 0 0 8px rgba(122,215,159,0);}100%{box-shadow:0 0 0 0 rgba(122,215,159,0);}}
+.photo-name{position:absolute;left:22px;bottom:20px;z-index:3;}
+.photo-name .nm{font-family:var(--display);font-size:21px;font-weight:700;color:#fff;letter-spacing:-0.01em;}
+.photo-name .role{font-family:var(--mono);font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--mint);margin-top:6px;}
+.float{position:absolute;z-index:5;background:rgba(10,27,21,0.82);border:1px solid var(--mint-border);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,0.30);backdrop-filter:blur(10px);}
+.float-score{top:-44px;right:-34px;padding:18px 20px 16px;width:172px;text-align:center;}
+.fs-label{font-family:var(--mono);font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;}
+.ring-wrap{position:relative;width:108px;height:108px;margin:0 auto;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-num{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:30px;color:var(--mint);}
+.ring-num small{font-size:14px;color:var(--ink2);margin-left:1px;}
+.fs-fit{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--mint);margin-top:10px;}
+.float-skills{bottom:64px;right:-44px;padding:16px 18px;width:228px;}
+.fsk-label{font-family:var(--mono);font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;}
+.skill-row{display:grid;grid-template-columns:64px 1fr 26px;align-items:center;gap:10px;margin-bottom:9px;}
+.skill-row:last-child{margin-bottom:0;}
+.skill-name{font-size:11.5px;color:var(--ink2);font-weight:500;}
+.skill-track{height:5px;border-radius:99px;background:rgba(159,182,168,0.14);overflow:hidden;}
+.skill-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--mint-deep),var(--mint));}
+.skill-val{font-family:var(--mono);font-size:11px;color:var(--mint);text-align:right;}
+.section{max-width:1180px;margin:0 auto;padding:96px 56px;}
+.band{background:var(--bg-2);border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);}
+.sec-head{text-align:center;margin-bottom:62px;}
+h2{font-family:var(--display);font-weight:800;font-size:clamp(34px,3.8vw,52px);letter-spacing:-0.025em;line-height:1.04;margin:16px 0 0;}
+h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(--mint);}
+.sec-sub{color:var(--ink2);font-size:16.5px;max-width:54ch;margin:18px auto 0;line-height:1.6;}
+.sec-head .eyebrow{justify-content:center;}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.feature-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px;transition:transform .2s,border-color .2s,background .2s;position:relative;overflow:hidden;}
+.feature-card:hover{transform:translateY(-4px);border-color:var(--mint-border);background:var(--panel-2);}
+.feature-num{font-family:var(--mono);font-size:11px;color:var(--ink3);letter-spacing:0.1em;margin-bottom:18px;}
+.feature-card h3{font-family:var(--display);font-size:18px;font-weight:700;color:var(--ink);margin-bottom:10px;letter-spacing:-0.01em;}
+.feature-card p{font-size:13.5px;line-height:1.62;color:var(--ink2);}
+.feature-tag{display:inline-block;margin-top:16px;font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:99px;background:var(--mint-dim);color:var(--mint);border:1px solid var(--mint-border);}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 22px;position:relative;transition:border-color .2s,background .2s;}
+.step:hover{border-color:var(--mint-border);background:var(--panel-2);}
+.step-num{font-family:var(--display);font-size:15px;font-weight:800;color:#06140f;width:34px;height:34px;border-radius:9px;background:var(--mint);display:grid;place-items:center;margin-bottom:18px;}
+.step h3{font-family:var(--display);font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px;}
+.step p{font-size:13px;line-height:1.58;color:var(--ink2);}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:960px;margin:0 auto;align-items:start;}
+.price-card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:30px 26px;position:relative;}
+.price-card.featured{background:linear-gradient(170deg,#103025,#0a1f18);border-color:var(--mint-border);box-shadow:0 24px 60px rgba(0,0,0,0.4),0 0 0 1px rgba(122,215,159,0.10) inset;transform:translateY(-10px);}
+.price-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;background:var(--mint);color:#06140f;padding:5px 14px;border-radius:99px;white-space:nowrap;box-shadow:0 6px 16px rgba(122,215,159,0.3);}
+.price-plan{font-family:var(--display);font-size:18px;font-weight:700;margin-bottom:6px;}
+.price-desc{font-size:12.5px;color:var(--ink3);line-height:1.5;margin-bottom:22px;min-height:38px;}
+.price-num{font-family:var(--display);font-size:50px;font-weight:800;line-height:1;display:flex;align-items:flex-start;gap:3px;}
+.price-cur{font-size:20px;margin-top:9px;color:var(--ink2);font-weight:600;}
+.price-period{font-family:var(--mono);font-size:11px;color:var(--ink3);letter-spacing:0.04em;margin:8px 0 24px;}
+.price-cta{display:block;text-align:center;width:100%;padding:13px 0;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;margin-bottom:24px;transition:background .15s,transform .15s,border-color .15s;}
+.cta-fill{background:var(--mint);color:#06140f;}
+.cta-fill:hover{background:var(--mint-bright);transform:translateY(-1px);}
+.cta-out{background:transparent;border:1px solid var(--line);color:var(--ink);}
+.cta-out:hover{border-color:var(--mint-border);background:var(--mint-dim);}
+.price-features{list-style:none;display:flex;flex-direction:column;gap:11px;}
+.pf{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.4;color:var(--ink2);}
+.pf b{color:var(--ink);font-weight:600;}
+.ck{flex:0 0 17px;width:17px;height:17px;border-radius:50%;display:grid;place-items:center;font-size:9px;margin-top:1px;}
+.ck.y{background:var(--mint-dim2);color:var(--mint);}
+.ck.n{background:rgba(159,182,168,0.08);color:var(--ink3);}
+.cta-strip{max-width:1180px;margin:0 auto;padding:0 56px 96px;}
+.cta-inner{background:linear-gradient(150deg,#11362a,#0a1f18);border:1px solid var(--mint-border);border-radius:24px;padding:56px;text-align:center;position:relative;overflow:hidden;}
+.cta-inner::before{content:'';position:absolute;inset:0;background:radial-gradient(600px 300px at 50% -30%,rgba(122,215,159,0.16),transparent 70%);pointer-events:none;}
+.cta-inner h2{position:relative;}
+.cta-inner p{position:relative;color:var(--ink2);font-size:16px;margin:16px auto 30px;max-width:46ch;line-height:1.6;}
+.cta-inner .hero-btns{justify-content:center;margin-bottom:0;position:relative;}
+.rs-footer{border-top:1px solid var(--line-2);padding:38px 56px;max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.footer-logo{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:15px;color:var(--ink);}
+.footer-mark{width:28px;height:28px;border-radius:7px;background:linear-gradient(150deg,var(--mint),var(--mint-deep));display:grid;place-items:center;font-size:12px;font-weight:800;color:#06140f;}
+.footer-note{font-family:var(--mono);font-size:11px;color:var(--ink3);letter-spacing:0.03em;}
+.footer-note a{color:var(--mint);text-decoration:none;}
+@media(max-width:1080px){.hero{grid-template-columns:1fr;gap:64px;padding-bottom:80px;}.hero-visual{max-width:460px;}.float-skills{right:-20px;}.float-score{right:-14px;}.features-grid{grid-template-columns:1fr 1fr;}.steps{grid-template-columns:1fr 1fr;}.pricing-grid{grid-template-columns:1fr;max-width:440px;}.price-card.featured{transform:none;}}
+@media(max-width:640px){.nav{padding:14px 20px;}.nav-links{display:none;}.hero{padding:44px 20px 56px;}.section{padding:64px 20px;}.cta-strip{padding:0 20px 64px;}.cta-inner{padding:38px 24px;}.features-grid,.steps{grid-template-columns:1fr;}.float-score{top:-18px;right:-8px;transform:scale(0.88)}.float-skills{right:-8px;bottom:20px;transform:scale(0.9)}.rs-footer{padding:28px 20px;flex-direction:column;text-align:center;}}
+</style>
+<nav class="nav">
+<a class="logo" href="#">
+<div class="logo-mark">R</div>
+<div class="logo-txt">
+<div class="logo-name">Resum<span>Sync</span></div>
+<div class="logo-by">by VisualizePro</div>
+</div>
+</a>
+<div class="nav-links">
+<a class="nav-link" href="#features">Features</a>
+<a class="nav-link" href="#how">How it works</a>
+<a class="nav-link" href="#pricing">Pricing</a>
+</div>
+<a class="nav-cta" href="?login=1">Try free &#8594;</a>
+</nav>
+<section class="hero">
+<div class="hero-copy">
+<div class="eyebrow">know before you apply</div>
+<h1>Stop applying blindly.<br><span class="italic">Know your match</span><br>before you apply.</h1>
+<p class="hero-lede">Upload your resume, paste any job posting &#8212; and in seconds know your exact <strong>match score</strong>, which skills are missing, which keywords get you <strong>past ATS</strong>, and walk away with a tailored cover letter and resume ready to send.</p>
+<div class="hero-btns">
+<a class="btn-primary" href="?login=1">Start free &#8212; no card needed</a>
+<a class="btn-ghost" href="#how">See how it works &#8594;</a>
+</div>
+<div class="hero-social">
+<div class="social-item"><span class="tick">&#10003;</span><b>3</b> free applications</div>
+<div class="social-div"></div>
+<div class="social-item"><span class="tick">&#10003;</span><b>AI</b> resume rewrites</div>
+<div class="social-div"></div>
+<div class="social-item"><span class="tick">&#10003;</span>Cover letter <b>included</b></div>
+</div>
+</div>
+<div class="hero-visual">
+<div class="photo-frame">
+<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=900&q=80&auto=format&fit=crop" alt="Professional" loading="lazy"/>
+<div class="photo-badge"><span class="pulse"></span>Now hiring &middot; You</div>
+<div class="photo-name">
+<div class="nm">Madeli, BI Specialist</div>
+<div class="role">Currently matching to 12 open roles</div>
+</div>
+</div>
+<div class="float float-score">
+<div class="fs-label">Match Score</div>
+<div class="ring-wrap">
+<svg width="108" height="108" viewBox="0 0 108 108">
+<circle cx="54" cy="54" r="48" fill="none" stroke="rgba(159,182,168,0.16)" stroke-width="8"/>
+<circle cx="54" cy="54" r="48" fill="none" stroke="var(--mint)" stroke-width="8" stroke-linecap="round" stroke-dasharray="301.6" stroke-dashoffset="24.1"/>
+</svg>
+<div class="ring-num">92<small>%</small></div>
+</div>
+<div class="fs-fit">Strong fit</div>
+</div>
+<div class="float float-skills">
+<div class="fsk-label">Skill alignment</div>
+<div class="skill-row"><span class="skill-name">Tableau</span><span class="skill-track"><span class="skill-fill" style="width:96%"></span></span><span class="skill-val">96</span></div>
+<div class="skill-row"><span class="skill-name">Power BI</span><span class="skill-track"><span class="skill-fill" style="width:82%"></span></span><span class="skill-val">82</span></div>
+<div class="skill-row"><span class="skill-name">SQL</span><span class="skill-track"><span class="skill-fill" style="width:90%"></span></span><span class="skill-val">90</span></div>
+<div class="skill-row"><span class="skill-name">Snowflake</span><span class="skill-track"><span class="skill-fill" style="width:74%"></span></span><span class="skill-val">74</span></div>
+</div>
+</div>
+</section>
+<div class="band">
+<section class="section" id="features">
+<div class="sec-head">
+<div class="eyebrow one">what resumesync does</div>
+<h2>Every tool you need to<br><span class="italic">land the job.</span></h2>
+<p class="sec-sub">From pasting a job posting to sending your application &#8212; one workflow handles the score, the rewrite, the cover letter, and the tracking.</p>
+</div>
+<div class="features-grid">
+<div class="feature-card"><div class="feature-num">01</div><h3>Match Score</h3><p>Paste any job description and get an instant percentage showing how well your resume fits &#8212; scored on skills, keywords, experience, and tone.</p><span class="feature-tag">Instant results</span></div>
+<div class="feature-card"><div class="feature-num">02</div><h3>Skill &amp; keyword gaps</h3><p>See exactly what&#8217;s missing &#8212; which keywords to add, which experience to emphasise, which sections to rewrite. Specific, actionable, never vague.</p><span class="feature-tag">AI-powered</span></div>
+<div class="feature-card"><div class="feature-num">03</div><h3>Resume rewriter</h3><p>One click tailors your resume to the job &#8212; sharpening language and lifting your ATS score without inventing anything or losing your voice.</p><span class="feature-tag">Claude AI</span></div>
+<div class="feature-card"><div class="feature-num">04</div><h3>Cover letter generator</h3><p>A tailored cover letter built from the posting and your updated resume. Sounds human, not robotic &#8212; and you can refine it with your own prompts.</p><span class="feature-tag">Tailored per role</span></div>
+<div class="feature-card"><div class="feature-num">05</div><h3>Prompt &amp; refine</h3><p>Not happy with the output? Tell it what to change. &#8220;Make it more senior.&#8221; &#8220;Emphasise leadership.&#8221; You always direct the final result.</p><span class="feature-tag">You direct the AI</span></div>
+<div class="feature-card"><div class="feature-num">06</div><h3>Application tracker</h3><p>Every application in one place &#8212; role, company, match score, resume version, cover letter, and status. Your whole job search, organised.</p><span class="feature-tag">Never lose track</span></div>
+</div>
+</section>
+</div>
+<section class="section" id="how">
+<div class="sec-head">
+<div class="eyebrow one">how it works</div>
+<h2>Four steps to a<br><span class="italic">stronger application.</span></h2>
+<p class="sec-sub">From job posting to ready-to-send application in under ten minutes.</p>
+</div>
+<div class="steps">
+<div class="step"><div class="step-num">1</div><h3>Paste the job</h3><p>Drop in a Seek or LinkedIn URL, or paste the description. We scrape the rest.</p></div>
+<div class="step"><div class="step-num">2</div><h3>Get your score</h3><p>See your match percentage instantly, with a clear list of gaps to close.</p></div>
+<div class="step"><div class="step-num">3</div><h3>Rewrite &amp; refine</h3><p>Let AI rewrite your resume and cover letter, then tweak with your own prompts.</p></div>
+<div class="step"><div class="step-num">4</div><h3>Track &amp; apply</h3><p>Save it all to your tracker and send. Every document stored, every status logged.</p></div>
+</div>
+</section>
+<div class="band">
+<section class="section" id="pricing">
+<div class="sec-head">
+<div class="eyebrow one">simple pricing</div>
+<h2>Pay less than one<br><span class="italic">coffee a week.</span></h2>
+<p class="sec-sub">Start free. Upgrade when you&#8217;re ready. Cancel any time.</p>
+</div>
+<div class="pricing-grid">
+<div class="price-card">
+<div class="price-plan">Free</div>
+<div class="price-desc">Try it on your first three applications. No credit card.</div>
+<div class="price-num"><span class="price-cur">A$</span>0</div>
+<div class="price-period">forever free</div>
+<a class="price-cta cta-out" href="?login=1">Get started &#8594;</a>
+<ul class="price-features">
+<li class="pf"><span class="ck y">&#10003;</span><span>3 applications included</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Resume rewriter</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Cover letter generator</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Prompt &amp; refine</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Application tracker</span></li>
+</ul>
+</div>
+<div class="price-card featured">
+<div class="price-badge">Most popular</div>
+<div class="price-plan">Starter</div>
+<div class="price-desc">Everything you need for an active job search.</div>
+<div class="price-num"><span class="price-cur">A$</span>9.90</div>
+<div class="price-period">per month &middot; cancel any time</div>
+<a class="price-cta cta-fill" href="?login=1">Start free trial &#8594;</a>
+<ul class="price-features">
+<li class="pf"><span class="ck y">&#10003;</span><span>10 applications per month</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Resume rewriter</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Cover letter generator</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Prompt &amp; refine</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Application tracker</span></li>
+</ul>
+</div>
+<div class="price-card">
+<div class="price-plan">Unlimited</div>
+<div class="price-desc">No limits. Apply to as many roles as you like.</div>
+<div class="price-num"><span class="price-cur">A$</span>14.90</div>
+<div class="price-period">per month &middot; cancel any time</div>
+<a class="price-cta cta-out" href="?login=1">Get started &#8594;</a>
+<ul class="price-features">
+<li class="pf"><span class="ck y">&#10003;</span><span>Unlimited applications</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Resume rewriter</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Cover letter generator</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Prompt &amp; refine</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Application tracker</span></li>
+</ul>
+</div>
+</div>
+</section>
+</div>
+<div class="cta-strip" id="cta">
+<div class="cta-inner">
+<div class="eyebrow one" style="justify-content:center;">start in 60 seconds</div>
+<h2 style="margin-top:14px;">Know your match.<br><span class="italic">Then apply with confidence.</span></h2>
+<p>Your first three applications are free. Upload a resume, paste a job, and see your score &#8212; no card, no commitment.</p>
+<div class="hero-btns">
+<a class="btn-primary" href="?login=1">Start free &#8212; no card needed</a>
+<a class="btn-ghost" href="#features">Explore features &#8594;</a>
+</div>
+</div>
+</div>
+<div class="rs-footer">
+<div class="footer-logo"><div class="footer-mark">R</div>ResumSync</div>
+<div class="footer-note">Built by <a href="https://visualizepro.com.au">VisualizePro</a> &middot; Sydney, Australia &middot; Powered by Claude AI</div>
+</div>"""
+
+    # Strip every whitespace-only line — prevents CommonMark from terminating
+    # the type-6 HTML block early (the real cause of the blank page bug).
+    st.markdown('\n'.join(l for l in _html.split('\n') if l.strip()), unsafe_allow_html=True)
 
 
 
