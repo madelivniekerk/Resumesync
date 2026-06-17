@@ -1429,25 +1429,66 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 </div>
 <script>
 (function() {
-  function triggerLogin() {
+  // Resize iframe to match parent viewport so no double-scrollbar confusion
+  function resizeToViewport() {
     try {
-      var pDoc = window.parent.document;
-      var btns = pDoc.querySelectorAll('button');
+      var frames = window.parent.document.querySelectorAll('iframe');
+      for (var i = 0; i < frames.length; i++) {
+        if (frames[i].contentWindow === window) {
+          frames[i].style.height = (window.parent.innerHeight || 768) + 'px';
+          break;
+        }
+      }
+    } catch(e) {}
+  }
+  resizeToViewport();
+  window.addEventListener('resize', resizeToViewport);
+
+  // Navigate parent page to login
+  function triggerLogin() {
+    // Method 1: direct parent location (works for same-origin user-gesture in most browsers)
+    try {
+      window.parent.location.href = window.parent.location.pathname + '?login=1';
+      return;
+    } catch(e1) {}
+    // Method 2: click the hidden trigger button in the parent Streamlit DOM
+    try {
+      var btns = window.parent.document.querySelectorAll('button');
       for (var i = 0; i < btns.length; i++) {
-        if (btns[i].textContent.trim() === '__rs_login__') {
+        if (btns[i].textContent.includes('__rs_login__')) {
           btns[i].click();
           return;
         }
       }
-    } catch(e) {}
-    var base = window.parent.location.href.split('?')[0];
-    window.open(base + '?login=1', '_blank');
+    } catch(e2) {}
+    // Method 3: open in new tab as last resort
+    try {
+      window.open(window.parent.location.href.split('?')[0] + '?login=1', '_blank');
+    } catch(e3) {}
   }
-  document.querySelectorAll('.cta-login').forEach(function(el) {
-    el.addEventListener('click', function(e) {
-      e.preventDefault();
-      triggerLogin();
-    });
+
+  // Single event-delegation listener — handles all clicks in the document
+  document.addEventListener('click', function(e) {
+    // Walk up from clicked element to find the <a> tag
+    var el = e.target;
+    while (el && el !== document.body) {
+      if (el.tagName === 'A') {
+        var href = el.getAttribute('href') || '';
+        if (el.classList.contains('cta-login')) {
+          e.preventDefault();
+          triggerLogin();
+          return;
+        }
+        if (href.startsWith('#') && href.length > 1) {
+          e.preventDefault();
+          var target = document.getElementById(href.slice(1));
+          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+        break;
+      }
+      el = el.parentElement;
+    }
   });
 })();
 </script>
