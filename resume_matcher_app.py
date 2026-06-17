@@ -1634,9 +1634,10 @@ def show_payment_redirect(plan: str):
         return
 
     auth_email = st.session_state.get("auth_email", "")
+    # Pass email|plan in ExternalReference so the webhook can identify the user and tier
     pay_params = urllib.parse.urlencode({
         "email":      auth_email,
-        "reference":  plan,
+        "reference":  f"{auth_email}|{plan}",
         "return_url": APP_URL + "?payment_return=1",
     })
     pay_url = PAY_ADVANCED_URL + "?" + pay_params
