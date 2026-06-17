@@ -370,35 +370,51 @@ def _fresh_supabase():
     return None
 
 
-def send_otp(email: str) -> tuple:
-    """Send a 9-digit OTP code to the user's email."""
-    sb = _fresh_supabase()
-    if not sb:
-        return False, "Supabase not configured. Check your SUPABASE_URL and SUPABASE_KEY secrets."
-    try:
-        sb.auth.sign_in_with_otp({"email": email, "options": {"should_create_user": True}})
-        return True, "Sent!"
-    except Exception as e:
-        return False, str(e)
-
-
-def verify_otp(email: str, token: str) -> Optional[dict]:
-    """Verify a 9-digit OTP token; returns user dict or None."""
-    sb = _fresh_supabase()
-    if not sb:
-        return None
-    try:
-        resp = sb.auth.verify_otp({"email": email, "token": token, "type": "email"})
-        if resp and resp.user and resp.session:
-            return {
-                "user_id":       resp.user.id,
-                "email":         resp.user.email or email,
-                "access_token":  resp.session.access_token,
-                "refresh_token": resp.session.refresh_token,
-            }
-    except Exception:
-        pass
+def _auth_user_dict(resp) -> Optional[dict]:
+    """Extract user dict from a Supabase auth response."""
+    if resp and resp.user and resp.session:
+        return {
+            "user_id":       resp.user.id,
+            "email":         resp.user.email or "",
+            "access_token":  resp.session.access_token,
+            "refresh_token": resp.session.refresh_token,
+        }
     return None
+
+
+def sign_in(email: str, password: str) -> tuple:
+    """Sign in with email + password. Returns (user_dict | None, error_str)."""
+    sb = _fresh_supabase()
+    if not sb:
+        return None, "Supabase not configured."
+    try:
+        resp = sb.auth.sign_in_with_password({"email": email, "password": password})
+        user = _auth_user_dict(resp)
+        return user, ("" if user else "Invalid email or password.")
+    except Exception as e:
+        msg = str(e)
+        if "Invalid login credentials" in msg:
+            return None, "Invalid email or password."
+        return None, msg
+
+
+def sign_up(email: str, password: str) -> tuple:
+    """Create a new account. Returns (user_dict | None, error_str)."""
+    sb = _fresh_supabase()
+    if not sb:
+        return None, "Supabase not configured."
+    try:
+        resp = sb.auth.sign_up({"email": email, "password": password})
+        user = _auth_user_dict(resp)
+        if user:
+            return user, ""
+        # Email confirmation still enabled in Supabase
+        return None, "Check your inbox to confirm your email, then sign in."
+    except Exception as e:
+        msg = str(e)
+        if "already registered" in msg.lower() or "already been registered" in msg.lower():
+            return None, "An account with that email already exists. Please sign in."
+        return None, msg
 
 
 def get_or_create_profile(user_id: str, email: str) -> dict:
@@ -1524,10 +1540,13 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 # ============= LOGIN PAGE =============
 
 def show_login_page():
-    """Magic-link login screen."""
+    """Email + password login / signup screen."""
     _, col, _ = st.columns([1, 1.6, 1])
     with col:
-        st.markdown("""
+        # Toggle between sign-in and sign-up
+        mode = st.session_state.get("login_mode", "signin")
+
+        st.markdown(f"""
         <div style="padding:3rem 0 1.5rem;">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:2.5rem;">
             <div style="width:44px;height:44px;border-radius:12px;
@@ -1544,67 +1563,84 @@ def show_login_page():
             </div>
           </div>
           <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
-                     font-size:30px;color:#ecf4ee;margin:0 0 0.4rem;letter-spacing:-0.02em;">Sign in</h1>
+                     font-size:30px;color:#ecf4ee;margin:0 0 0.4rem;letter-spacing:-0.02em;">
+            {"Create account" if mode == "signup" else "Sign in"}
+          </h1>
           <p style="font-family:'DM Sans',sans-serif;font-size:15px;color:#9fb6a8;margin:0 0 2rem;">
-            Enter your email — we'll send a 9-digit code. No password needed.
+            {"Enter your email and choose a password." if mode == "signup" else "Welcome back — enter your email and password."}
           </p>
         </div>
         """, unsafe_allow_html=True)
 
-        if st.session_state.get("otp_sent_email"):
-            sent_email = st.session_state["otp_sent_email"]
-            st.success(f"Code sent to **{sent_email}** — check your inbox (and spam).")
-            st.markdown("<div style='height:0.5rem;'></div>", unsafe_allow_html=True)
-            otp_input = st.text_input(
-                "Login code",
-                placeholder="Paste your code here",
-                label_visibility="collapsed",
-                key="otp_code_input",
-            )
-            if st.button("Sign in →", type="primary", use_container_width=True, key="verify_otp_btn"):
-                code_val = (otp_input or "").strip()
-                if not code_val:
-                    st.error("Please enter the login code from your email.")
+        email_input = st.text_input(
+            "Email address",
+            placeholder="you@example.com",
+            label_visibility="collapsed",
+            key="login_email_input",
+        )
+        password_input = st.text_input(
+            "Password",
+            placeholder="Password (min 6 characters)",
+            type="password",
+            label_visibility="collapsed",
+            key="login_password_input",
+        )
+
+        if mode == "signup":
+            if st.button("Create account →", type="primary", use_container_width=True, key="signup_btn"):
+                email_val    = (email_input or "").strip().lower()
+                password_val = (password_input or "").strip()
+                if not email_val or "@" not in email_val:
+                    st.error("Please enter a valid email address.")
+                elif len(password_val) < 6:
+                    st.error("Password must be at least 6 characters.")
                 else:
-                    info = verify_otp(sent_email, code_val)
+                    info, err = sign_up(email_val, password_val)
                     if info:
                         st.session_state["auth_user_id"]  = info["user_id"]
                         st.session_state["auth_email"]    = info["email"]
                         st.session_state["auth_token"]    = info["access_token"]
                         st.session_state["auth_refresh"]  = info["refresh_token"]
                         st.session_state["user_profile"]  = get_or_create_profile(info["user_id"], info["email"])
-                        st.session_state.pop("otp_sent_email", None)
+                        st.session_state.pop("login_mode", None)
                         st.rerun()
                     else:
-                        st.error("Invalid or expired code. Please try again or request a new one.")
-            if st.button("← Use a different email", key="reset_login"):
-                st.session_state.pop("otp_sent_email", None)
+                        st.error(err)
+            st.markdown("<div style='height:0.5rem;'></div>", unsafe_allow_html=True)
+            if st.button("Already have an account? Sign in", key="switch_to_signin"):
+                st.session_state["login_mode"] = "signin"
                 st.rerun()
         else:
-            email_input = st.text_input(
-                "Email address",
-                placeholder="you@example.com",
-                label_visibility="collapsed",
-                key="login_email_input",
-            )
-            if st.button("Send Code →", type="primary", use_container_width=True, key="send_otp_btn"):
-                email_val = (email_input or "").strip().lower()
+            if st.button("Sign in →", type="primary", use_container_width=True, key="signin_btn"):
+                email_val    = (email_input or "").strip().lower()
+                password_val = (password_input or "").strip()
                 if not email_val or "@" not in email_val:
                     st.error("Please enter a valid email address.")
+                elif not password_val:
+                    st.error("Please enter your password.")
                 else:
-                    ok, msg = send_otp(email_val)
-                    if ok:
-                        st.session_state["otp_sent_email"] = email_val
+                    info, err = sign_in(email_val, password_val)
+                    if info:
+                        st.session_state["auth_user_id"]  = info["user_id"]
+                        st.session_state["auth_email"]    = info["email"]
+                        st.session_state["auth_token"]    = info["access_token"]
+                        st.session_state["auth_refresh"]  = info["refresh_token"]
+                        st.session_state["user_profile"]  = get_or_create_profile(info["user_id"], info["email"])
+                        st.session_state.pop("login_mode", None)
                         st.rerun()
                     else:
-                        st.error(f"Could not send code: {msg}")
+                        st.error(err)
+            st.markdown("<div style='height:0.5rem;'></div>", unsafe_allow_html=True)
+            if st.button("No account yet? Create one free", key="switch_to_signup"):
+                st.session_state["login_mode"] = "signup"
+                st.rerun()
 
         st.markdown("""
         <div style="margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);">
           <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#6e8a7b;margin:0 0 1.2rem;">
             <b style="color:#9fb6a8;">Free tier:</b> 3 analyses ·
-            <b style="color:#9fb6a8;">Starter $10/mo:</b> 10/month ·
-            <b style="color:#9fb6a8;">Unlimited $15/mo:</b> no limits
+            <b style="color:#9fb6a8;">Starter A$9.90/mo:</b> 10/month ·
+            <b style="color:#9fb6a8;">Unlimited A$14.90/mo:</b> no limits
           </p>
           <a href="https://madelivniekerk.github.io/Resumesync"
              style="font-family:'DM Sans',sans-serif;font-size:13px;color:#6e8a7b;
