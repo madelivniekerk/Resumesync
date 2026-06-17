@@ -18,6 +18,7 @@ try:
     import os
     import re
     import json
+    import urllib.parse
     from datetime import datetime
     from typing import Optional
     from dotenv import load_dotenv
@@ -351,6 +352,9 @@ TIER_LABELS  = {
     "unlimited": {"label": "Unlimited", "color": "#7ad79f", "bg": "rgba(122,215,159,0.15)"},
 }
 
+PAY_ADVANCED_URL = "https://pad.live/pa53992/pay"
+APP_URL = "https://resumesync-adc8kjcujdwh8jnnhcgcpe.streamlit.app"
+
 
 def _fresh_supabase():
     """Non-cached Supabase client used for auth calls."""
@@ -452,6 +456,22 @@ def increment_usage(user_id: str):
                 st.session_state["user_profile"]["analyses_used"] = new_count
     except Exception:
         pass
+
+
+def update_user_tier(user_id: str, tier: str) -> bool:
+    """Set a user's subscription tier and reset usage counter."""
+    sb = _fresh_supabase()
+    if not sb:
+        return False
+    try:
+        sb.table("profiles").update({
+            "tier": tier,
+            "analyses_used": 0,
+            "analyses_month": datetime.now().strftime("%Y-%m"),
+        }).eq("id", user_id).execute()
+        return True
+    except Exception:
+        return False
 
 
 def extract_text_from_pdf(file):
@@ -1368,7 +1388,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <div class="price-desc">Try it on your first three applications. No credit card.</div>
 <div class="price-num"><span class="price-cur">A$</span>0</div>
 <div class="price-period">forever free</div>
-<a class="price-cta cta-out cta-login" href="#">Get started &#8594;</a>
+<a class="price-cta cta-out cta-login" data-plan="free" href="#">Get started &#8594;</a>
 <ul class="price-features">
 <li class="pf"><span class="ck y">&#10003;</span><span>3 applications included</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
@@ -1384,7 +1404,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <div class="price-desc">Everything you need for an active job search.</div>
 <div class="price-num"><span class="price-cur">A$</span>9.90</div>
 <div class="price-period">per month &middot; cancel any time</div>
-<a class="price-cta cta-fill cta-login" href="#">Start free trial &#8594;</a>
+<a class="price-cta cta-fill cta-login" data-plan="starter" href="#">Start free trial &#8594;</a>
 <ul class="price-features">
 <li class="pf"><span class="ck y">&#10003;</span><span>10 applications per month</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
@@ -1399,7 +1419,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <div class="price-desc">No limits. Apply to as many roles as you like.</div>
 <div class="price-num"><span class="price-cur">A$</span>14.90</div>
 <div class="price-period">per month &middot; cancel any time</div>
-<a class="price-cta cta-out cta-login" href="#">Get started &#8594;</a>
+<a class="price-cta cta-out cta-login" data-plan="unlimited" href="#">Get started &#8594;</a>
 <ul class="price-features">
 <li class="pf"><span class="ck y">&#10003;</span><span>Unlimited applications</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
@@ -1444,11 +1464,12 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
   resizeToViewport();
   window.addEventListener('resize', resizeToViewport);
 
-  // Navigate parent page to login
-  function triggerLogin() {
+  // Navigate parent page to login, optionally with a plan
+  function triggerLogin(plan) {
+    var planParam = plan ? '&plan=' + encodeURIComponent(plan) : '';
     // Method 1: direct parent location (works for same-origin user-gesture in most browsers)
     try {
-      window.parent.location.href = window.parent.location.pathname + '?login=1';
+      window.parent.location.href = window.parent.location.pathname + '?login=1' + planParam;
       return;
     } catch(e1) {}
     // Method 2: click the hidden trigger button in the parent Streamlit DOM
@@ -1463,7 +1484,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
     } catch(e2) {}
     // Method 3: open in new tab as last resort
     try {
-      window.open(window.parent.location.href.split('?')[0] + '?login=1', '_blank');
+      window.open(window.parent.location.href.split('?')[0] + '?login=1' + planParam, '_blank');
     } catch(e3) {}
   }
 
@@ -1476,7 +1497,8 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
         var href = el.getAttribute('href') || '';
         if (el.classList.contains('cta-login')) {
           e.preventDefault();
-          triggerLogin();
+          var plan = el.getAttribute('data-plan') || '';
+          triggerLogin(plan);
           return;
         }
         if (href.startsWith('#') && href.length > 1) {
@@ -1594,6 +1616,129 @@ def show_login_page():
           </a>
         </div>
         """, unsafe_allow_html=True)
+
+
+# ============= PAYMENT PAGES =============
+
+_PLAN_INFO = {
+    "starter":   {"name": "Starter",   "price": "A$9.90/month",  "analyses": "10 applications per month", "color": "#6fb1e0"},
+    "unlimited": {"name": "Unlimited", "price": "A$14.90/month", "analyses": "Unlimited applications",     "color": "#7ad79f"},
+}
+
+
+def show_payment_redirect(plan: str):
+    """Shown after login when user selected a paid plan — redirect them to Pay Advanced checkout."""
+    info = _PLAN_INFO.get(plan, {})
+    if not info:
+        st.rerun()
+        return
+
+    auth_email = st.session_state.get("auth_email", "")
+    pay_params = urllib.parse.urlencode({
+        "email":      auth_email,
+        "reference":  plan,
+        "return_url": APP_URL + "?payment_return=1",
+    })
+    pay_url = PAY_ADVANCED_URL + "?" + pay_params
+
+    st.markdown("""
+<style>
+[data-testid="stHeader"]{display:none!important;}
+#MainMenu{visibility:hidden!important;}
+footer{visibility:hidden!important;}
+</style>""", unsafe_allow_html=True)
+
+    _, col, _ = st.columns([1, 1.6, 1])
+    with col:
+        st.markdown(f"""
+<div style="padding:3rem 0 1rem;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:2.5rem;">
+    <div style="width:44px;height:44px;border-radius:12px;
+                background:linear-gradient(150deg,#7ad79f,#4fae7a);
+                display:grid;place-items:center;
+                font-family:'Bricolage Grotesque',sans-serif;
+                font-weight:800;font-size:22px;color:#06140f;
+                box-shadow:0 4px 16px rgba(122,215,159,0.30);">R</div>
+    <div>
+      <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;
+                  font-size:20px;color:#ecf4ee;letter-spacing:-0.02em;">ResumeSync</div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;
+                  letter-spacing:0.18em;text-transform:uppercase;color:#6e8a7b;">by VisualizePro</div>
+    </div>
+  </div>
+  <div style="background:#0c2019;border:1px solid rgba(159,182,168,0.12);
+              border-radius:14px;padding:1.8rem;margin-bottom:1.5rem;">
+    <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;
+                text-transform:uppercase;color:{info['color']};margin-bottom:0.5rem;">Selected plan</div>
+    <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+                font-size:26px;color:#ecf4ee;margin-bottom:0.25rem;">{info['name']}</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;
+                color:{info['color']};margin-bottom:0.5rem;">{info['price']}</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:#9fb6a8;">{info['analyses']}</div>
+  </div>
+  <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:#9fb6a8;margin:0 0 1.5rem;">
+    You're signed in as <strong style="color:#ecf4ee;">{auth_email}</strong>.
+    Click below to complete your payment — you'll be redirected back automatically.
+  </p>
+</div>""", unsafe_allow_html=True)
+
+        st.link_button(
+            f"Pay {info['price']} — activate {info['name']} →",
+            pay_url,
+            type="primary",
+            use_container_width=True,
+        )
+        st.markdown("<div style='height:0.75rem;'></div>", unsafe_allow_html=True)
+        if st.button("Skip — use free tier for now", key="skip_payment_btn", use_container_width=True):
+            st.rerun()
+
+
+def show_payment_pending():
+    """Shown after returning from Pay Advanced while the webhook processes."""
+    st.markdown("""
+<style>
+[data-testid="stHeader"]{display:none!important;}
+#MainMenu{visibility:hidden!important;}
+footer{visibility:hidden!important;}
+</style>""", unsafe_allow_html=True)
+
+    _, col, _ = st.columns([1, 1.6, 1])
+    with col:
+        st.markdown("""
+<div style="padding:3rem 0 1rem;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:2.5rem;">
+    <div style="width:44px;height:44px;border-radius:12px;
+                background:linear-gradient(150deg,#7ad79f,#4fae7a);
+                display:grid;place-items:center;
+                font-family:'Bricolage Grotesque',sans-serif;
+                font-weight:800;font-size:22px;color:#06140f;
+                box-shadow:0 4px 16px rgba(122,215,159,0.30);">R</div>
+    <div>
+      <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;
+                  font-size:20px;color:#ecf4ee;letter-spacing:-0.02em;">ResumeSync</div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;
+                  letter-spacing:0.18em;text-transform:uppercase;color:#6e8a7b;">by VisualizePro</div>
+    </div>
+  </div>
+  <div style="background:#0c2019;border:1px solid rgba(122,215,159,0.20);
+              border-radius:14px;padding:1.8rem;margin-bottom:1.5rem;text-align:center;">
+    <div style="font-size:36px;margin-bottom:0.75rem;">✓</div>
+    <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+                font-size:22px;color:#ecf4ee;margin-bottom:0.5rem;">Payment received!</div>
+    <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:#9fb6a8;margin:0;">
+      Your account is being upgraded. It may take a moment to activate —
+      click below to continue and your new tier will reflect shortly.
+    </p>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+        if st.button("Continue to app →", type="primary", use_container_width=True, key="payment_continue_btn"):
+            # Refresh the profile from Supabase to pick up the webhook-updated tier
+            uid = st.session_state.get("auth_user_id")
+            email = st.session_state.get("auth_email", "")
+            if uid:
+                st.session_state["user_profile"] = get_or_create_profile(uid, email)
+            st.rerun()
 
 
 # ============= TRACKER PAGE =============
@@ -1889,10 +2034,19 @@ def show_tracker():
 # ============= STREAMLIT UI =============
 
 def main():
-    # ── Handle ?login=1 and ?start=1 query params (from nav links / external links) ──
+    # ── Handle ?login=1[&plan=X] query params ────────────────────────────────
     if st.query_params.get('login'):
+        plan = st.query_params.get('plan', '')
         st.query_params.clear()
         st.session_state.show_login = True
+        if plan in ('free', 'starter', 'unlimited'):
+            st.session_state.pending_plan = plan
+        st.rerun()
+
+    # ── Handle ?payment_return=1 (returning from Pay Advanced) ──────────────
+    if st.query_params.get('payment_return'):
+        st.query_params.clear()
+        st.session_state.show_payment_pending = True
         st.rerun()
 
     # ── Auth gate ─────────────────────────────────────────────────────────────
@@ -1902,6 +2056,18 @@ def main():
         else:
             show_landing()
         return
+
+    # ── Post-login payment screens ────────────────────────────────────────────
+    if st.session_state.pop('show_payment_pending', None):
+        show_payment_pending()
+        return
+
+    pending_plan = st.session_state.get('pending_plan', '')
+    if pending_plan in ('starter', 'unlimited'):
+        st.session_state.pop('pending_plan', None)
+        show_payment_redirect(pending_plan)
+        return
+    st.session_state.pop('pending_plan', None)
 
     auth_user_id = st.session_state['auth_user_id']
     auth_email   = st.session_state.get('auth_email', '')
