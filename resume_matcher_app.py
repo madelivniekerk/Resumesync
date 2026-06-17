@@ -46,6 +46,12 @@ try:
     TRACKER_PATH = os.path.join(os.path.dirname(__file__), "job_applications.xlsx")
     COVER_LETTERS_PATH = os.path.join(os.path.dirname(__file__), "cover_letters")
 
+    # Bidirectional landing page component — lets CTA buttons signal Python
+    _landing_comp = _components.declare_component(
+        "landing_component",
+        path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "landing_component")
+    )
+
     _IMPORT_ERROR = None
 except Exception as _ie:
     _IMPORT_ERROR = _ie
@@ -1099,279 +1105,24 @@ def get_vp_logo_b64():
 # ============= LANDING PAGE =============
 
 def show_landing():
-    """Marketing landing page — shown before user enters the app workspace."""
+    """Marketing landing page — rendered via a declared component for working CTA navigation."""
 
-    # Hide sidebar and expand to full width
-    st.markdown("""
-    <style>
+    # Hide all Streamlit chrome so the landing page fills the viewport
+    st.markdown("""<style>
     section[data-testid="stSidebar"]{display:none!important;}
     [data-testid="collapsedControl"]{display:none!important;}
-    .block-container{padding:0!important;max-width:100%!important;}
+    .block-container{padding:0!important;max-width:100%!important;margin:0!important;}
     header[data-testid="stHeader"]{display:none!important;}
-    </style>
-    """, unsafe_allow_html=True)
+    #MainMenu{display:none!important;}
+    footer{display:none!important;}
+    .stApp{overflow:hidden!important;}
+    </style>""", unsafe_allow_html=True)
 
-    TILE = ("border-radius:14px;overflow:hidden;position:relative;background:#0c2019;"
-            "border:1px solid rgba(159,182,168,0.12);box-shadow:0 24px 60px rgba(0,0,0,0.45);")
-    BADGE = ("font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.16em;"
-             "text-transform:uppercase;color:#7ad79f;background:rgba(7,21,18,0.88);"
-             "padding:5px 9px;border-radius:6px;border:1px solid rgba(122,215,159,0.22);"
-             "position:absolute;top:14px;left:14px;z-index:2;")
+    result = _landing_comp(key="landing")
+    if result == 'login':
+        st.session_state.show_login = True
+        st.rerun()
 
-    # ── Nav ──────────────────────────────────────────────────────────────────
-    nav_l, nav_r = st.columns([1, 1])
-    with nav_l:
-        st.markdown("""
-        <div style="padding:22px 32px 10px;display:flex;align-items:center;gap:11px;">
-          <div style="width:34px;height:34px;border-radius:9px;
-                      background:linear-gradient(150deg,#7ad79f,#4fae7a);
-                      display:grid;place-items:center;
-                      font-family:'Bricolage Grotesque',system-ui,sans-serif;
-                      font-weight:800;font-size:16px;color:#06140f;
-                      box-shadow:0 4px 12px rgba(122,215,159,0.28);flex-shrink:0;">R</div>
-          <div>
-            <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;
-                        font-weight:700;font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;">ResumeSync</div>
-            <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;
-                        text-transform:uppercase;color:#6e8a7b;">by VisualizePro</div>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-    with nav_r:
-        st.markdown('<div style="padding:22px 32px 10px;display:flex;justify-content:flex-end;">', unsafe_allow_html=True)
-        if st.button("Try for free →", key="nav_cta", type="primary"):
-            st.session_state.show_login = True
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # ── Hero ─────────────────────────────────────────────────────────────────
-    st.markdown('<div style="padding:40px 40px 0;">', unsafe_allow_html=True)
-    hero_l, hero_r = st.columns([1, 1.05], gap="large")
-
-    with hero_l:
-        st.markdown("""
-        <div style="padding:0.5rem 0 2rem;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
-            <span style="display:inline-block;width:24px;height:1px;background:#7ad79f;opacity:0.6;flex-shrink:0;"></span>
-            <span style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.18em;
-                         color:#7ad79f;text-transform:lowercase;">— know before you apply —</span>
-          </div>
-          <h1 style="font-family:'Bricolage Grotesque',serif;font-weight:700;
-                     font-size:clamp(32px,3.5vw,56px);line-height:1.05;
-                     letter-spacing:-0.025em;margin:0 0 20px;color:#ecf4ee;">
-            Stop applying blindly,<br/>
-            <em style="font-style:italic;color:#7ad79f;font-weight:500;">Know Your Match</em><br/>
-            Before You Apply.
-          </h1>
-          <p style="font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.65;
-                    color:#9fb6a8;margin:0 0 32px;max-width:440px;">
-            Upload your resume, paste any job posting — know your exact match score,
-            which skills are missing, which keywords get you past ATS, and walk away
-            with a tailored cover letter ready to send.
-          </p>
-        </div>
-        """, unsafe_allow_html=True)
-        cta_l, cta_r = st.columns([1, 1], gap="small")
-        with cta_l:
-            if st.button("Start free →", key="hero_cta", type="primary", use_container_width=True):
-                st.session_state.page = 'app'
-                st.rerun()
-        with cta_r:
-            st.markdown("""
-            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;
-                        font-family:'DM Sans',sans-serif;font-size:13.5px;color:#9fb6a8;">
-              <span style="width:6px;height:6px;border-radius:50%;background:#7ad79f;
-                           display:inline-block;flex-shrink:0;"></span>
-              No account needed
-            </div>
-            """, unsafe_allow_html=True)
-
-    with hero_r:
-        tile_l, tile_r = st.columns([1.4, 1], gap="small")
-        with tile_l:
-            st.markdown(f"""
-            <div style="{TILE} height:360px;">
-              <div style="{BADGE}">Now hiring · You</div>
-              <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=900&q=80&auto=format&fit=crop"
-                   style="width:100%;height:100%;object-fit:cover;display:block;" alt="Professional" loading="lazy"/>
-              <div style="position:absolute;left:0;right:0;bottom:0;padding:20px 18px 16px;
-                          background:linear-gradient(180deg,transparent,rgba(8,32,25,0.88) 65%);z-index:2;">
-                <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:19px;
-                             font-weight:700;color:#ecf4ee;letter-spacing:-0.02em;">Madeli, BI Specialist</div>
-                <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;
-                             text-transform:uppercase;color:#7ad79f;margin-top:5px;">Currently matching to 12 open roles</div>
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-        with tile_r:
-            st.markdown(f"""
-            <div style="{TILE} height:172px;margin-bottom:10px;
-                         background:radial-gradient(circle at center,#143d33 0%,#0a1b16 100%);
-                         display:flex;align-items:center;justify-content:center;">
-              <div style="{BADGE}">Match Score</div>
-              <div style="position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center;">
-                <svg width="120" height="120" viewBox="0 0 120 120" style="position:absolute;top:0;left:0;transform:rotate(-90deg);">
-                  <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="11"/>
-                  <circle cx="60" cy="60" r="46" fill="none" stroke="#7ad79f" stroke-width="11"
-                          stroke-dasharray="289" stroke-dashoffset="23" stroke-linecap="round"/>
-                </svg>
-                <div style="text-align:center;position:relative;z-index:1;">
-                  <span style="font-family:'Bricolage Grotesque',serif;font-size:32px;font-weight:700;color:#7ad79f;line-height:1;">92</span>
-                  <span style="font-family:'Bricolage Grotesque',serif;font-size:15px;color:#7ad79f;">%</span>
-                </div>
-              </div>
-              <div style="position:absolute;bottom:14px;left:0;right:0;text-align:center;
-                          font-family:'Space Mono',monospace;font-size:10px;
-                          letter-spacing:0.2em;text-transform:uppercase;color:#9fb6a8;">Strong Fit</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            def skill_bar(name, pct, gap=False):
-                bar_color = "linear-gradient(90deg,#b5742f,#e0a14a)" if gap else "linear-gradient(90deg,#4fae7a,#7ad79f)"
-                val_color = "#e0a14a" if gap else "#7ad79f"
-                return (
-                    f'<div style="display:flex;align-items:center;gap:8px;font-size:10px;color:#ecf4ee;">'
-                    f'<span style="width:60px;font-weight:500;font-family:DM Sans,sans-serif;flex-shrink:0;">{name}</span>'
-                    f'<div style="flex:1;height:4px;background:rgba(255,255,255,0.07);border-radius:999px;">'
-                    f'<div style="width:{pct}%;height:100%;background:{bar_color};border-radius:999px;"></div>'
-                    f'</div>'
-                    f'<span style="font-family:Space Mono,monospace;font-size:9px;color:{val_color};min-width:20px;text-align:right;">{pct}</span>'
-                    f'</div>'
-                )
-            bars = skill_bar("Tableau",96) + skill_bar("Power BI",82) + skill_bar("SQL",90) + skill_bar("Snowflake",58,gap=True)
-            st.markdown(f"""
-            <div style="{TILE} height:178px;padding:12px 14px;
-                         background:linear-gradient(160deg,#15392f,#0a1b16);
-                         display:flex;flex-direction:column;justify-content:flex-end;gap:10px;">
-              <div style="{BADGE}">Skill alignment</div>
-              {bars}
-            </div>
-            """, unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ── Features strip ────────────────────────────────────────────────────────
-    st.markdown('<div style="padding:64px 40px 0;">', unsafe_allow_html=True)
-    st.markdown("""
-    <div style="text-align:center;margin-bottom:40px;">
-      <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:14px;">
-        <span style="display:inline-block;width:22px;height:1px;background:#7ad79f;opacity:0.5;"></span>
-        <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.2em;
-                     text-transform:uppercase;color:#7ad79f;">What you get</span>
-        <span style="display:inline-block;width:22px;height:1px;background:#7ad79f;opacity:0.5;"></span>
-      </div>
-      <h2 style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:clamp(26px,3vw,40px);
-                 letter-spacing:-0.02em;color:#ecf4ee;margin:0;">Everything you need to land the role</h2>
-    </div>
-    """, unsafe_allow_html=True)
-    features = [
-        ("01", "Match % score", "See exactly how well your resume fits the role before you waste a click applying.", "Score 0–100"),
-        ("02", "Skill & keyword gaps", "The exact missing skills and ATS keywords that are costing you interviews.", "Pinpoint gaps"),
-        ("03", "Resume rewriter", "AI rewrites your resume for the specific role. Stronger words, same true facts.", "Auto-tailored"),
-        ("04", "Cover letter gen", "A personalised cover letter in seconds, based on your match analysis.", "Job-specific"),
-        ("05", "ATS optimisation", "The must-add and nice-to-add keywords to get past automated screeners.", "Beat the bots"),
-        ("06", "Application tracker", "Track every role, every document, every status — all in one place.", "Stay organised"),
-    ]
-    f_cols = st.columns(3, gap="medium")
-    for i, (num, title, desc, tag) in enumerate(features):
-        with f_cols[i % 3]:
-            st.markdown(f"""
-            <div style="background:#0c2019;border:1px solid rgba(159,182,168,0.12);border-radius:16px;
-                        padding:22px;margin-bottom:16px;min-height:160px;">
-              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.18em;
-                           color:#7ad79f;margin-bottom:12px;">{num}</div>
-              <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;
-                           font-size:16px;color:#ecf4ee;margin-bottom:8px;">{title}</div>
-              <div style="font-size:13px;color:#9fb6a8;line-height:1.5;margin-bottom:12px;">{desc}</div>
-              <div style="display:inline-block;font-family:'Space Mono',monospace;font-size:10px;
-                           padding:3px 9px;border-radius:99px;background:rgba(122,215,159,0.10);
-                           border:1px solid rgba(122,215,159,0.22);color:#7ad79f;">{tag}</div>
-            </div>
-            """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ── Pricing ───────────────────────────────────────────────────────────────
-    st.markdown('<div style="padding:64px 40px 0;">', unsafe_allow_html=True)
-    st.markdown("""
-    <div style="text-align:center;margin-bottom:40px;">
-      <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:14px;">
-        <span style="display:inline-block;width:22px;height:1px;background:#7ad79f;opacity:0.5;"></span>
-        <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.2em;
-                     text-transform:uppercase;color:#7ad79f;">Pricing</span>
-        <span style="display:inline-block;width:22px;height:1px;background:#7ad79f;opacity:0.5;"></span>
-      </div>
-      <h2 style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:clamp(26px,3vw,40px);
-                 letter-spacing:-0.02em;color:#ecf4ee;margin:0;">Simple, honest pricing</h2>
-    </div>
-    """, unsafe_allow_html=True)
-    p_cols = st.columns(3, gap="medium")
-    plans = [
-        ("Free", "A$0", "forever", False, ["5 analyses per month", "Match score + gaps", "ATS keyword list", "—", "—"]),
-        ("Job Seeker", "A$15", "/month", True, ["Unlimited analyses", "Match score + gaps", "ATS keyword list", "Resume rewriter", "Cover letter generator"]),
-        ("One Application", "A$9", "one-time", False, ["1 full analysis", "Match score + gaps", "ATS keyword list", "Resume rewriter", "Cover letter generator"]),
-    ]
-    for i, (name, price, per, featured, feats) in enumerate(plans):
-        with p_cols[i]:
-            border = "rgba(122,215,159,0.35)" if featured else "rgba(159,182,168,0.12)"
-            bg = "#0f271e" if featured else "#0c2019"
-            badge = '<div style="display:inline-block;font-family:\'Space Mono\',monospace;font-size:9px;padding:3px 8px;border-radius:99px;background:#7ad79f;color:#06140f;font-weight:700;margin-bottom:12px;">Most popular</div>' if featured else ""
-            feat_rows = []
-            for f in feats:
-                is_avail = f != "—"
-                dot_col = "#7ad79f" if is_avail else "#6e8a7b"
-                txt_col = "#ecf4ee" if is_avail else "#6e8a7b"
-                icon = "✓" if is_avail else "—"
-                feat_rows.append(
-                    '<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">'
-                    '<span style="color:' + dot_col + ';flex-shrink:0;">' + icon + '</span>'
-                    '<span style="font-size:13px;color:' + txt_col + ';font-family:DM Sans,sans-serif;">' + f + '</span>'
-                    '</div>'
-                )
-            feat_html = "".join(feat_rows)
-            st.markdown(f"""
-            <div style="background:{bg};border:1px solid {border};border-radius:18px;padding:26px;min-height:320px;">
-              {badge}
-              <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;
-                           font-size:18px;color:#ecf4ee;margin-bottom:8px;">{name}</div>
-              <div style="margin-bottom:20px;">
-                <span style="font-family:'Bricolage Grotesque',serif;font-weight:800;font-size:36px;color:#ecf4ee;">{price}</span>
-                <span style="font-size:13px;color:#9fb6a8;margin-left:4px;font-family:DM Sans,sans-serif;">{per}</span>
-              </div>
-              {feat_html}
-            </div>
-            """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ── Bottom CTA ────────────────────────────────────────────────────────────
-    st.markdown('<div style="padding:64px 40px 40px;text-align:center;">', unsafe_allow_html=True)
-    st.markdown("""
-    <h2 style="font-family:'Bricolage Grotesque',serif;font-weight:700;font-size:clamp(26px,3vw,42px);
-               letter-spacing:-0.025em;color:#ecf4ee;margin:0 0 16px;">
-      Ready to know your match?
-    </h2>
-    <p style="font-family:'DM Sans',sans-serif;font-size:15px;color:#9fb6a8;margin:0 0 32px;">
-      Free to start. No account needed.
-    </p>
-    """, unsafe_allow_html=True)
-    _, cta_mid, _ = st.columns([1, 1, 1])
-    with cta_mid:
-        if st.button("Start for free →", key="bottom_cta", type="primary", use_container_width=True):
-            st.session_state.show_login = True
-            st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ── Footer ────────────────────────────────────────────────────────────────
-    st.markdown("""
-    <div style="border-top:1px solid rgba(159,182,168,0.07);padding:24px 40px;
-                display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-      <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#6e8a7b;">
-        © 2026 ResumeSync by VisualizePro
-      </span>
-      <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#6e8a7b;">
-        Powered by Claude AI
-      </span>
-    </div>
-    """, unsafe_allow_html=True)
 
 
 # ============= LOGIN PAGE =============
@@ -1764,6 +1515,12 @@ def show_tracker():
 # ============= STREAMLIT UI =============
 
 def main():
+    # ── Handle ?login=1 and ?start=1 query params (from nav links / external links) ──
+    if st.query_params.get('login'):
+        st.query_params.clear()
+        st.session_state.show_login = True
+        st.rerun()
+
     # ── Auth gate ─────────────────────────────────────────────────────────────
     if 'auth_user_id' not in st.session_state:
         if st.session_state.get('show_login'):
