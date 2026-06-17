@@ -399,7 +399,33 @@ def sign_in(email: str, password: str) -> tuple:
 
 
 def sign_up(email: str, password: str) -> tuple:
-    """Create a new account. Returns (user_dict | None, error_str)."""
+    """Create a pre-confirmed account using the service role key, then sign in."""
+    if not _SUPABASE_AVAILABLE:
+        return None, "Supabase not configured."
+    url  = _read_secret("SUPABASE_URL")
+    skey = _read_secret("SUPABASE_SERVICE_ROLE_KEY")
+    if not url or not skey:
+        # Fall back to regular signup if no service role key
+        return _sign_up_basic(email, password)
+    try:
+        admin_sb = _supabase_create_client(url, skey)
+        # Create user as already confirmed — no email needed
+        admin_sb.auth.admin.create_user({
+            "email": email,
+            "password": password,
+            "email_confirm": True,
+        })
+    except Exception as e:
+        msg = str(e)
+        if "already been registered" in msg.lower() or "already registered" in msg.lower() or "already exists" in msg.lower():
+            return None, "An account with that email already exists. Please sign in."
+        return None, msg
+    # Now sign in with the new credentials
+    return sign_in(email, password)
+
+
+def _sign_up_basic(email: str, password: str) -> tuple:
+    """Fallback signup without service role key (requires email confirmation off in Supabase)."""
     sb = _fresh_supabase()
     if not sb:
         return None, "Supabase not configured."
@@ -408,8 +434,7 @@ def sign_up(email: str, password: str) -> tuple:
         user = _auth_user_dict(resp)
         if user:
             return user, ""
-        # Email confirmation still enabled in Supabase
-        return None, "Check your inbox to confirm your email, then sign in."
+        return None, "Account created — please check your inbox to confirm your email, then sign in."
     except Exception as e:
         msg = str(e)
         if "already registered" in msg.lower() or "already been registered" in msg.lower():
