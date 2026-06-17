@@ -1099,24 +1099,41 @@ def get_vp_logo_b64():
 # ============= LANDING PAGE =============
 
 def show_landing():
-    """Marketing landing page — full backup HTML design via st.markdown with blank-line fix."""
+    """Marketing landing page — full-page iframe with sidebar trigger for navigation."""
 
-    # Fonts + hide all Streamlit chrome
+    # Hide all Streamlit chrome and set dark background to match design
     st.markdown("""
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Lora:ital,wght@1,500;1,600&family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
 <style>
 section[data-testid="stSidebar"]{display:none!important;}
 [data-testid="collapsedControl"]{display:none!important;}
-.block-container{padding:0!important;max-width:100%!important;margin:0!important;}
 header[data-testid="stHeader"]{display:none!important;}
 #MainMenu{display:none!important;}
 footer[data-testid="stFooter"]{display:none!important;}
+.stApp,[data-testid="stApp"]{background:#071512!important;overflow:hidden!important;}
+[data-testid="stAppViewContainer"],.stAppViewContainer{background:#071512!important;height:100vh!important;overflow:hidden!important;}
+section.main,.main{background:#071512!important;padding:0!important;height:100vh!important;overflow:hidden!important;}
+.block-container,[data-testid="stMainBlockContainer"]{background:#071512!important;padding:0!important;max-width:100%!important;margin:0!important;height:100vh!important;overflow:hidden!important;}
+[data-testid="stVerticalBlock"]{height:100vh!important;gap:0!important;overflow:hidden!important;}
+iframe[title="st.iframe"]{height:100vh!important;width:100vw!important;border:none!important;display:block!important;}
 </style>""", unsafe_allow_html=True)
 
-    # Full landing page HTML — blank lines removed before render so CommonMark
-    # does not terminate the type-6 HTML block early (the root cause of the blank page).
-    _html = """<style>
+    # Hidden login trigger in sidebar (hidden by display:none CSS above).
+    # Iframe JS finds this button by text and clicks it to trigger a Python-side rerun.
+    with st.sidebar:
+        if st.button("__rs_login__", key="rs_login_trigger"):
+            st.session_state.show_login = True
+            st.rerun()
+
+    # Full landing page in isolated iframe — no Streamlit container constraints.
+    _landing_doc = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ResumSync — know your match before you apply</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Lora:ital,wght@1,500;1,600&family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
 :root{
 --bg:#071512;--bg-2:#0a1b16;--panel:#0c2019;--panel-2:#0f271e;
 --ink:#ecf4ee;--ink2:#9fb6a8;--ink3:#6e8a7b;
@@ -1245,6 +1262,8 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 @media(max-width:1080px){.hero{grid-template-columns:1fr;gap:64px;padding-bottom:80px;}.hero-visual{max-width:460px;}.float-skills{right:-20px;}.float-score{right:-14px;}.features-grid{grid-template-columns:1fr 1fr;}.steps{grid-template-columns:1fr 1fr;}.pricing-grid{grid-template-columns:1fr;max-width:440px;}.price-card.featured{transform:none;}}
 @media(max-width:640px){.nav{padding:14px 20px;}.nav-links{display:none;}.hero{padding:44px 20px 56px;}.section{padding:64px 20px;}.cta-strip{padding:0 20px 64px;}.cta-inner{padding:38px 24px;}.features-grid,.steps{grid-template-columns:1fr;}.float-score{top:-18px;right:-8px;transform:scale(0.88)}.float-skills{right:-8px;bottom:20px;transform:scale(0.9)}.rs-footer{padding:28px 20px;flex-direction:column;text-align:center;}}
 </style>
+</head>
+<body>
 <nav class="nav">
 <a class="logo" href="#">
 <div class="logo-mark">R</div>
@@ -1258,7 +1277,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <a class="nav-link" href="#how">How it works</a>
 <a class="nav-link" href="#pricing">Pricing</a>
 </div>
-<a class="nav-cta" href="?login=1">Try free &#8594;</a>
+<a class="nav-cta cta-login" id="nav-cta-btn" href="#">Try free &#8594;</a>
 </nav>
 <section class="hero">
 <div class="hero-copy">
@@ -1266,7 +1285,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <h1>Stop applying blindly.<br><span class="italic">Know your match</span><br>before you apply.</h1>
 <p class="hero-lede">Upload your resume, paste any job posting &#8212; and in seconds know your exact <strong>match score</strong>, which skills are missing, which keywords get you <strong>past ATS</strong>, and walk away with a tailored cover letter and resume ready to send.</p>
 <div class="hero-btns">
-<a class="btn-primary" href="?login=1">Start free &#8212; no card needed</a>
+<a class="btn-primary cta-login" href="#">Start free &#8212; no card needed</a>
 <a class="btn-ghost" href="#how">See how it works &#8594;</a>
 </div>
 <div class="hero-social">
@@ -1349,7 +1368,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <div class="price-desc">Try it on your first three applications. No credit card.</div>
 <div class="price-num"><span class="price-cur">A$</span>0</div>
 <div class="price-period">forever free</div>
-<a class="price-cta cta-out" href="?login=1">Get started &#8594;</a>
+<a class="price-cta cta-out cta-login" href="#">Get started &#8594;</a>
 <ul class="price-features">
 <li class="pf"><span class="ck y">&#10003;</span><span>3 applications included</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
@@ -1365,7 +1384,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <div class="price-desc">Everything you need for an active job search.</div>
 <div class="price-num"><span class="price-cur">A$</span>9.90</div>
 <div class="price-period">per month &middot; cancel any time</div>
-<a class="price-cta cta-fill" href="?login=1">Start free trial &#8594;</a>
+<a class="price-cta cta-fill cta-login" href="#">Start free trial &#8594;</a>
 <ul class="price-features">
 <li class="pf"><span class="ck y">&#10003;</span><span>10 applications per month</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
@@ -1380,7 +1399,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <div class="price-desc">No limits. Apply to as many roles as you like.</div>
 <div class="price-num"><span class="price-cur">A$</span>14.90</div>
 <div class="price-period">per month &middot; cancel any time</div>
-<a class="price-cta cta-out" href="?login=1">Get started &#8594;</a>
+<a class="price-cta cta-out cta-login" href="#">Get started &#8594;</a>
 <ul class="price-features">
 <li class="pf"><span class="ck y">&#10003;</span><span>Unlimited applications</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
@@ -1399,19 +1418,43 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <h2 style="margin-top:14px;">Know your match.<br><span class="italic">Then apply with confidence.</span></h2>
 <p>Your first three applications are free. Upload a resume, paste a job, and see your score &#8212; no card, no commitment.</p>
 <div class="hero-btns">
-<a class="btn-primary" href="?login=1">Start free &#8212; no card needed</a>
+<a class="btn-primary cta-login" href="#">Start free &#8212; no card needed</a>
 <a class="btn-ghost" href="#features">Explore features &#8594;</a>
 </div>
 </div>
 </div>
 <div class="rs-footer">
 <div class="footer-logo"><div class="footer-mark">R</div>ResumSync</div>
-<div class="footer-note">Built by <a href="https://visualizepro.com.au">VisualizePro</a> &middot; Sydney, Australia &middot; Powered by Claude AI</div>
-</div>"""
+<div class="footer-note">Built by <a href="https://visualizepro.com.au" target="_blank">VisualizePro</a> &middot; Sydney, Australia &middot; Powered by Claude AI</div>
+</div>
+<script>
+(function() {
+  function triggerLogin() {
+    try {
+      var pDoc = window.parent.document;
+      var btns = pDoc.querySelectorAll('button');
+      for (var i = 0; i < btns.length; i++) {
+        if (btns[i].textContent.trim() === '__rs_login__') {
+          btns[i].click();
+          return;
+        }
+      }
+    } catch(e) {}
+    var base = window.parent.location.href.split('?')[0];
+    window.open(base + '?login=1', '_blank');
+  }
+  document.querySelectorAll('.cta-login').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      e.preventDefault();
+      triggerLogin();
+    });
+  });
+})();
+</script>
+</body>
+</html>"""
 
-    # Strip every whitespace-only line — prevents CommonMark from terminating
-    # the type-6 HTML block early (the real cause of the blank page bug).
-    st.markdown('\n'.join(l for l in _html.split('\n') if l.strip()), unsafe_allow_html=True)
+    _components.html(_landing_doc, height=850, scrolling=True)
 
 
 
