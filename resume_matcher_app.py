@@ -883,6 +883,7 @@ Your task is to improve how existing experience is communicated — NOT to add e
 - NEVER invent metrics, numbers, or achievements — only use figures already stated in the resume
 - NEVER add experience with software, frameworks, or industries not mentioned in the resume
 - You MAY: use stronger action verbs, improve sentence structure, make achievements clearer, reframe existing content more powerfully, fix vague language
+- PRIORITISE these action verbs wherever they naturally fit existing content: Built, Designed, Developed, Automated, Optimised, Implemented, Led, Delivered, Reduced, Increased, Migrated, Integrated — replace weak or passive verbs with these where accurate
 - If additional guidance is provided, follow it only where it aligns with existing resume content
 - If a recommendation requires adding something the candidate clearly doesn't have, SKIP that change entirely
 
