@@ -2474,6 +2474,11 @@ def main():
                     return
                 status.update(label="Analysis complete!", state="complete")
 
+        # Clear previous comparison results before storing new ones
+        for _k in ['cover_letter', 'proposed_updates', 'updated_resume_bytes',
+                   'updated_resume_name', 'updated_match_pct', 'tracker_saved']:
+            st.session_state.pop(_k, None)
+
         st.session_state['analysis_result'] = result
         st.session_state['resume_text'] = resume_text
         st.session_state['job_content'] = job_content
