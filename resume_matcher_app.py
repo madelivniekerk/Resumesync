@@ -1329,7 +1329,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <a class="logo" href="#">
 <div class="logo-mark">R</div>
 <div class="logo-txt">
-<div class="logo-name">Resum<span>Sync</span></div>
+<div class="logo-name">Resume<span>Sync</span></div>
 <div class="logo-by">by VisualizePro</div>
 </div>
 </a>
