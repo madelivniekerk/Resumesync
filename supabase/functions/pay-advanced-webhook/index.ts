@@ -56,6 +56,13 @@ Deno.serve(async (req: Request) => {
     return new Response("Invalid JSON", { status: 400 });
   }
 
+  // Validate schema — each event must have Code and Event fields
+  for (const event of events) {
+    if (typeof event !== "object" || event === null || !event.Code || !event.Event) {
+      return new Response("Invalid schema", { status: 400 });
+    }
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
