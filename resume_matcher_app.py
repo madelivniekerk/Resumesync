@@ -2113,6 +2113,9 @@ def main():
     if st.query_params.get('payment_return'):
         st.query_params.clear()
         st.session_state.show_payment_pending = True
+        # If session was lost during redirect, send to login first (not landing)
+        if 'auth_user_id' not in st.session_state:
+            st.session_state.show_login = True
         st.rerun()
 
     # ── Auth gate ─────────────────────────────────────────────────────────────
