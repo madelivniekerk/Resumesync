@@ -637,6 +637,9 @@ List the exact keywords and phrases to add to pass ATS screening for this role. 
 - **Nice-to-add keywords:** (boost ranking)
 
 ⚠️ KEYWORD EXACTNESS WARNING: Flag any case where the resume uses a vague or paraphrased term instead of the job ad's exact wording. ATS systems match literal strings — "SQL" ≠ "database querying", "Python" ≠ "scripting", "AWS" ≠ "cloud platforms", "Tableau" ≠ "visualisation tools". List each mismatch explicitly so the candidate knows to use the job ad's exact terminology.
+- Flag missing semantic phrases where relevant: "end-to-end ownership", "data-driven decision making", "cross-functional collaboration", "stakeholder management", "scalable solutions", "production-ready systems", "business insights"
+- Warn if resume shows signs of keyword stuffing or random keyword lists — modern ATS detects and penalises this
+- Score bullets against the magic formula: Action Verb + Exact Skill + Quantified Impact + Business Outcome. Flag weak bullets that are missing impact or outcome.
 
 ## COVER LETTER TALKING POINTS
 Top 3 specific talking points tailored to this role and company.
@@ -889,6 +892,9 @@ Your task is to improve how existing experience is communicated — NOT to add e
 - If the user has provided metrics in the guidance (%, time saved, revenue, cost reduction, efficiency, scale), work them into the relevant bullet points
 - Where a bullet point is missing a quantified result and one could logically exist, note this in the description field (e.g. "Consider adding a metric here — what % improvement or time saving resulted?") so the user knows where to strengthen further
 - CRITICAL — technical keyword matching: if the job ad uses specific tool/technology names (e.g. "SQL", "Python", "Tableau", "AWS"), the resume must use those EXACT words — not synonyms or paraphrases. "SQL" not "database querying". "Python" not "scripting". "AWS" not "cloud platforms". "Tableau" not "visualisation tools". Where the candidate clearly has the skill but has used a vague term, replace it with the exact keyword from the job ad
+- SEMANTIC PHRASES — where naturally supported by existing experience, weave in AI-scoring phrases: "end-to-end ownership", "data-driven decision making", "cross-functional collaboration", "stakeholder management", "scalable solutions", "production-ready systems", "business insights" — only where they accurately describe what the candidate did
+- AVOID keyword stuffing, repeating the same keyword multiple times, or adding keyword lists — modern ATS systems detect and downgrade this
+- THE MAGIC FORMULA for a strong bullet: Action Verb + Exact Skill/Tool + Quantified Impact + Business Outcome. Example: "Built automated Tableau dashboards using SQL and Python, reducing manual reporting time by 40% and improving stakeholder decision-making speed." Apply this structure to existing bullets wherever possible
 - If additional guidance is provided, follow it only where it aligns with existing resume content
 - If a recommendation requires adding something the candidate clearly doesn't have, SKIP that change entirely
 
