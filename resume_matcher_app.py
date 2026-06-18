@@ -1523,9 +1523,9 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
         }
       }
     } catch(e2) {}
-    // Method 3: open in new tab as last resort
+    // Method 3: navigate same tab as last resort
     try {
-      window.open(window.parent.location.href.split('?')[0] + '?login=1' + planParam, '_blank');
+      window.location.href = '?login=1' + planParam;
     } catch(e3) {}
   }
 
@@ -1748,12 +1748,16 @@ footer{visibility:hidden!important;}
   </p>
 </div>""", unsafe_allow_html=True)
 
-        st.link_button(
-            f"Pay {info['price']} — activate {info['name']} →",
-            pay_url,
-            type="primary",
-            use_container_width=True,
-        )
+        st.markdown(f"""
+<a href="{pay_url}" target="_self" style="
+  display:block;width:100%;padding:0.65rem 1rem;
+  background:linear-gradient(135deg,#7ad79f,#4fae7a);
+  color:#06140f;font-family:'DM Sans',sans-serif;font-weight:700;
+  font-size:15px;text-align:center;border-radius:9px;
+  text-decoration:none;box-sizing:border-box;
+  box-shadow:0 4px 14px rgba(122,215,159,0.30);">
+  Pay {info['price']} — activate {info['name']} →
+</a>""", unsafe_allow_html=True)
         st.markdown("<div style='height:0.75rem;'></div>", unsafe_allow_html=True)
         if st.button("Skip — use free tier for now", key="skip_payment_btn", use_container_width=True):
             st.rerun()
