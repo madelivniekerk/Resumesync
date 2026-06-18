@@ -884,6 +884,8 @@ Your task is to improve how existing experience is communicated — NOT to add e
 - NEVER add experience with software, frameworks, or industries not mentioned in the resume
 - You MAY: use stronger action verbs, improve sentence structure, make achievements clearer, reframe existing content more powerfully, fix vague language
 - PRIORITISE these action verbs wherever they naturally fit existing content: Built, Designed, Developed, Automated, Optimised, Implemented, Led, Delivered, Reduced, Increased, Migrated, Integrated — replace weak or passive verbs with these where accurate
+- If the user has provided metrics in the guidance (%, time saved, revenue, cost reduction, efficiency, scale), work them into the relevant bullet points
+- Where a bullet point is missing a quantified result and one could logically exist, note this in the description field (e.g. "Consider adding a metric here — what % improvement or time saving resulted?") so the user knows where to strengthen further
 - If additional guidance is provided, follow it only where it aligns with existing resume content
 - If a recommendation requires adding something the candidate clearly doesn't have, SKIP that change entirely
 
@@ -2505,10 +2507,26 @@ def main():
                 unsafe_allow_html=True
             )
 
+            st.markdown(
+                '<div style="background:rgba(111,177,224,0.08);padding:1rem 1.5rem;border-radius:12px;'
+                'border-left:4px solid #6fb1e0;margin-bottom:1rem;">'
+                '<p style="color:#6fb1e0;font-family:\'Space Mono\',monospace;font-size:9px;'
+                'letter-spacing:0.14em;text-transform:uppercase;margin:0 0 0.5rem;">Tip — quantified impact</p>'
+                '<p style="color:#9fb6a8;font-size:0.88rem;margin:0 0 0.5rem;font-family:\'DM Sans\',sans-serif;line-height:1.6;">'
+                'AI systems heavily favour measurable results. If you know any of these, add them to the guidance box below and the AI will work them in:</p>'
+                '<p style="color:#ecf4ee;font-size:0.85rem;margin:0;font-family:\'DM Sans\',sans-serif;line-height:1.8;">'
+                '📊 <b>%</b> &nbsp;·&nbsp; ⏱ <b>time saved</b> &nbsp;·&nbsp; 💰 <b>revenue / cost reduction</b> &nbsp;·&nbsp; ⚡ <b>efficiency gain</b> &nbsp;·&nbsp; 📈 <b>scale</b> (users, datasets, systems)<br>'
+                '<span style="color:#6e8a7b;font-size:0.82rem;">'
+                'e.g. "reduced processing time by 35%" &nbsp;·&nbsp; "increased accuracy by 20%" &nbsp;·&nbsp; "supported 5M+ records daily"'
+                '</span></p>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
             upd_guidance = st.text_area(
                 "Additional guidance *(optional)*",
-                placeholder="e.g. Emphasise my leadership of the 2023 project. Lead with my Python skills. Make it more senior in tone.",
-                height=80,
+                placeholder="Add any metrics you know, e.g. 'reduced costs by 30%', 'managed a team of 8', 'processed 2M records daily'. Also: emphasise leadership, lead with Python skills, make it more senior in tone.",
+                height=90,
                 key="upd_guidance"
             )
 
