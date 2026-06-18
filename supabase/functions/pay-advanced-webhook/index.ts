@@ -18,19 +18,11 @@ async function verifySignature(body: string, receivedSig: string, secret: string
     ["sign"],
   );
   const sigBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-  const hexSig = Array.from(new Uint8Array(sigBuffer))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
 
-  // Pay Advanced may send as hex or with a prefix — try both
-  const clean = receivedSig.replace(/^sha256=/, "");
-  if (hexSig.length !== clean.length) return false;
+  // Pay Advanced uses Base64-encoded HMAC-SHA256 (not hex)
+  const base64Sig = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)));
 
-  let diff = 0;
-  for (let i = 0; i < hexSig.length; i++) {
-    diff |= hexSig.charCodeAt(i) ^ clean.charCodeAt(i);
-  }
-  return diff === 0;
+  return base64Sig === receivedSig;
 }
 
 Deno.serve(async (req: Request) => {
