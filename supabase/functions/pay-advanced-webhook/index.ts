@@ -77,8 +77,8 @@ Deno.serve(async (req: Request) => {
     const data = event.Data as Record<string, unknown>;
     if (!data) continue;
 
-    // ExternalReference is set by us when building the checkout URL as "email|plan"
-    const externalRef = String(data.ExternalReference || "");
+    // paymentref URL param is stored as ExternalID in the webhook (max 50 chars, format: email|plan)
+    const externalRef = String(data.ExternalID || data.ExternalReference || "");
     const amount = Number(data.Amount || 0);
 
     let email = "";

@@ -1695,11 +1695,15 @@ def show_payment_redirect(plan: str):
         return
 
     auth_email = st.session_state.get("auth_email", "")
-    # Pass email|plan in ExternalReference so the webhook can identify the user and tier
+    _amounts      = {"starter": "9.90", "unlimited": "14.90"}
+    _descriptions = {"starter": "ResumeSync Starter Plan", "unlimited": "ResumeSync Unlimited Plan"}
+    # paymentref (max 50 chars) is stored as ExternalID in the webhook payload
+    _ref = f"{auth_email}|{plan}"[:50]
     pay_params = urllib.parse.urlencode({
-        "email":      auth_email,
-        "reference":  f"{auth_email}|{plan}",
-        "return_url": APP_URL + "?payment_return=1",
+        "paymentamount":      _amounts.get(plan, "9.90"),
+        "paymentdescription": _descriptions.get(plan, "ResumeSync"),
+        "paymentref":         _ref,
+        "email":              auth_email,
     })
     pay_url = PAY_ADVANCED_URL + "?" + pay_params
 
