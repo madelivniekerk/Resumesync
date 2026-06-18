@@ -636,6 +636,8 @@ List the exact keywords and phrases to add to pass ATS screening for this role. 
 - **Must-add keywords:** (critical — likely filtered by ATS)
 - **Nice-to-add keywords:** (boost ranking)
 
+⚠️ KEYWORD EXACTNESS WARNING: Flag any case where the resume uses a vague or paraphrased term instead of the job ad's exact wording. ATS systems match literal strings — "SQL" ≠ "database querying", "Python" ≠ "scripting", "AWS" ≠ "cloud platforms", "Tableau" ≠ "visualisation tools". List each mismatch explicitly so the candidate knows to use the job ad's exact terminology.
+
 ## COVER LETTER TALKING POINTS
 Top 3 specific talking points tailored to this role and company.
 
@@ -886,6 +888,7 @@ Your task is to improve how existing experience is communicated — NOT to add e
 - PRIORITISE these action verbs wherever they naturally fit existing content: Built, Designed, Developed, Automated, Optimised, Implemented, Led, Delivered, Reduced, Increased, Migrated, Integrated — replace weak or passive verbs with these where accurate
 - If the user has provided metrics in the guidance (%, time saved, revenue, cost reduction, efficiency, scale), work them into the relevant bullet points
 - Where a bullet point is missing a quantified result and one could logically exist, note this in the description field (e.g. "Consider adding a metric here — what % improvement or time saving resulted?") so the user knows where to strengthen further
+- CRITICAL — technical keyword matching: if the job ad uses specific tool/technology names (e.g. "SQL", "Python", "Tableau", "AWS"), the resume must use those EXACT words — not synonyms or paraphrases. "SQL" not "database querying". "Python" not "scripting". "AWS" not "cloud platforms". "Tableau" not "visualisation tools". Where the candidate clearly has the skill but has used a vague term, replace it with the exact keyword from the job ad
 - If additional guidance is provided, follow it only where it aligns with existing resume content
 - If a recommendation requires adding something the candidate clearly doesn't have, SKIP that change entirely
 
