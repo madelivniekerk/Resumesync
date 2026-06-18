@@ -92,7 +92,8 @@ Deno.serve(async (req: Request) => {
 
     // Fall back to amount-based tier detection
     if (!tier) {
-      if (amount >= 9 && amount < 12)   tier = "starter";
+      if (amount >= 1 && amount < 5)    tier = "starter";   // $1 test price
+      if (amount >= 9 && amount < 12)   tier = "starter";   // $9.90 live price
       if (amount >= 14 && amount < 17)  tier = "unlimited";
     }
 

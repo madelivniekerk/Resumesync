@@ -1695,7 +1695,7 @@ def show_payment_redirect(plan: str):
         return
 
     auth_email = st.session_state.get("auth_email", "")
-    _amounts      = {"starter": "9.90", "unlimited": "14.90"}
+    _amounts      = {"starter": "1.00", "unlimited": "14.90"}
     _descriptions = {"starter": "ResumeSync Starter Plan", "unlimited": "ResumeSync Unlimited Plan"}
     # paymentref (max 50 chars) is stored as ExternalID in the webhook payload
     _ref = f"{auth_email}|{plan}"[:50]
