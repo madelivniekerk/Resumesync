@@ -109,6 +109,20 @@ st.markdown("""
         color: var(--ink) !important;
         font-weight: 700 !important;
     }
+    /* ── Analysis result headings (LLM markdown ## / ###) — keep compact ── */
+    .stMarkdown h2 {
+        font-size: 1.05rem !important;
+        font-weight: 700 !important;
+        margin: 1.4rem 0 0.35rem !important;
+        padding-bottom: 0.3rem !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        letter-spacing: 0 !important;
+    }
+    .stMarkdown h3 {
+        font-size: 0.92rem !important;
+        font-weight: 600 !important;
+        margin: 0.9rem 0 0.25rem !important;
+    }
     .stMarkdown { font-family: 'DM Sans', sans-serif !important; color: var(--ink) !important; }
     p, li, label { color: var(--ink) !important; }
 
