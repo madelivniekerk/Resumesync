@@ -1191,7 +1191,7 @@ iframe[title="st.iframe"]{height:100vh!important;width:100vw!important;border:no
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ResumSync — know your match before you apply</title>
+<title>ResumeSync — know your match before you apply</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Lora:ital,wght@1,500;1,600&family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
 <style>
@@ -1338,7 +1338,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <a class="nav-link" href="#how">How it works</a>
 <a class="nav-link" href="#pricing">Pricing</a>
 </div>
-<a class="nav-cta cta-login" id="nav-cta-btn" href="#">Try free &#8594;</a>
+<a class="nav-cta cta-login" id="nav-cta-btn" href="#">Log in &#8594;</a>
 </nav>
 <section class="hero">
 <div class="hero-copy">
@@ -1485,7 +1485,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 </div>
 </div>
 <div class="rs-footer">
-<div class="footer-logo"><div class="footer-mark">R</div>ResumSync</div>
+<div class="footer-logo"><div class="footer-mark">R</div>ResumeSync</div>
 <div class="footer-note">Built by <a href="https://visualizepro.com.au" target="_blank">VisualizePro</a> &middot; Sydney, Australia &middot; Powered by Claude AI</div>
 </div>
 <script>
