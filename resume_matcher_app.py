@@ -2613,16 +2613,20 @@ def main():
                             )
                         with col_a:
                             st.markdown(
-                                f'<div style="background:rgba(122,215,159,0.08);border-left:3px solid #7ad79f;'
-                                f'padding:0.6rem 0.8rem;border-radius:10px;font-size:0.82rem;'
-                                f'font-family:\'DM Sans\',sans-serif;color:#ecf4ee;">'
-                                f'<strong style="color:#7ad79f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                                f'letter-spacing:0.1em;text-transform:uppercase;">After</strong><br>{replace}</div>',
+                                f'<p style="color:#7ad79f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                                f'letter-spacing:0.1em;text-transform:uppercase;margin:0 0 0.3rem;">After — edit if needed</p>',
                                 unsafe_allow_html=True
+                            )
+                            edited_replace = st.text_area(
+                                f"After {i+1}",
+                                value=replace,
+                                height=100,
+                                key=f"edit_replace_{i}",
+                                label_visibility="collapsed"
                             )
                         st.markdown("<div style='margin-bottom:0.8rem'></div>", unsafe_allow_html=True)
                         if checked:
-                            selected.append(change)
+                            selected.append({**change, 'replace': edited_replace})
 
                 n_selected = len(selected)
                 col_apply = st.columns([1, 2, 1])[1]
@@ -2758,11 +2762,16 @@ def main():
         if 'cover_letter' in st.session_state:
             st.markdown("---")
             st.markdown(
-                '<div class="cl-box" style="background:white; padding:2rem; border-radius:8px; '
-                'box-shadow:0 2px 8px rgba(0,0,0,0.1); border:1px solid rgb(220,220,220); margin:2rem 0;">'
-                f'<div style="font-size:1rem; line-height:1.8; white-space:pre-wrap;">{st.session_state["cover_letter"]}</div>'
-                '</div>',
+                '<p style="font-family:\'DM Sans\',sans-serif;font-size:0.8rem;color:#9fb6a8;'
+                'margin:0 0 0.3rem;">Edit directly below — your changes are reflected in the download.</p>',
                 unsafe_allow_html=True
+            )
+            cl_edited = st.text_area(
+                "Cover letter",
+                value=st.session_state['cover_letter'],
+                height=420,
+                key="cl_edit_area",
+                label_visibility="collapsed"
             )
 
             # ── Regenerate section ─────────────────────────────────────────
@@ -2785,7 +2794,7 @@ def main():
             with dl_col:
                 st.download_button(
                     label="💾 Download Cover Letter (.docx)",
-                    data=create_cover_letter_docx(st.session_state['cover_letter']),
+                    data=create_cover_letter_docx(cl_edited),
                     file_name=f"CoverLetter_{_fn_person}_{_fn_role}_{_fn_date}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     key="download_cl",
@@ -2798,7 +2807,7 @@ def main():
                         cl_result = generate_cover_letter(
                             resume_text, job_content, job_url, result['analysis'], client,
                             tone=cl_tone, length=cl_length, incorporate_recs=cl_incorporate,
-                            prior_letter=st.session_state['cover_letter'],
+                            prior_letter=cl_edited,
                             change_instructions=cl_changes if cl_changes.strip() else None,
                             user_guidance=cl_guidance
                         )
