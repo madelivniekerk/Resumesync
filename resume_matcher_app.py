@@ -2348,9 +2348,50 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-        if st.button("📋 View Applications", key="sidebar_view_tracker", use_container_width=True):
-            st.session_state.page = 'tracker'
-            st.rerun()
+        _has_analysis = 'analysis_result' in st.session_state
+        if not st.session_state.get('_confirm_leave_tracker'):
+            if st.button("📋 View Applications", key="sidebar_view_tracker", use_container_width=True):
+                if _has_analysis:
+                    st.session_state['_confirm_leave_tracker'] = True
+                    st.rerun()
+                else:
+                    st.session_state.page = 'tracker'
+                    st.rerun()
+        else:
+            st.markdown(
+                '<div style="background:rgba(224,122,95,0.10);border:1px solid rgba(224,122,95,0.3);'
+                'border-radius:8px;padding:0.75rem 0.9rem;margin-bottom:0.5rem;">'
+                '<p style="color:#e07a5f;font-family:\'DM Sans\',sans-serif;font-size:0.82rem;'
+                'font-weight:600;margin:0 0 0.3rem;">⚠️ Leave this analysis?</p>'
+                '<p style="color:#9fb6a8;font-family:\'DM Sans\',sans-serif;font-size:0.78rem;margin:0;">'
+                'Download your report first — it won\'t be here when you come back.</p>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+            _res = st.session_state.get('analysis_result', {})
+            _rc  = st.session_state.get('resume_text', '')
+            _jc  = st.session_state.get('job_content', '')
+            _jurl = st.session_state.get('job_url', '')
+            _rfn  = st.session_state.get('resume_filename', 'resume')
+            if _res:
+                st.download_button(
+                    label="💾 Download Report",
+                    data=create_analysis_docx(_res.get('analysis', ''), _jurl, _rfn, _jc),
+                    file_name=f"ResumeAnalysis_{_rfn.rsplit('.', 1)[0][:20]}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    key="sidebar_dl_before_leave",
+                    use_container_width=True
+                )
+            leave_col, stay_col = st.columns(2)
+            with leave_col:
+                if st.button("Go anyway", key="confirm_leave_tracker", use_container_width=True):
+                    st.session_state.pop('_confirm_leave_tracker', None)
+                    st.session_state.page = 'tracker'
+                    st.rerun()
+            with stay_col:
+                if st.button("Stay", key="cancel_leave_tracker", use_container_width=True):
+                    st.session_state.pop('_confirm_leave_tracker', None)
+                    st.rerun()
 
         st.markdown("""
         <a href='https://madelivniekerk.github.io/Resumesync/' target='_self'
@@ -2566,7 +2607,8 @@ def main():
 
         # Clear previous comparison results before storing new ones
         for _k in ['cover_letter', 'proposed_updates', 'updated_resume_bytes',
-                   'updated_resume_name', 'updated_match_pct', 'tracker_saved']:
+                   'updated_resume_name', 'updated_match_pct', 'tracker_saved',
+                   '_confirm_leave_tracker']:
             st.session_state.pop(_k, None)
 
         st.session_state['analysis_result'] = result
