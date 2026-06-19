@@ -1024,6 +1024,46 @@ def apply_updates_to_docx(file_bytes: bytes, updates: list, original_filename: s
                 for cell in row.cells:
                     yield from cell.paragraphs
 
+    def _replace_in_para(para, find_text, replace_text):
+        # Best case: find_text lives entirely within one run — replace only that run,
+        # leaving every other run's formatting completely untouched.
+        for run in para.runs:
+            if find_text in run.text:
+                run.text = run.text.replace(find_text, replace_text)
+                return True
+
+        # Fallback: text spans multiple runs — concatenate, replace, rebuild.
+        if find_text not in para.text:
+            return False
+
+        new_text = para.text.replace(find_text, replace_text)
+
+        # Pick the last non-empty content run as the formatting reference so we
+        # inherit colour/size from the actual text, not from a structural run[0].
+        ref_run = next(
+            (r for r in reversed(para.runs) if r.text.strip()),
+            para.runs[0] if para.runs else None,
+        )
+
+        if para.runs:
+            tgt = para.runs[0]
+            tgt.text = new_text
+            if ref_run and ref_run is not tgt:
+                try:
+                    if ref_run.font.color.rgb is not None:
+                        tgt.font.color.rgb = ref_run.font.color.rgb
+                except Exception:
+                    pass
+                if ref_run.font.size:
+                    tgt.font.size = ref_run.font.size
+                if ref_run.font.name:
+                    tgt.font.name = ref_run.font.name
+                tgt.bold = ref_run.bold
+                tgt.italic = ref_run.italic
+            for run in para.runs[1:]:
+                run.text = ''
+        return True
+
     for update in updates:
         find_text = update.get('find', '').strip()
         replace_text = update.get('replace', '').strip()
@@ -1032,13 +1072,8 @@ def apply_updates_to_docx(file_bytes: bytes, updates: list, original_filename: s
 
         for para in _all_paragraphs(doc):
             if find_text in para.text:
-                if para.runs:
-                    para.runs[0].text = para.text.replace(find_text, replace_text)
-                    for run in para.runs[1:]:
-                        run.text = ''
-                else:
-                    para.text = para.text.replace(find_text, replace_text)
-                applied += 1
+                if _replace_in_para(para, find_text, replace_text):
+                    applied += 1
                 break
 
     output = io.BytesIO()
