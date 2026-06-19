@@ -2563,9 +2563,19 @@ def main():
             tier_name = profile.get('tier', 'free')
             st.error(f"🔒 {_reason}")
             if tier_name == 'free':
-                st.info("Upgrade to **Starter ($10/mo)** for 10 analyses/month, or **Unlimited ($15/mo)** for no limits. Contact madelivniekerk@gmail.com to upgrade.")
+                _uc1, _uc2 = st.columns(2)
+                with _uc1:
+                    if st.button("⚡ Upgrade to Starter — $9.90/mo", key="upgrade_starter_limit", use_container_width=True):
+                        st.session_state.pending_plan = 'starter'
+                        st.rerun()
+                with _uc2:
+                    if st.button("🚀 Upgrade to Unlimited — $14.90/mo", key="upgrade_unlimited_limit", use_container_width=True):
+                        st.session_state.pending_plan = 'unlimited'
+                        st.rerun()
             else:
-                st.info("Contact madelivniekerk@gmail.com to upgrade to Unlimited.")
+                if st.button("🚀 Upgrade to Unlimited — $14.90/mo", key="upgrade_unlimited_limit", use_container_width=True):
+                    st.session_state.pending_plan = 'unlimited'
+                    st.rerun()
             return
 
         with st.spinner("🔍 Analyzing your resume against the job posting..."):
