@@ -2727,7 +2727,7 @@ def main():
                             edited_replace = st.text_area(
                                 f"After {i+1}",
                                 value=replace,
-                                height=100,
+                                height=150,
                                 key=f"edit_replace_{i}",
                                 label_visibility="collapsed"
                             )
