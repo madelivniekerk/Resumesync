@@ -539,7 +539,8 @@ def extract_text_from_pdf(file):
 
 def extract_text_from_docx(file):
     try:
-        doc = Document(file)
+        file_bytes = file.getvalue() if hasattr(file, 'getvalue') else file.read()
+        doc = Document(io.BytesIO(file_bytes))
         return "\n".join(para.text for para in doc.paragraphs)
     except Exception as e:
         return f"Error reading Word document: {str(e)}"
@@ -558,8 +559,10 @@ def extract_resume_text(uploaded_file):
     file_type = uploaded_file.name.split('.')[-1].lower()
     if file_type == 'pdf':
         return extract_text_from_pdf(uploaded_file)
-    elif file_type in ['docx', 'doc']:
+    elif file_type == 'docx':
         return extract_text_from_docx(uploaded_file)
+    elif file_type == 'doc':
+        return "Error: Old .doc format is not supported. Please open your resume in Word, save it as .docx, then re-upload."
     elif file_type == 'txt':
         return extract_text_from_txt(uploaded_file)
     return "Unsupported file type. Please upload PDF, DOCX, or TXT."
