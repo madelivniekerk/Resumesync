@@ -126,5 +126,37 @@
     "created_at": "2026-06-09T10:29:36.783025+00:00",
     "updated_resume_file": "Madeli_van_Niekerk_Resume_Updated_Customer_Insights___Data_2026-06-09.docx",
     "user_id": "5c425ee1-959f-45b5-8709-006d5057027c"
+  },
+  {
+    "id": "5b3add93-89cb-4749-80b0-5658b8d63744",
+    "date": "2026-06-18",
+    "job_title": "Analytics Manager",
+    "company": "Zembl",
+    "location": "Sydney, New South Wales (Hybrid)",
+    "resume_file": "Madeli_vNiekerk_Resume_Senior (1).docx",
+    "match_pct": "91%",
+    "job_url": "",
+    "status": "Applied",
+    "notes": "**1. Rewrite the Professional Summary to position as a senior IC with commercial impact focus**\n\n*Current:* \"Known for translating complex technical landscapes into clear business strategy, driving organisation-wide data adoption, and leading high-performing teams.\"\n\n*Revised:* \"Known for end-to-end delivery of analytics projects that move revenue, conversion, and margin — from problem definition through to boardroom-ready insight. Equally at home writing production SQL and Python pipelines, building Power BI semantic models trusted by senior leaders, and translating ambiguous business questions into commercial recommendations across Sales, Marketing, Operations, and Finance.\"\n\nThis directly mirrors the JD's language and repositions you from team-builder to hands-on commercial analyst.\n\n---\n\n**2. Add commercial impact language to every Foxtel bullet that currently lacks it**\n\n*Current:* \"Delivered 30+ Tableau and Power BI dashboards across customer segmentation, operational, and C-suite domains — achieving 90% performance improvement across managed data sources through rigorous grain design and Tableau Server optimisation.\"\n\n*Revised:* \"Delivered 30+ Power BI and Tableau dashboards across customer segmentation, operational performance, and C-suite reporting — achieving 90% performance improvement through grain design and Tableau Server optimisation, enabling faster data-driven decisions on customer acquisition and retention strategy.\"\n\nThe addition of business outcome languag",
+    "cover_letter": "/mount/src/resumesync/cover_letters/CoverLetter_Madeli_vNiekerk_Resume_Se_Analytics_Manager_2026-06-18.docx",
+    "created_at": "2026-06-18T12:34:18.282552+00:00",
+    "updated_resume_file": "Madeli_vNiekerk_Resume_Se_Updated_Analytics_Manager_2026-06-18.docx",
+    "user_id": "1836cee0-80cc-4b24-bf3b-3b4fe253ed0f"
+  },
+  {
+    "id": "2229f539-a7ba-4b01-9847-d499c0b06c77",
+    "date": "2026-06-18",
+    "job_title": "Analytics Manager",
+    "company": "Zembl",
+    "location": "Sydney, New South Wales (Hybrid)",
+    "resume_file": "Madeli_vNiekerk_Resume_Senior (1).docx",
+    "match_pct": "72%",
+    "job_url": "",
+    "status": "Applied",
+    "notes": "**1. Rewrite the Professional Summary to lead with consulting and risk framing**\n\n*Current:* \"Senior data and analytics leader with over a decade of experience building and scaling data functions across media, financial services, and government environments.\"\n\n*Suggested revision:* \"Senior data and analytics professional with over a decade of experience delivering advanced analytics, BI solutions, and AI-driven insights across consulting, financial services, and government environments. Experienced in client-facing engagement delivery, regulated data environments, and translating complex analytical outputs into risk and compliance decision frameworks. Brings hands-on technical depth across Python, SQL, Alteryx, and cloud platforms alongside executive stakeholder influence — with a track record of embedding data-driven risk solutions that generate measurable outcomes for clients and organisations.\"\n\nThis reframe immediately speaks Ashurst's language without fabricating experience.\n\n**2. Strengthen the MIP consulting role — it is your most relevant experience and currently undersells**\n\nThe MIP bullets focus on Tableau training and dashboard delivery. For Ashurst, reframe these around engagement management, client outcomes, and risk-adjacent work.\n\n*Current:* \"Delivered 10+ end-to-end Tableau consulting engagements for C-suite clients including Sydney Water and NSW Health\"\n\n*Add/expand:* Highlight any work at NSW Health or other clients where analytics supported compliance, aud",
+    "cover_letter": "/mount/src/resumesync/cover_letters/CoverLetter_Madeli_vNiekerk_Resume_Se_Senior_Manager_-_Data___A_2026-06-18.docx",
+    "created_at": "2026-06-18T13:09:36.436815+00:00",
+    "updated_resume_file": "Madeli_vNiekerk_Resume_Se_Updated_Senior_Manager_-_Data___A_2026-06-18.docx",
+    "user_id": "1836cee0-80cc-4b24-bf3b-3b4fe253ed0f"
   }
 ]
