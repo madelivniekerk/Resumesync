@@ -901,16 +901,19 @@ def generate_resume_updates(resume_text: str, analysis_text: str, client, user_g
     """
     guidance_block = ""
     if user_guidance and user_guidance.strip():
-        guidance_block = f"\n**ADDITIONAL GUIDANCE FROM CANDIDATE:**\n{user_guidance.strip()}\n"
+        guidance_block = (
+            f"\n⭐ CANDIDATE GUIDANCE — apply this first, it takes priority over general rules:\n"
+            f"{user_guidance.strip()}\n"
+        )
 
     prompt = f"""You are a professional resume editor with a strict honesty policy.
-
+{guidance_block}
 **CURRENT RESUME TEXT:**
 {resume_text}
 
 **ANALYSIS & RECOMMENDATIONS:**
 {analysis_text}
-{guidance_block}
+
 Your task is to improve how existing experience is communicated — NOT to add experience that doesn't exist.
 
 ⚠️ HONESTY RULES (non-negotiable):
@@ -2655,6 +2658,7 @@ def main():
                 update_btn = st.button("✨ Propose Resume Changes", type="primary", key="update_resume_btn", use_container_width=True)
 
             if update_btn:
+                st.session_state['_upd_guidance_saved'] = upd_guidance
                 with st.spinner("Generating proposed changes..."):
                     with st.status("Analysing what can be improved...", expanded=True) as upd_status:
                         upd_result = generate_resume_updates(resume_text, result['analysis'], client, user_guidance=upd_guidance)
@@ -2677,6 +2681,18 @@ def main():
             # ── Review step ────────────────────────────────────────────────
             if 'proposed_updates' in st.session_state and st.session_state['proposed_updates']:
                 proposed = st.session_state['proposed_updates']
+
+                _saved_guidance = st.session_state.get('_upd_guidance_saved', '').strip()
+                if _saved_guidance:
+                    st.markdown(
+                        f'<div style="background:rgba(111,177,224,0.08);border-left:3px solid #6fb1e0;'
+                        f'padding:0.5rem 0.9rem;border-radius:6px;margin-bottom:0.8rem;font-family:\'DM Sans\',sans-serif;">'
+                        f'<span style="color:#6fb1e0;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                        f'text-transform:uppercase;letter-spacing:0.1em;">✓ Guidance applied: </span>'
+                        f'<span style="color:#9fb6a8;font-size:0.82rem;">{_saved_guidance}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
                 st.markdown(
                     '<p style="font-family:\'DM Sans\',sans-serif;font-weight:600;color:#ecf4ee;'
