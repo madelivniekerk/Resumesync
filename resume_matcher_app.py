@@ -541,7 +541,19 @@ def extract_text_from_docx(file):
     try:
         file_bytes = file.getvalue() if hasattr(file, 'getvalue') else file.read()
         doc = Document(io.BytesIO(file_bytes))
-        return "\n".join(para.text for para in doc.paragraphs)
+        texts = []
+        # Body paragraphs
+        for para in doc.paragraphs:
+            if para.text.strip():
+                texts.append(para.text)
+        # Table cells — many resume templates use tables for layout
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for para in cell.paragraphs:
+                        if para.text.strip():
+                            texts.append(para.text)
+        return "\n".join(texts)
     except Exception as e:
         return f"Error reading Word document: {str(e)}"
 
@@ -2451,6 +2463,9 @@ def main():
                 resume_text = extract_resume_text(resume_file_obj)
                 if "Error" in resume_text:
                     st.error(f"❌ {resume_text}")
+                    return
+                if len(resume_text.strip()) < 100:
+                    st.error("❌ Could not read enough text from your resume. If it's a PDF, it may be image-based (scanned) — try saving as DOCX instead. If it's a DOCX, re-save it from Word and re-upload.")
                     return
                 st.write(f"✅ Extracted {len(resume_text)} characters from resume")
                 status.update(label="Resume extracted!", state="complete")
