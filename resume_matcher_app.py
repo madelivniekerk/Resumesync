@@ -2608,7 +2608,7 @@ def main():
         # Clear previous comparison results before storing new ones
         for _k in ['cover_letter', 'proposed_updates', 'updated_resume_bytes',
                    'updated_resume_name', 'updated_match_pct', 'tracker_saved',
-                   '_confirm_leave_tracker']:
+                   '_confirm_leave_tracker', 'upd_guidance', '_upd_guidance_saved']:
             st.session_state.pop(_k, None)
 
         st.session_state['analysis_result'] = result
@@ -2642,7 +2642,8 @@ def main():
                 for key in ['analysis_result', 'resume_text', 'job_content', 'job_url',
                             'resume_filename', 'resume_file_bytes', 'resume_is_docx',
                             'cover_letter', 'tracker_saved', 'proposed_updates',
-                            'updated_resume_bytes', 'updated_resume_name', 'updated_match_pct']:
+                            'updated_resume_bytes', 'updated_resume_name', 'updated_match_pct',
+                            'upd_guidance', '_upd_guidance_saved']:
                     st.session_state.pop(key, None)
                 st.rerun()
 
