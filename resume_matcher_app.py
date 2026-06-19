@@ -1011,10 +1011,18 @@ def re_score_resume(updated_text: str, job_content: str, client) -> int | None:
 def apply_updates_to_docx(file_bytes: bytes, updates: list, original_filename: str) -> bytes:
     """
     Apply find→replace pairs to the original DOCX, preserving all formatting.
+    Searches both body paragraphs and table cells (many templates use tables for layout).
     Returns the updated DOCX as bytes.
     """
     doc = Document(io.BytesIO(file_bytes))
     applied = 0
+
+    def _all_paragraphs(doc):
+        yield from doc.paragraphs
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    yield from cell.paragraphs
 
     for update in updates:
         find_text = update.get('find', '').strip()
@@ -1022,11 +1030,9 @@ def apply_updates_to_docx(file_bytes: bytes, updates: list, original_filename: s
         if not find_text or not replace_text:
             continue
 
-        for para in doc.paragraphs:
+        for para in _all_paragraphs(doc):
             if find_text in para.text:
-                # Preserve the run formatting of the first run
                 if para.runs:
-                    # Put all text into first run, clear the rest
                     para.runs[0].text = para.text.replace(find_text, replace_text)
                     for run in para.runs[1:]:
                         run.text = ''
@@ -2694,9 +2700,13 @@ def main():
                     st.success(f"✅ {applied} change(s) applied to your resume.")
                     # Re-score the updated resume
                     with st.spinner("Calculating updated compatibility score..."):
-                        updated_text = "\n".join(
-                            p.text for p in Document(io.BytesIO(updated_bytes)).paragraphs
-                        )
+                        _upd_doc = Document(io.BytesIO(updated_bytes))
+                        _upd_paras = list(_upd_doc.paragraphs)
+                        for _t in _upd_doc.tables:
+                            for _r in _t.rows:
+                                for _c in _r.cells:
+                                    _upd_paras.extend(_c.paragraphs)
+                        updated_text = "\n".join(p.text for p in _upd_paras if p.text.strip())
                         new_score = re_score_resume(updated_text, job_content, client)
                         if new_score is not None:
                             st.session_state['updated_match_pct'] = f"{new_score}%"
