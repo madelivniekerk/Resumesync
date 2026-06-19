@@ -837,10 +837,11 @@ def save_to_tracker(job_title: str, company: str, location: str,
         "cover_letter":        cover_letter_path if cover_letter_path else cover_letter,
         "user_id":             user_id,
     }
-    if sb:
-        sb.table("applications").insert(row).execute()
-    else:
+    if not sb:
         raise RuntimeError("Supabase is not configured — cannot save application.")
+    result = sb.table("applications").insert(row).execute()
+    if hasattr(result, 'error') and result.error:
+        raise RuntimeError(f"Supabase insert failed: {result.error}")
 
 
 @st.cache_data(ttl=30)
@@ -2952,29 +2953,30 @@ def main():
                     st.rerun()
             else:
                 if st.button("💾 Save to Job Tracker", key="save_tracker", use_container_width=True):
-                    cover_letter_text = st.session_state.get('cover_letter', '')
-                    cl_path = ''
-                    if cover_letter_text:
-                        os.makedirs(COVER_LETTERS_PATH, exist_ok=True)
-                        cl_filename = f"CoverLetter_{_fn_person}_{_fn_role}_{_fn_date}.docx"
-                        cl_path = os.path.join(COVER_LETTERS_PATH, cl_filename)
-                        with open(cl_path, 'wb') as f:
-                            f.write(create_cover_letter_docx(cover_letter_text))
-                    save_to_tracker(
-                        job_title=job_title_input,
-                        company=company_input,
-                        location=location_input,
-                        resume_filename=resume_filename,
-                        match_pct=st.session_state.get('updated_match_pct') or fields['match_pct'],
-                        job_url=job_url,
-                        cover_letter=cover_letter_text,
-                        cover_letter_path=cl_path,
-                        notes=extract_recommendations_summary(result['analysis']),
-                        updated_resume_file=st.session_state.get('updated_resume_name', ''),
-                        user_id=st.session_state.get('auth_user_id'),
-                    )
-                    st.session_state['tracker_saved'] = True
-                    st.rerun()
+                    try:
+                        # Use edited cover letter text if available (from cl_edit_area widget)
+                        cover_letter_text = (
+                            st.session_state.get('cl_edit_area')
+                            or st.session_state.get('cover_letter', '')
+                        )
+                        save_to_tracker(
+                            job_title=job_title_input,
+                            company=company_input,
+                            location=location_input,
+                            resume_filename=resume_filename,
+                            match_pct=st.session_state.get('updated_match_pct') or fields['match_pct'],
+                            job_url=job_url,
+                            cover_letter=cover_letter_text,
+                            cover_letter_path='',
+                            notes=extract_recommendations_summary(result['analysis']),
+                            updated_resume_file=st.session_state.get('updated_resume_name', ''),
+                            user_id=st.session_state.get('auth_user_id'),
+                        )
+                        load_tracker_data.clear()
+                        st.session_state['tracker_saved'] = True
+                        st.rerun()
+                    except Exception as _save_err:
+                        st.error(f"❌ Could not save to tracker: {_save_err}")
 
         tracker_data = load_tracker_data()
         if tracker_data:
