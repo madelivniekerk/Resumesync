@@ -950,6 +950,29 @@ Rules:
 
 Return only the JSON array, no other text."""
 
+    def _sanitize_json(s: str) -> str:
+        """Escape unescaped control characters inside JSON string values."""
+        result = []
+        in_string = False
+        i = 0
+        _escapes = {'\n': '\\n', '\r': '\\r', '\t': '\\t', '\b': '\\b', '\f': '\\f'}
+        while i < len(s):
+            c = s[i]
+            if c == '\\' and in_string:
+                result.append(c)
+                i += 1
+                if i < len(s):
+                    result.append(s[i])
+            elif c == '"':
+                result.append(c)
+                in_string = not in_string
+            elif in_string and ord(c) < 0x20:
+                result.append(_escapes.get(c, ''))
+            else:
+                result.append(c)
+            i += 1
+        return ''.join(result)
+
     try:
         message = client.messages.create(
             model=MODEL_NAME,
@@ -959,7 +982,10 @@ Return only the JSON array, no other text."""
         response_text = message.content[0].text
         json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
         json_str = json_match.group(1) if json_match else response_text.strip()
-        updates = json.loads(json_str)
+        try:
+            updates = json.loads(json_str)
+        except json.JSONDecodeError:
+            updates = json.loads(_sanitize_json(json_str))
         return {'success': True, 'updates': updates}
     except Exception as e:
         return {'success': False, 'error': str(e)}
