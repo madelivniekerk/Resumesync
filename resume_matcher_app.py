@@ -18,6 +18,7 @@ try:
     import os
     import re
     import json
+    import hashlib
     import urllib.parse
     from datetime import datetime
     from typing import Optional
@@ -2572,7 +2573,12 @@ def main():
         st.session_state['resume_file_bytes'] = resume_bytes
         st.session_state['resume_is_docx'] = resume_name.lower().endswith(('.docx', '.doc'))
         st.session_state['tracker_saved'] = False
-        increment_usage(auth_user_id)
+
+        # Only charge one analysis per unique resume+job combination
+        _analysis_key = hashlib.md5((resume_text + job_content).encode()).hexdigest()
+        if st.session_state.get('_last_analysis_key') != _analysis_key:
+            increment_usage(auth_user_id)
+            st.session_state['_last_analysis_key'] = _analysis_key
 
     # Results
     if 'analysis_result' in st.session_state:
