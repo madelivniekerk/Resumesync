@@ -2648,7 +2648,7 @@ def main():
             upd_guidance = st.text_area(
                 "Additional guidance *(optional)*",
                 placeholder="Add any metrics you know, e.g. 'reduced costs by 30%', 'managed a team of 8', 'processed 2M records daily'. Also: emphasise leadership, lead with Python skills, make it more senior in tone.",
-                height=90,
+                height=150,
                 key="upd_guidance"
             )
 
