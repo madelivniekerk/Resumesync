@@ -1973,7 +1973,7 @@ def show_tracker():
         """, unsafe_allow_html=True)
 
         if st.button("✦ New Analysis", key="tracker_nav_new", use_container_width=True):
-            st.session_state.show_login = True
+            st.session_state['page'] = 'app'
             st.rerun()
 
         # Applications — active/current page
@@ -2022,7 +2022,7 @@ def show_tracker():
     with hdr_r:
         st.markdown("<div style='padding-top:32px;'>", unsafe_allow_html=True)
         if st.button("New analysis →", key="tracker_hdr_new", type="primary", use_container_width=True):
-            st.session_state.show_login = True
+            st.session_state['page'] = 'app'
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
