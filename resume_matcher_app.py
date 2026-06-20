@@ -128,9 +128,9 @@ st.markdown("""
     p, li, label { color: var(--ink) !important; }
 
     /* ── Primary button — sage green fill ── */
-    .stButton > button {
+    .stButton > button, .stButton > button * {
         background: var(--gold) !important;
-        color: #0a1f17 !important;
+        color: #000000 !important;
         border: none !important;
         border-radius: 4px !important;
         padding: 16px 32px !important;
@@ -140,8 +140,9 @@ st.markdown("""
         transition: transform .15s, background .2s !important;
         min-height: 52px !important;
     }
-    .stButton > button:hover {
+    .stButton > button:hover, .stButton > button:hover * {
         background: var(--gold-soft) !important;
+        color: #000000 !important;
         transform: translateY(-1px) !important;
         box-shadow: none !important;
     }
