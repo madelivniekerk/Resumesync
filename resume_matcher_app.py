@@ -266,15 +266,15 @@ st.markdown("""
     button[title="Remove file"] { color: var(--muted) !important; }
 
     /* ── Feedback boxes ── */
-    .stSuccess {
+    .stSuccess, .stSuccess * {
         background-color: rgba(122,215,159,0.07) !important;
-        color: var(--gold-soft) !important;
+        color: #000000 !important;
         border-left: 4px solid var(--gold) !important;
     }
-    .stInfo {
+    .stInfo, .stInfo * {
         background-color: rgba(122,215,159,0.04) !important;
         border-left: 4px solid var(--line-strong) !important;
-        color: var(--muted) !important;
+        color: #000000 !important;
     }
     .stError { font-family: 'DM Sans', sans-serif !important; }
     .stStatus { font-family: 'DM Sans', sans-serif !important; }
