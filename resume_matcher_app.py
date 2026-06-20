@@ -2298,23 +2298,23 @@ def main():
             <div style="display:flex; flex-direction:column; gap:0.6rem;">
               <div style="display:flex; gap:10px; align-items:flex-start;">
                 <span style="color:#7ad79f; font-size:14px; flex-shrink:0; margin-top:1px;">📊</span>
-                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;"><b>Match % score</b> <span style="color:#9fb6a8;">— see your fit before you apply</span></span>
+                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;">Match % score <span style="color:#9fb6a8;">— see your fit before you apply</span></span>
               </div>
               <div style="display:flex; gap:10px; align-items:flex-start;">
                 <span style="color:#7ad79f; font-size:14px; flex-shrink:0; margin-top:1px;">🎯</span>
-                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;"><b>Skills &amp; keyword gaps</b> <span style="color:#9fb6a8;">— exactly what's missing</span></span>
+                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;">Skills &amp; keyword gaps <span style="color:#9fb6a8;">— exactly what's missing</span></span>
               </div>
               <div style="display:flex; gap:10px; align-items:flex-start;">
                 <span style="color:#7ad79f; font-size:14px; flex-shrink:0; margin-top:1px;">🤖</span>
-                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;"><b>ATS optimisation</b> <span style="color:#9fb6a8;">— get past the robot screeners</span></span>
+                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;">ATS optimisation <span style="color:#9fb6a8;">— get past the robot screeners</span></span>
               </div>
               <div style="display:flex; gap:10px; align-items:flex-start;">
                 <span style="color:#7ad79f; font-size:14px; flex-shrink:0; margin-top:1px;">✍️</span>
-                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;"><b>Tailored cover letter</b> <span style="color:#9fb6a8;">— ready to send in seconds</span></span>
+                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;">Tailored cover letter <span style="color:#9fb6a8;">— ready to send in seconds</span></span>
               </div>
               <div style="display:flex; gap:10px; align-items:flex-start;">
                 <span style="color:#7ad79f; font-size:14px; flex-shrink:0; margin-top:1px;">✨</span>
-                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;"><b>Resume auto-updater</b> <span style="color:#9fb6a8;">— stronger words, same facts</span></span>
+                <span style="font-family:'DM Sans',sans-serif; font-size:0.8rem; color:#ecf4ee; line-height:1.4;">Resume auto-updater <span style="color:#9fb6a8;">— stronger words, same facts</span></span>
               </div>
             </div>
           </div>
