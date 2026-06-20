@@ -360,7 +360,7 @@ def get_supabase():
 
 # ── Auth & subscription helpers ──────────────────────────────────────────────
 
-FREE_CREDITS = 2
+FREE_CREDITS = 3
 
 PACK_INFO = {
     "pack5":  {"name": "Starter Pack", "credits": 5,  "price": "A$9",  "amount": "9.00",  "color": "#6fb1e0"},
@@ -467,7 +467,11 @@ def get_or_create_profile(user_id: str, email: str) -> dict:
     try:
         res = sb.table("profiles").select("*").eq("id", user_id).execute()
         if res.data:
-            return res.data[0]
+            profile = res.data[0]
+            if profile.get("credits") is None:
+                sb.table("profiles").update({"credits": FREE_CREDITS}).eq("id", user_id).execute()
+                profile["credits"] = FREE_CREDITS
+            return profile
         new_profile = {"id": user_id, "email": email, "credits": FREE_CREDITS}
         sb.table("profiles").insert(new_profile).execute()
         return new_profile
@@ -1517,17 +1521,17 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <div class="sec-head">
 <div class="eyebrow one">simple pricing</div>
 <h2>Buy what you need.<br><span class="italic">No subscription.</span></h2>
-<p class="sec-sub">Start with 2 free analyses. Top up whenever you like &#8212; credits never expire.</p>
+<p class="sec-sub">Start with 3 free analyses. Top up whenever you like &#8212; credits never expire.</p>
 </div>
 <div class="pricing-grid">
 <div class="price-card">
 <div class="price-plan">Free</div>
-<div class="price-desc">Try it on your first two applications. No credit card needed.</div>
+<div class="price-desc">Try it on your first three applications. No credit card needed.</div>
 <div class="price-num"><span class="price-cur">A$</span>0</div>
-<div class="price-period">2 analyses included</div>
+<div class="price-period">3 analyses included</div>
 <a class="price-cta cta-out cta-login" data-plan="free" href="#">Get started &#8594;</a>
 <ul class="price-features">
-<li class="pf"><span class="ck y">&#10003;</span><span>2 analyses included</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>3 analyses included</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Resume rewriter</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Cover letter generator</span></li>
@@ -1579,7 +1583,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <div class="cta-inner">
 <div class="eyebrow one" style="justify-content:center;">start in 60 seconds</div>
 <h2 style="margin-top:14px;">Know your match.<br><span class="italic">Then apply with confidence.</span></h2>
-<p>Your first two applications are free. Upload a resume, paste a job, and see your score &#8212; no card, no commitment.</p>
+<p>Your first three applications are free. Upload a resume, paste a job, and see your score &#8212; no card, no commitment.</p>
 <div class="hero-btns">
 <a class="btn-primary cta-login" href="#">Start free &#8212; no card needed</a>
 <a class="btn-ghost" href="#features">Explore features &#8594;</a>
@@ -1776,7 +1780,7 @@ def show_login_page():
         st.markdown("""
         <div style="margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);">
           <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#6e8a7b;margin:0 0 1.2rem;">
-            <b style="color:#9fb6a8;">Free:</b> 2 analyses included ·
+            <b style="color:#9fb6a8;">Free:</b> 3 analyses included ·
             <b style="color:#9fb6a8;">Packs from A$9</b> — no subscription, never expires
           </p>
           <a href="https://madelivniekerk.github.io/Resumesync"
