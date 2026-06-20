@@ -477,7 +477,7 @@ def get_or_create_profile(user_id: str, email: str) -> dict:
 
 def can_run_analysis(profile: dict) -> tuple:
     """Returns (allowed: bool, reason: str)."""
-    credits = int(profile.get("credits", 0))
+    credits = int(profile.get("credits") or 0)
     if credits > 0:
         return True, ""
     return False, "You have no analyses left. Top up with a credit pack to continue."
@@ -491,7 +491,7 @@ def decrement_credits(user_id: str):
     try:
         res = sb.table("profiles").select("credits").eq("id", user_id).execute()
         if res.data:
-            new_credits = max(0, int(res.data[0].get("credits", 0)) - 1)
+            new_credits = max(0, int(res.data[0].get("credits") or 0) - 1)
             sb.table("profiles").update({"credits": new_credits}).eq("id", user_id).execute()
             if "user_profile" in st.session_state:
                 st.session_state["user_profile"]["credits"] = new_credits
@@ -506,7 +506,7 @@ def add_credits(user_id: str, amount: int) -> bool:
         return False
     try:
         res = sb.table("profiles").select("credits").eq("id", user_id).execute()
-        current = int(res.data[0].get("credits", 0)) if res.data else 0
+        current = int(res.data[0].get("credits") or 0) if res.data else 0
         sb.table("profiles").update({"credits": current + amount}).eq("id", user_id).execute()
         return True
     except Exception:
@@ -2284,7 +2284,7 @@ def main():
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
                            font-size:22px;color:#7ad79f;line-height:1;">
-                {int(profile.get('credits', 0))}
+                {int(profile.get('credits') or 0)}
               </span>
               <span style="font-family:'DM Sans',sans-serif;font-size:11px;color:#6e8a7b;">
                 {"analysis" if int(profile.get('credits',0)) == 1 else "analyses"} remaining
