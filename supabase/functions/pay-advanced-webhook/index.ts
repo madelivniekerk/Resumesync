@@ -1,4 +1,4 @@
-// Supabase Edge Function — receives Pay Advanced webhooks and upgrades user tier
+// Supabase Edge Function — receives Pay Advanced webhooks and adds credits to user account
 // Deploy: supabase functions deploy pay-advanced-webhook
 // Webhook URL: https://svihqlnlfdavkmhjbqrd.supabase.co/functions/v1/pay-advanced-webhook
 //
@@ -7,7 +7,22 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Constant-time string comparison to prevent timing attacks
+const PACK_CREDITS: Record<string, number> = {
+  pack5:  5,
+  pack20: 20,
+  pack30: 30,
+  pack50: 50,
+};
+
+// Amount-based fallback (in case paymentref is truncated or missing)
+function creditsFromAmount(amount: number): number {
+  if (amount >= 8   && amount < 12)  return 5;   // A$9
+  if (amount >= 14  && amount < 17)  return 20;  // A$15
+  if (amount >= 19  && amount < 22)  return 30;  // A$20
+  if (amount >= 29  && amount < 33)  return 50;  // A$30
+  return 0;
+}
+
 async function verifySignature(body: string, receivedSig: string, secret: string): Promise<boolean> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -18,10 +33,7 @@ async function verifySignature(body: string, receivedSig: string, secret: string
     ["sign"],
   );
   const sigBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-
-  // Pay Advanced uses Base64-encoded HMAC-SHA256 (not hex)
   const base64Sig = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)));
-
   return base64Sig === receivedSig;
 }
 
@@ -32,7 +44,6 @@ Deno.serve(async (req: Request) => {
 
   const rawBody = await req.text();
 
-  // Verify signature if secret is configured
   const secret = Deno.env.get("PAY_ADVANCED_SECRET") || "";
   if (secret) {
     const sig = req.headers.get("x-payadvantage-signature") || "";
@@ -47,7 +58,6 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // Pay Advanced sends an array of events
   let events: Array<Record<string, unknown>>;
   try {
     const parsed = JSON.parse(rawBody);
@@ -56,7 +66,6 @@ Deno.serve(async (req: Request) => {
     return new Response("Invalid JSON", { status: 400 });
   }
 
-  // Validate schema — each event must have Code and Event fields
   for (const event of events) {
     if (typeof event !== "object" || event === null || !event.Code || !event.Event) {
       return new Response("Invalid schema", { status: 400 });
@@ -72,60 +81,62 @@ Deno.serve(async (req: Request) => {
     const eventName = String(event.Event || "");
     console.log("Received event:", eventName);
 
-    // Arming handshake — Pay Advanced sends this to verify the endpoint is live
     if (eventName === "webhook_endpoint.armed") {
       console.log("Webhook endpoint armed successfully");
       continue;
     }
 
-    // Only process successful payments
     if (eventName !== "payment.created") continue;
 
     const data = event.Data as Record<string, unknown>;
     if (!data) continue;
 
-    // paymentref URL param is stored as ExternalID in the webhook (max 50 chars, format: email|plan)
+    // paymentref format: email|pack5 / email|pack20 / email|pack30 / email|pack50
     const externalRef = String(data.ExternalID || data.ExternalReference || "");
     const amount = Number(data.Amount || 0);
 
     let email = "";
-    let tier = "";
+    let credits = 0;
 
     if (externalRef.includes("|")) {
-      const [refEmail, refPlan] = externalRef.split("|");
+      const [refEmail, refPack] = externalRef.split("|");
       email = refEmail.trim().toLowerCase();
-      if (refPlan === "starter" || refPlan === "unlimited") tier = refPlan;
+      credits = PACK_CREDITS[refPack] ?? 0;
     }
 
-    // Fall back to amount-based tier detection
-    if (!tier) {
-      if (amount >= 1 && amount < 5)    tier = "starter";   // $1 test price
-      if (amount >= 9 && amount < 12)   tier = "starter";   // $9.90 live price
-      if (amount >= 14 && amount < 17)  tier = "unlimited";
-    }
+    // Fall back to amount-based detection
+    if (!credits) credits = creditsFromAmount(amount);
 
-    if (!email || !tier) {
-      console.error("Cannot identify user or tier — ExternalReference:", externalRef, "Amount:", amount);
-      // Return 202 so Pay Advanced doesn't keep retrying
+    if (!email || !credits) {
+      console.error("Cannot identify user or pack — ExternalReference:", externalRef, "Amount:", amount);
       continue;
     }
 
-    const now   = new Date();
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-    const { error } = await supabase
+    // Fetch current credits and increment
+    const { data: rows, error: fetchErr } = await supabase
       .from("profiles")
-      .update({ tier, analyses_used: 0, analyses_month: month })
+      .select("credits")
+      .eq("email", email)
+      .single();
+
+    if (fetchErr || !rows) {
+      console.error("Could not fetch profile for", email, fetchErr);
+      continue;
+    }
+
+    const newCredits = (Number(rows.credits) || 0) + credits;
+    const { error: updateErr } = await supabase
+      .from("profiles")
+      .update({ credits: newCredits })
       .eq("email", email);
 
-    if (error) {
-      console.error("Supabase update failed for", email, error);
+    if (updateErr) {
+      console.error("Supabase update failed for", email, updateErr);
     } else {
-      console.log(`Upgraded ${email} → ${tier}`);
+      console.log(`Added ${credits} credits to ${email} — new balance: ${newCredits}`);
     }
   }
 
-  // Pay Advanced requires 202 Accepted
   return new Response(JSON.stringify({ ok: true }), {
     status: 202,
     headers: { "Content-Type": "application/json" },

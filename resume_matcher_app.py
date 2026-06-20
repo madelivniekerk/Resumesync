@@ -360,11 +360,13 @@ def get_supabase():
 
 # ── Auth & subscription helpers ──────────────────────────────────────────────
 
-TIER_LIMITS = {"free": 3, "starter": 10, "unlimited": 999999}
-TIER_LABELS  = {
-    "free":      {"label": "Free",      "color": "#6e8a7b", "bg": "rgba(110,138,123,0.15)"},
-    "starter":   {"label": "Starter",   "color": "#6fb1e0", "bg": "rgba(111,177,224,0.15)"},
-    "unlimited": {"label": "Unlimited", "color": "#7ad79f", "bg": "rgba(122,215,159,0.15)"},
+FREE_CREDITS = 2
+
+PACK_INFO = {
+    "pack5":  {"name": "Starter Pack", "credits": 5,  "price": "A$9",  "amount": "9.00",  "color": "#6fb1e0"},
+    "pack20": {"name": "Value Pack",   "credits": 20, "price": "A$15", "amount": "15.00", "color": "#7ad79f"},
+    "pack30": {"name": "Pro Pack",     "credits": 30, "price": "A$20", "amount": "20.00", "color": "#a78bfa"},
+    "pack50": {"name": "Max Pack",     "credits": 50, "price": "A$30", "amount": "30.00", "color": "#f59e0b"},
 }
 
 PAY_ADVANCED_URL = "https://pad.live/pa53992/pay"
@@ -461,70 +463,51 @@ def get_or_create_profile(user_id: str, email: str) -> dict:
     """Load user profile from Supabase, creating it on first login."""
     sb = get_supabase()
     if not sb:
-        return {"id": user_id, "email": email, "tier": "free", "analyses_used": 0, "analyses_month": ""}
+        return {"id": user_id, "email": email, "credits": FREE_CREDITS}
     try:
         res = sb.table("profiles").select("*").eq("id", user_id).execute()
         if res.data:
-            profile = res.data[0]
-            current_month = datetime.now().strftime("%Y-%m")
-            if profile.get("tier") == "starter" and profile.get("analyses_month") != current_month:
-                sb.table("profiles").update({
-                    "analyses_used": 0, "analyses_month": current_month
-                }).eq("id", user_id).execute()
-                profile["analyses_used"] = 0
-                profile["analyses_month"] = current_month
-            return profile
-        new_profile = {
-            "id": user_id, "email": email, "tier": "free",
-            "analyses_used": 0, "analyses_month": datetime.now().strftime("%Y-%m"),
-        }
+            return res.data[0]
+        new_profile = {"id": user_id, "email": email, "credits": FREE_CREDITS}
         sb.table("profiles").insert(new_profile).execute()
         return new_profile
     except Exception:
-        return {"id": user_id, "email": email, "tier": "free", "analyses_used": 0, "analyses_month": ""}
+        return {"id": user_id, "email": email, "credits": FREE_CREDITS}
 
 
 def can_run_analysis(profile: dict) -> tuple:
     """Returns (allowed: bool, reason: str)."""
-    tier  = profile.get("tier", "free")
-    used  = int(profile.get("analyses_used", 0))
-    limit = TIER_LIMITS.get(tier, 3)
-    if used < limit:
+    credits = int(profile.get("credits", 0))
+    if credits > 0:
         return True, ""
-    if tier == "free":
-        return False, "You've used all 3 free analyses."
-    if tier == "starter":
-        return False, "You've used all 10 analyses this month. Resets next month."
-    return True, ""
+    return False, "You have no analyses left. Top up with a credit pack to continue."
 
 
-def increment_usage(user_id: str):
-    """Increment analyses_used by 1."""
+def decrement_credits(user_id: str):
+    """Deduct 1 credit after a successful analysis."""
     sb = get_supabase()
     if not sb or not user_id:
         return
     try:
-        res = sb.table("profiles").select("analyses_used").eq("id", user_id).execute()
+        res = sb.table("profiles").select("credits").eq("id", user_id).execute()
         if res.data:
-            new_count = int(res.data[0].get("analyses_used", 0)) + 1
-            sb.table("profiles").update({"analyses_used": new_count}).eq("id", user_id).execute()
+            new_credits = max(0, int(res.data[0].get("credits", 0)) - 1)
+            sb.table("profiles").update({"credits": new_credits}).eq("id", user_id).execute()
             if "user_profile" in st.session_state:
-                st.session_state["user_profile"]["analyses_used"] = new_count
+                st.session_state["user_profile"]["credits"] = new_credits
     except Exception:
         pass
 
 
-def update_user_tier(user_id: str, tier: str) -> bool:
-    """Set a user's subscription tier and reset usage counter."""
+def add_credits(user_id: str, amount: int) -> bool:
+    """Add credits to a user's account after a pack purchase."""
     sb = _fresh_supabase()
     if not sb:
         return False
     try:
-        sb.table("profiles").update({
-            "tier": tier,
-            "analyses_used": 0,
-            "analyses_month": datetime.now().strftime("%Y-%m"),
-        }).eq("id", user_id).execute()
+        res = sb.table("profiles").select("credits").eq("id", user_id).execute()
+        current = int(res.data[0].get("credits", 0)) if res.data else 0
+        sb.table("profiles").update({"credits": current + amount}).eq("id", user_id).execute()
         return True
     except Exception:
         return False
@@ -1533,56 +1516,62 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <section class="section" id="pricing">
 <div class="sec-head">
 <div class="eyebrow one">simple pricing</div>
-<h2>Pay less than one<br><span class="italic">coffee a week.</span></h2>
-<p class="sec-sub">Start free. Upgrade when you&#8217;re ready. Cancel any time.</p>
+<h2>Buy what you need.<br><span class="italic">No subscription.</span></h2>
+<p class="sec-sub">Start with 2 free analyses. Top up whenever you like &#8212; credits never expire.</p>
 </div>
 <div class="pricing-grid">
 <div class="price-card">
 <div class="price-plan">Free</div>
-<div class="price-desc">Try it on your first three applications. No credit card.</div>
+<div class="price-desc">Try it on your first two applications. No credit card needed.</div>
 <div class="price-num"><span class="price-cur">A$</span>0</div>
-<div class="price-period">forever free</div>
+<div class="price-period">2 analyses included</div>
 <a class="price-cta cta-out cta-login" data-plan="free" href="#">Get started &#8594;</a>
 <ul class="price-features">
-<li class="pf"><span class="ck y">&#10003;</span><span>3 applications included</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>2 analyses included</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Resume rewriter</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Cover letter generator</span></li>
-<li class="pf"><span class="ck y">&#10003;</span><span>Prompt &amp; refine</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Application tracker</span></li>
 </ul>
 </div>
 <div class="price-card featured">
 <div class="price-badge">Most popular</div>
-<div class="price-plan">Starter</div>
-<div class="price-desc">Everything you need for an active job search.</div>
-<div class="price-num"><span class="price-cur">A$</span>9.90</div>
-<div class="price-period">per month &middot; cancel any time</div>
-<a class="price-cta cta-fill cta-login" data-plan="starter" href="#">Start free trial &#8594;</a>
+<div class="price-plan">Value Pack</div>
+<div class="price-desc">Great value for an active job search. Credits never expire.</div>
+<div class="price-num"><span class="price-cur">A$</span>15</div>
+<div class="price-period">20 analyses &middot; one-off</div>
+<a class="price-cta cta-fill cta-login" data-plan="pack20" href="#">Buy 20 analyses &#8594;</a>
 <ul class="price-features">
-<li class="pf"><span class="ck y">&#10003;</span><span>10 applications per month</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>20 analyses</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Resume rewriter</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Cover letter generator</span></li>
-<li class="pf"><span class="ck y">&#10003;</span><span>Prompt &amp; refine</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Application tracker</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Credits never expire</span></li>
 </ul>
 </div>
 <div class="price-card">
-<div class="price-plan">Unlimited</div>
-<div class="price-desc">No limits. Apply to as many roles as you like.</div>
-<div class="price-num"><span class="price-cur">A$</span>14.90</div>
-<div class="price-period">per month &middot; cancel any time</div>
-<a class="price-cta cta-out cta-login" data-plan="unlimited" href="#">Get started &#8594;</a>
+<div class="price-plan">Starter Pack</div>
+<div class="price-desc">Enough for a focused sprint of applications.</div>
+<div class="price-num"><span class="price-cur">A$</span>9</div>
+<div class="price-period">5 analyses &middot; one-off</div>
+<a class="price-cta cta-out cta-login" data-plan="pack5" href="#">Buy 5 analyses &#8594;</a>
 <ul class="price-features">
-<li class="pf"><span class="ck y">&#10003;</span><span>Unlimited applications</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>5 analyses</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Match score + gap report</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Resume rewriter</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Cover letter generator</span></li>
-<li class="pf"><span class="ck y">&#10003;</span><span>Prompt &amp; refine</span></li>
 <li class="pf"><span class="ck y">&#10003;</span><span>Application tracker</span></li>
+<li class="pf"><span class="ck y">&#10003;</span><span>Credits never expire</span></li>
 </ul>
 </div>
+</div>
+<div style="text-align:center;margin-top:1.5rem;">
+<p style="font-family:'DM Sans',sans-serif;font-size:14px;color:#6e8a7b;margin:0 0 0.75rem;">
+  Need more? <strong style="color:#9fb6a8;">Pro Pack — 30 analyses for A$20</strong> &middot; <strong style="color:#9fb6a8;">Max Pack — 50 analyses for A$30</strong>
+</p>
+<a class="price-cta cta-out cta-login" data-plan="pack30" href="#" style="display:inline-block;margin:0 6px 6px;">Pro Pack A$20 &#8594;</a>
+<a class="price-cta cta-out cta-login" data-plan="pack50" href="#" style="display:inline-block;margin:0 6px 6px;">Max Pack A$30 &#8594;</a>
 </div>
 </section>
 </div>
@@ -1590,7 +1579,7 @@ h2 .italic{font-family:var(--serif);font-weight:600;font-style:italic;color:var(
 <div class="cta-inner">
 <div class="eyebrow one" style="justify-content:center;">start in 60 seconds</div>
 <h2 style="margin-top:14px;">Know your match.<br><span class="italic">Then apply with confidence.</span></h2>
-<p>Your first three applications are free. Upload a resume, paste a job, and see your score &#8212; no card, no commitment.</p>
+<p>Your first two applications are free. Upload a resume, paste a job, and see your score &#8212; no card, no commitment.</p>
 <div class="hero-btns">
 <a class="btn-primary cta-login" href="#">Start free &#8212; no card needed</a>
 <a class="btn-ghost" href="#features">Explore features &#8594;</a>
@@ -1776,9 +1765,8 @@ def show_login_page():
         st.markdown("""
         <div style="margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);">
           <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#6e8a7b;margin:0 0 1.2rem;">
-            <b style="color:#9fb6a8;">Free tier:</b> 3 analyses ·
-            <b style="color:#9fb6a8;">Starter A$9.90/mo:</b> 10/month ·
-            <b style="color:#9fb6a8;">Unlimited A$14.90/mo:</b> no limits
+            <b style="color:#9fb6a8;">Free:</b> 2 analyses included ·
+            <b style="color:#9fb6a8;">Packs from A$9</b> — no subscription, never expires
           </p>
           <a href="https://madelivniekerk.github.io/Resumesync"
              style="font-family:'DM Sans',sans-serif;font-size:13px;color:#6e8a7b;
@@ -1794,27 +1782,18 @@ def show_login_page():
 
 # ============= PAYMENT PAGES =============
 
-_PLAN_INFO = {
-    "starter":   {"name": "Starter",   "price": "A$9.90/month",  "analyses": "10 applications per month", "color": "#6fb1e0"},
-    "unlimited": {"name": "Unlimited", "price": "A$14.90/month", "analyses": "Unlimited applications",     "color": "#7ad79f"},
-}
-
-
-def show_payment_redirect(plan: str):
-    """Shown after login when user selected a paid plan — redirect them to Pay Advanced checkout."""
-    info = _PLAN_INFO.get(plan, {})
+def show_payment_redirect(pack: str):
+    """Shown after login when user selected a pack — redirect them to Pay Advanced checkout."""
+    info = PACK_INFO.get(pack, {})
     if not info:
         st.rerun()
         return
 
     auth_email = st.session_state.get("auth_email", "")
-    _amounts      = {"starter": "1.00", "unlimited": "14.90"}
-    _descriptions = {"starter": "ResumeSync Starter Plan", "unlimited": "ResumeSync Unlimited Plan"}
-    # paymentref (max 50 chars) is stored as ExternalID in the webhook payload
-    _ref = f"{auth_email}|{plan}"[:50]
+    _ref = f"{auth_email}|{pack}"[:50]
     pay_params = urllib.parse.urlencode({
-        "paymentamount":      _amounts.get(plan, "9.90"),
-        "paymentdescription": _descriptions.get(plan, "ResumeSync"),
+        "paymentamount":      info["amount"],
+        "paymentdescription": f"ResumeSync {info['name']} ({info['credits']} analyses)",
         "paymentref":         _ref,
         "email":              auth_email,
     })
@@ -1848,12 +1827,12 @@ footer{visibility:hidden!important;}
   <div style="background:#0c2019;border:1px solid rgba(159,182,168,0.12);
               border-radius:14px;padding:1.8rem;margin-bottom:1.5rem;">
     <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;
-                text-transform:uppercase;color:{info['color']};margin-bottom:0.5rem;">Selected plan</div>
+                text-transform:uppercase;color:{info['color']};margin-bottom:0.5rem;">Selected pack</div>
     <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
                 font-size:26px;color:#ecf4ee;margin-bottom:0.25rem;">{info['name']}</div>
     <div style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;
-                color:{info['color']};margin-bottom:0.5rem;">{info['price']}</div>
-    <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:#9fb6a8;">{info['analyses']}</div>
+                color:{info['color']};margin-bottom:0.5rem;">{info['price']} one-off</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:#9fb6a8;">{info['credits']} analyses · never expires · no subscription</div>
   </div>
   <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:#9fb6a8;margin:0 0 1.5rem;">
     You're signed in as <strong style="color:#ecf4ee;">{auth_email}</strong>.
@@ -1869,10 +1848,10 @@ footer{visibility:hidden!important;}
   font-size:15px;text-align:center;border-radius:9px;
   text-decoration:none;box-sizing:border-box;
   box-shadow:0 4px 14px rgba(122,215,159,0.30);">
-  Pay {info['price']} — activate {info['name']} →
+  Pay {info['price']} — get {info['credits']} analyses →
 </a>""", unsafe_allow_html=True)
         st.markdown("<div style='height:0.75rem;'></div>", unsafe_allow_html=True)
-        if st.button("Skip — use free tier for now", key="skip_payment_btn", use_container_width=True):
+        if st.button("Skip — use my free credits for now", key="skip_payment_btn", use_container_width=True):
             st.rerun()
 
 
@@ -1909,8 +1888,8 @@ footer{visibility:hidden!important;}
     <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
                 font-size:22px;color:#ecf4ee;margin-bottom:0.5rem;">Payment received!</div>
     <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:#9fb6a8;margin:0;">
-      Your account is being upgraded. It may take a moment to activate —
-      click below to continue and your new tier will reflect shortly.
+      Your credits are being added. It may take a moment to activate —
+      click below to continue and your balance will reflect shortly.
     </p>
   </div>
 </div>""", unsafe_allow_html=True)
@@ -2222,7 +2201,7 @@ def main():
         plan = st.query_params.get('plan', '')
         st.query_params.clear()
         st.session_state.show_login = True
-        if plan in ('free', 'starter', 'unlimited'):
+        if plan in ('free', 'pack5', 'pack20', 'pack30', 'pack50'):
             st.session_state.pending_plan = plan
         st.rerun()
 
@@ -2249,7 +2228,7 @@ def main():
         return
 
     pending_plan = st.session_state.get('pending_plan', '')
-    if pending_plan in ('starter', 'unlimited'):
+    if pending_plan in PACK_INFO:
         st.session_state.pop('pending_plan', None)
         show_payment_redirect(pending_plan)
         return
@@ -2285,25 +2264,20 @@ def main():
           <!-- Divider -->
           <div style="border-top:1px solid rgba(159,182,168,0.12); margin-bottom:1.2rem;"></div>
 
-          <!-- User / tier block -->
+          <!-- User / credits block -->
           <div style="background:#0c2019;border:1px solid rgba(159,182,168,0.10);
                       border-radius:10px;padding:12px 14px;margin-bottom:1.2rem;">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-              <div style="min-width:0;">
-                <div style="font-family:'DM Sans',sans-serif;font-size:12px;
-                            color:#9fb6a8;white-space:nowrap;overflow:hidden;
-                            text-overflow:ellipsis;">{auth_email}</div>
-              </div>
-              <span style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;
-                           letter-spacing:0.10em;text-transform:uppercase;
-                           color:{TIER_LABELS.get(profile.get('tier','free'), TIER_LABELS['free'])['color']};
-                           background:{TIER_LABELS.get(profile.get('tier','free'), TIER_LABELS['free'])['bg']};
-                           border-radius:20px;padding:2px 8px;white-space:nowrap;">
-                {TIER_LABELS.get(profile.get('tier','free'), TIER_LABELS['free'])['label']}
+            <div style="font-family:'DM Sans',sans-serif;font-size:12px;
+                        color:#9fb6a8;white-space:nowrap;overflow:hidden;
+                        text-overflow:ellipsis;margin-bottom:6px;">{auth_email}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+                           font-size:22px;color:#7ad79f;line-height:1;">
+                {int(profile.get('credits', 0))}
               </span>
-            </div>
-            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:#6e8a7b;margin-top:6px;">
-              {int(profile.get('analyses_used',0))}/{"3" if profile.get("tier","free")=="free" else "10" if profile.get("tier")=="starter" else "No limit"} analyses used
+              <span style="font-family:'DM Sans',sans-serif;font-size:11px;color:#6e8a7b;">
+                {"analysis" if int(profile.get('credits',0)) == 1 else "analyses"} remaining
+              </span>
             </div>
           </div>
 
@@ -2560,21 +2534,22 @@ def main():
         # ── Usage limit check ─────────────────────────────────────────────────
         _allowed, _reason = can_run_analysis(profile)
         if not _allowed:
-            tier_name = profile.get('tier', 'free')
             st.error(f"🔒 {_reason}")
-            if tier_name == 'free':
-                _uc1, _uc2 = st.columns(2)
-                with _uc1:
-                    if st.button("⚡ Upgrade to Starter — $9.90/mo", key="upgrade_starter_limit", use_container_width=True):
-                        st.session_state.pending_plan = 'starter'
-                        st.rerun()
-                with _uc2:
-                    if st.button("🚀 Upgrade to Unlimited — $14.90/mo", key="upgrade_unlimited_limit", use_container_width=True):
-                        st.session_state.pending_plan = 'unlimited'
-                        st.rerun()
-            else:
-                if st.button("🚀 Upgrade to Unlimited — $14.90/mo", key="upgrade_unlimited_limit", use_container_width=True):
-                    st.session_state.pending_plan = 'unlimited'
+            st.markdown("**Top up with a credit pack — one-off, no subscription, never expires.**")
+            _pc1, _pc2 = st.columns(2)
+            with _pc1:
+                if st.button("5 analyses — A$9", key="buy_pack5", use_container_width=True):
+                    st.session_state.pending_plan = 'pack5'
+                    st.rerun()
+                if st.button("30 analyses — A$20", key="buy_pack30", use_container_width=True):
+                    st.session_state.pending_plan = 'pack30'
+                    st.rerun()
+            with _pc2:
+                if st.button("20 analyses — A$15", key="buy_pack20", use_container_width=True):
+                    st.session_state.pending_plan = 'pack20'
+                    st.rerun()
+                if st.button("50 analyses — A$30", key="buy_pack50", use_container_width=True):
+                    st.session_state.pending_plan = 'pack50'
                     st.rerun()
             return
 
@@ -2633,7 +2608,7 @@ def main():
         # Only charge one analysis per unique resume+job combination
         _analysis_key = hashlib.md5((resume_text + job_content).encode()).hexdigest()
         if st.session_state.get('_last_analysis_key') != _analysis_key:
-            increment_usage(auth_user_id)
+            decrement_credits(auth_user_id)
             st.session_state['_last_analysis_key'] = _analysis_key
 
     # Results
