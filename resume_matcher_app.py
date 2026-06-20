@@ -2333,6 +2333,27 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
+        st.markdown("""
+        <div style="border-top:1px solid rgba(159,182,168,0.12);padding-top:1rem;margin:0 0 0.6rem;">
+          <p style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.16em;
+                    color:#7ad79f;text-transform:uppercase;margin:0 0 0.7rem;">Top up credits</p>
+        </div>""", unsafe_allow_html=True)
+        _tu1, _tu2 = st.columns(2)
+        with _tu1:
+            if st.button("5 · A$9", key="topup_pack5", use_container_width=True):
+                st.session_state.pending_plan = 'pack5'
+                st.rerun()
+            if st.button("30 · A$20", key="topup_pack30", use_container_width=True):
+                st.session_state.pending_plan = 'pack30'
+                st.rerun()
+        with _tu2:
+            if st.button("20 · A$15", key="topup_pack20", use_container_width=True):
+                st.session_state.pending_plan = 'pack20'
+                st.rerun()
+            if st.button("50 · A$30", key="topup_pack50", use_container_width=True):
+                st.session_state.pending_plan = 'pack50'
+                st.rerun()
+
         _has_analysis = 'analysis_result' in st.session_state
         if not st.session_state.get('_confirm_leave_tracker'):
             if st.button("📋 View Applications", key="sidebar_view_tracker", use_container_width=True):
