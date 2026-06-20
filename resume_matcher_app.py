@@ -1712,6 +1712,17 @@ def show_login_page():
             label_visibility="collapsed",
             key="login_password_input",
         )
+        _components.html("""<script>
+(function() {
+  function patch() {
+    var inputs = window.parent.document.querySelectorAll('input[type="password"]');
+    inputs.forEach(function(el) { el.setAttribute('autocomplete', 'off'); });
+  }
+  patch();
+  var obs = new MutationObserver(patch);
+  obs.observe(window.parent.document.body, { childList: true, subtree: true });
+})();
+</script>""", height=0)
 
         if mode == "signup":
             if st.button("Create account →", type="primary", use_container_width=True, key="signup_btn"):
