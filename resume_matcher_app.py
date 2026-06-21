@@ -2254,7 +2254,7 @@ def main():
 
     auth_user_id = st.session_state['auth_user_id']
     auth_email   = st.session_state.get('auth_email', '')
-    profile      = st.session_state.get('user_profile') or get_or_create_profile(auth_user_id, auth_email)
+    profile = get_or_create_profile(auth_user_id, auth_email)
     st.session_state['user_profile'] = profile
 
     # ── Route to tracker or app workspace ─────────────────────────────────────
@@ -2288,14 +2288,16 @@ def main():
             <div style="font-family:'DM Sans',sans-serif;font-size:12px;
                         color:#9fb6a8;white-space:nowrap;overflow:hidden;
                         text-overflow:ellipsis;margin-bottom:6px;">{auth_email}</div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
-                           font-size:22px;color:#7ad79f;line-height:1;">
-                {int(profile.get('credits') or 0)}
-              </span>
-              <span style="font-family:'DM Sans',sans-serif;font-size:11px;color:#6e8a7b;">
-                {"analysis" if int(profile.get('credits',0)) == 1 else "analyses"} remaining
-              </span>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+                             font-size:22px;color:#7ad79f;line-height:1;">
+                  {int(profile.get('credits') or 0)}
+                </span>
+                <span style="font-family:'DM Sans',sans-serif;font-size:11px;color:#6e8a7b;">
+                  {"analysis" if int(profile.get('credits') or 0) == 1 else "analyses"} remaining
+                </span>
+              </div>
             </div>
           </div>
 
@@ -2339,6 +2341,10 @@ def main():
 
         </div>
         """, unsafe_allow_html=True)
+
+        if st.button("↻ Refresh credits", key="refresh_credits_btn", use_container_width=True):
+            st.session_state.pop('user_profile', None)
+            st.rerun()
 
         _sb_email = auth_email
         _sb_links = []
