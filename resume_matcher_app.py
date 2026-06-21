@@ -664,6 +664,19 @@ For every IMPLIED or MISSING item, provide either:
 **Skills Section:** Does it mirror the job's exact terminology? What's missing or misworded?
 **Education / Certifications:** Any required credentials absent?
 
+## SPECIFIC IMPROVEMENT RECOMMENDATIONS
+
+Provide 6–8 concrete rewrites of existing resume text. Each must:
+- Quote the EXACT current text from the resume (copy it verbatim including bullet characters)
+- Replace weak verbs, vague language, or synonym mismatches — use the job ad's exact terminology where the candidate clearly has the skill
+- Apply the formula: Action Verb + Exact Skill + Quantified Impact + Business Outcome
+- NEVER add skills, tools, or experience not already in the resume
+
+Format each as:
+**Before:** [exact current text, copied verbatim]
+**After:** [improved version — same facts, better expression]
+**Why:** [one sentence]
+
 ## ATS FORMATTING FLAGS
 
 Flag any structural issues that cause ATS parsing failures:
