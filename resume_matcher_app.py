@@ -595,11 +595,8 @@ def scrape_job_url(url: str) -> dict:
 # ============= ANALYSIS =============
 
 def analyze_resume_vs_job(resume_text: str, job_content: str, job_url: str, client):
-    """
-    ResumeWorded-style deep analysis: keyword matching, hard/soft skills gap,
-    section-by-section review, and ATS optimization.
-    """
-    prompt = f"""You are a professional resume expert and ATS specialist — apply the same rigorous methodology used by top resume review platforms like ResumeWorded.
+    """Tiered keyword extraction, three-way match (exact/implied/missing), ATS formatting flags."""
+    prompt = f"""You are an expert ATS analyst and resume strategist. Produce a rigorous, honest gap analysis — not flattery. Be specific and conservative: when in doubt, mark something as implied or missing rather than matched.
 
 **MY RESUME:**
 {resume_text}
@@ -607,13 +604,17 @@ def analyze_resume_vs_job(resume_text: str, job_content: str, job_url: str, clie
 **JOB POSTING (from {job_url}):**
 {job_content}
 
-Perform a thorough, honest analysis using the format below. Be specific — name actual skills, tools, and phrases from both documents.
-
 ---
 
 ## COMPATIBILITY SCORE: [X]%
-Score 0–100. Base it on: keyword overlap, required skills coverage, experience level match, and industry fit.
-Provide one sentence explaining what drives this score.
+
+Weight your score as follows — hard requirements matter most:
+- Hard requirements (must-haves): 50%
+- Core skills and tools: 30%
+- Preferred / nice-to-have: 15%
+- Soft skills and culture fit: 5%
+
+Provide one sentence explaining the primary driver of the score.
 
 ## JOB DETAILS
 - **Job Title:**
@@ -621,56 +622,78 @@ Provide one sentence explaining what drives this score.
 - **Location:**
 - **Employment Type:**
 
-## KEYWORD MATCH ANALYSIS
-List the most important keywords/phrases from the job posting, and whether each appears in the resume:
+## KEYWORD EXTRACTION & MATCH
 
-| Keyword / Phrase | In Resume? | Notes |
-|------------------|-----------|-------|
-| [keyword] | ✅ Yes / ❌ No | [brief note] |
+Extract all significant requirements from the job posting into four tiers, then assign each a match status:
+- **EXACT** — the term or a recognised synonym/acronym appears clearly in the resume
+- **IMPLIED** — the resume describes the underlying experience but without matching terminology (note what bridges it)
+- **MISSING** — no evidence in the resume
 
-Include at least 10 keywords. Focus on tools, technologies, skills, and role-specific terminology.
+Be conservative: partial overlap (e.g. "manage" vs "management") = IMPLIED. "Cloud platforms" is NOT "AWS". "Scripting" is NOT "Python".
 
-## HARD SKILLS GAP
-**Matched hard skills:** List skills/tools the resume clearly demonstrates that the job requires.
-**Missing hard skills:** List required technical skills, tools, or certifications not evident in the resume.
+### Hard Requirements *(degree, certification, years of experience, "required" / "must have")*
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| [item] | EXACT / IMPLIED / MISSING | [note] |
 
-## SOFT SKILLS & EXPERIENCE GAP
-**Matched:** Soft skills and experience types that align.
-**Missing or weak:** Soft skills or experience the job emphasises that are not well demonstrated.
+### Core Skills & Tools *(technologies, software, methodologies explicitly named)*
+| Skill / Tool | Status | Notes |
+|--------------|--------|-------|
+| [item] | EXACT / IMPLIED / MISSING | [note] |
+
+### Preferred Qualifications *("preferred", "plus", "bonus", "nice to have")*
+| Qualification | Status | Notes |
+|---------------|--------|-------|
+| [item] | EXACT / IMPLIED / MISSING | [note] |
+
+### Soft Skills & Competencies
+| Competency | Status | Notes |
+|------------|--------|-------|
+| [item] | EXACT / IMPLIED / MISSING | [note] |
+
+## CLOSING THE GAPS
+
+For every IMPLIED or MISSING item, provide either:
+- A specific, honest reword the candidate could use **only if the underlying experience genuinely applies** — do not invent experience
+- OR flag it as **"Verify with candidate"** if it cannot be determined from the resume
 
 ## RESUME SECTION REVIEW
-Review each key section of the resume against what this role needs:
 
-**Professional Summary:** [Is it tailored? Does it lead with the right strengths for this role?]
-**Work Experience:** [Are the right achievements highlighted? Are bullets outcome-focused with metrics?]
-**Skills Section:** [Does it reflect the job's requirements? What's missing?]
-**Education/Certifications:** [Relevant? Any gaps?]
+**Professional Summary:** Is it tailored? Does it open with the right strengths for this specific role?
+**Work Experience:** Score bullets against: Action Verb + Exact Skill + Quantified Impact + Business Outcome. Name specific weak bullets.
+**Skills Section:** Does it mirror the job's exact terminology? What's missing or misworded?
+**Education / Certifications:** Any required credentials absent?
 
-## SPECIFIC IMPROVEMENT RECOMMENDATIONS
-Provide 4–6 concrete, actionable edits — reference exact bullet points or phrases to change:
-1. [Specific change with before/after example where possible]
-2. ...
+## ATS FORMATTING FLAGS
 
-## ATS OPTIMIZATION
-List the exact keywords and phrases to add to pass ATS screening for this role. Group by category:
-- **Must-add keywords:** (critical — likely filtered by ATS)
-- **Nice-to-add keywords:** (boost ranking)
+Flag any structural issues that cause ATS parsing failures:
+- Tables, text boxes, or multi-column layouts
+- Headers/footers containing key information
+- Non-standard section titles (e.g. "My Journey" instead of "Experience")
+- Graphics or images in place of text
+- Unparseable date formats
+
+If none found, state: *No formatting issues detected.*
+
+## ATS KEYWORD OPTIMISATION
+- **Must-add (hard filter risk):** exact terms the ATS almost certainly filters on
+- **Should-add (ranking boost):** phrases that increase ranking
 
 ⚠️ KEYWORD EXACTNESS WARNING: Flag any case where the resume uses a vague or paraphrased term instead of the job ad's exact wording. ATS systems match literal strings — "SQL" ≠ "database querying", "Python" ≠ "scripting", "AWS" ≠ "cloud platforms", "Tableau" ≠ "visualisation tools". List each mismatch explicitly so the candidate knows to use the job ad's exact terminology.
 - Flag missing semantic phrases where relevant: "end-to-end ownership", "data-driven decision making", "cross-functional collaboration", "stakeholder management", "scalable solutions", "production-ready systems", "business insights"
-- Warn if resume shows signs of keyword stuffing or random keyword lists — modern ATS detects and penalises this
-- Score bullets against the magic formula: Action Verb + Exact Skill + Quantified Impact + Business Outcome. Flag weak bullets that are missing impact or outcome.
+- Flag synonym mismatches explicitly: "SQL" is NOT "database querying", "Python" is NOT "scripting", "AWS" is NOT "cloud platforms"
+- Warn if the resume shows keyword stuffing — modern ATS platforms detect and penalise it
 
 ## COVER LETTER TALKING POINTS
-Top 3 specific talking points tailored to this role and company.
+Top 3 specific talking points for this role and company, focused on honestly bridging the most important implied or missing gaps.
 
-Be direct and honest. If the match is weak, say so clearly and explain why.
+Be direct. If the match is weak, say so and explain why.
 """
 
     try:
         message = client.messages.create(
             model=MODEL_NAME,
-            max_tokens=3000,
+            max_tokens=4000,
             messages=[{"role": "user", "content": prompt}]
         )
         return {'success': True, 'analysis': message.content[0].text}
