@@ -2340,26 +2340,34 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("""
-        <div style="border-top:1px solid rgba(159,182,168,0.12);padding-top:1rem;margin:0 0 0.6rem;">
-          <p style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.16em;
-                    color:#7ad79f;text-transform:uppercase;margin:0 0 0.7rem;">Top up credits</p>
-        </div>""", unsafe_allow_html=True)
-        _tu1, _tu2 = st.columns(2)
-        with _tu1:
-            if st.button("5 · A$9", key="topup_pack5", use_container_width=True):
-                st.session_state.pending_plan = 'pack5'
-                st.rerun()
-            if st.button("30 · A$20", key="topup_pack30", use_container_width=True):
-                st.session_state.pending_plan = 'pack30'
-                st.rerun()
-        with _tu2:
-            if st.button("20 · A$15", key="topup_pack20", use_container_width=True):
-                st.session_state.pending_plan = 'pack20'
-                st.rerun()
-            if st.button("50 · A$30", key="topup_pack50", use_container_width=True):
-                st.session_state.pending_plan = 'pack50'
-                st.rerun()
+        _sb_email = auth_email
+        _sb_links = []
+        for _pk, _pi in PACK_INFO.items():
+            _ref = f"{_sb_email}|{_pk}"[:50]
+            _params = urllib.parse.urlencode({
+                "paymentamount": _pi["amount"],
+                "paymentdescription": f"ResumeSync {_pi['name']} ({_pi['credits']} analyses)",
+                "paymentref": _ref,
+                "email": _sb_email,
+            })
+            _url = PAY_ADVANCED_URL + "?" + _params
+            _sb_links.append(f"""
+            <a href="{_url}" target="_blank" style="
+                display:block;padding:0.45rem 0.6rem;margin-bottom:0.4rem;
+                background:linear-gradient(135deg,#7ad79f,#4fae7a);
+                color:#000000;font-family:'DM Sans',sans-serif;font-weight:700;
+                font-size:12px;text-align:center;border-radius:6px;
+                text-decoration:none;">
+                {_pi['credits']} analyses &nbsp;·&nbsp; {_pi['price']}
+            </a>""")
+        st.markdown(
+            '<div style="border-top:1px solid rgba(159,182,168,0.12);padding-top:1rem;margin:0 0 0.6rem;">'
+            '<p style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.16em;'
+            'color:#7ad79f;text-transform:uppercase;margin:0 0 0.7rem;">Top up credits</p>'
+            + "".join(_sb_links)
+            + '</div>',
+            unsafe_allow_html=True
+        )
 
         _has_analysis = 'analysis_result' in st.session_state
         if not st.session_state.get('_confirm_leave_tracker'):
@@ -2574,22 +2582,32 @@ def main():
         _allowed, _reason = can_run_analysis(profile)
         if not _allowed:
             st.error(f"🔒 {_reason}")
-            st.markdown("**Top up with a credit pack — one-off, no subscription, never expires.**")
-            _pc1, _pc2 = st.columns(2)
-            with _pc1:
-                if st.button("5 analyses — A$9", key="buy_pack5", use_container_width=True):
-                    st.session_state.pending_plan = 'pack5'
-                    st.rerun()
-                if st.button("30 analyses — A$20", key="buy_pack30", use_container_width=True):
-                    st.session_state.pending_plan = 'pack30'
-                    st.rerun()
-            with _pc2:
-                if st.button("20 analyses — A$15", key="buy_pack20", use_container_width=True):
-                    st.session_state.pending_plan = 'pack20'
-                    st.rerun()
-                if st.button("50 analyses — A$30", key="buy_pack50", use_container_width=True):
-                    st.session_state.pending_plan = 'pack50'
-                    st.rerun()
+            _ue = st.session_state.get('auth_email', '')
+            _pack_links = []
+            for _pk, _pi in PACK_INFO.items():
+                _ref = f"{_ue}|{_pk}"[:50]
+                _params = urllib.parse.urlencode({
+                    "paymentamount": _pi["amount"],
+                    "paymentdescription": f"ResumeSync {_pi['name']} ({_pi['credits']} analyses)",
+                    "paymentref": _ref,
+                    "email": _ue,
+                })
+                _url = PAY_ADVANCED_URL + "?" + _params
+                _pack_links.append(f"""
+                <a href="{_url}" target="_blank" style="
+                    display:block;padding:0.6rem 1rem;margin-bottom:0.5rem;
+                    background:linear-gradient(135deg,#7ad79f,#4fae7a);
+                    color:#000000;font-family:'DM Sans',sans-serif;font-weight:700;
+                    font-size:14px;text-align:center;border-radius:8px;
+                    text-decoration:none;box-shadow:0 4px 12px rgba(122,215,159,0.25);">
+                    {_pi['name']} — {_pi['price']} &nbsp;·&nbsp; {_pi['credits']} analyses
+                </a>""")
+            st.markdown(
+                '<p style="font-family:\'DM Sans\',sans-serif;font-size:13px;'
+                'color:#9fb6a8;margin:0.75rem 0 0.5rem;">Top up — one-off, never expires:</p>'
+                + "".join(_pack_links),
+                unsafe_allow_html=True
+            )
             return
 
         with st.spinner("🔍 Analyzing your resume against the job posting..."):
