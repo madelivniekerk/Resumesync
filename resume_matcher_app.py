@@ -1029,8 +1029,13 @@ def re_score_resume(updated_text: str, job_content: str, client) -> int | None:
             model=MODEL_NAME,
             max_tokens=10,
             messages=[{"role": "user", "content":
-                f"Score this resume against the job posting. "
-                f"Return ONLY a single integer 0-100 — the compatibility percentage. No other text.\n\n"
+                f"Score this resume against the job posting using this exact weighting:\n"
+                f"- Hard requirements (degree, certs, years exp, 'required'/'must have'): 50%\n"
+                f"- Core skills and tools explicitly named: 30%\n"
+                f"- Preferred/nice-to-have qualifications: 15%\n"
+                f"- Soft skills and culture fit: 5%\n"
+                f"Be conservative — implied matches score lower than exact matches.\n"
+                f"Return ONLY a single integer 0-100. No other text.\n\n"
                 f"RESUME:\n{updated_text[:4000]}\n\nJOB POSTING:\n{job_content[:4000]}"}]
         )
         val = re.search(r'\d+', message.content[0].text.strip())
@@ -2906,20 +2911,21 @@ def main():
                     new_num  = int(re.search(r'\d+', updated_pct).group()) if re.search(r'\d+', updated_pct) else None
                     if orig_num is not None and new_num is not None:
                         delta = new_num - orig_num
-                        delta_str = f"+{delta}" if delta >= 0 else str(delta)
-                        delta_color = "#7ad79f" if delta >= 0 else "#ef4444"
-                        st.markdown(
-                            f'<div style="text-align:center;margin:8px 0 4px;">'
-                            f'<span style="font-family:\'Space Mono\',monospace;font-size:12px;color:#9fb6a8;">Compatibility: </span>'
-                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#9fb6a8;text-decoration:line-through;">{orig_pct}</span>'
-                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:17px;color:#6e8a7b;margin:0 6px;">→</span>'
-                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#ecf4ee;">{updated_pct}</span>'
-                            f'<span style="font-family:\'Space Mono\',monospace;font-size:11px;color:{delta_color};'
-                            f'background:{"rgba(122,215,159,0.12)" if delta >= 0 else "rgba(239,68,68,0.10)"};'
-                            f'padding:2px 7px;border-radius:5px;margin-left:8px;">{delta_str} pts</span>'
-                            f'</div>',
-                            unsafe_allow_html=True
-                        )
+                        if delta != 0:
+                            delta_str = f"+{delta}" if delta > 0 else str(delta)
+                            delta_color = "#7ad79f" if delta > 0 else "#ef4444"
+                            st.markdown(
+                                f'<div style="text-align:center;margin:8px 0 4px;">'
+                                f'<span style="font-family:\'Space Mono\',monospace;font-size:12px;color:#9fb6a8;">Compatibility: </span>'
+                                f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#9fb6a8;text-decoration:line-through;">{orig_pct}</span>'
+                                f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:17px;color:#6e8a7b;margin:0 6px;">→</span>'
+                                f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#ecf4ee;">{updated_pct}</span>'
+                                f'<span style="font-family:\'Space Mono\',monospace;font-size:11px;color:{delta_color};'
+                                f'background:{"rgba(122,215,159,0.12)" if delta > 0 else "rgba(239,68,68,0.10)"};'
+                                f'padding:2px 7px;border-radius:5px;margin-left:8px;">{delta_str} pts</span>'
+                                f'</div>',
+                                unsafe_allow_html=True
+                            )
                 col_dl_upd = st.columns([1, 2, 1])[1]
                 with col_dl_upd:
                     st.download_button(
