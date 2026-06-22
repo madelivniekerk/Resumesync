@@ -302,5 +302,21 @@
     "created_at": "2026-06-20T07:33:28.368025+00:00",
     "updated_resume_file": "Madeli_van_Niekerk_-_Resu_Updated_Management_Consultant_2026-06-20.docx",
     "user_id": "1836cee0-80cc-4b24-bf3b-3b4fe253ed0f"
+  },
+  {
+    "id": "a7af2345-c36f-4793-88d1-8bc561bb6c8a",
+    "date": "2026-06-22",
+    "job_title": "Operations Manager, Australia",
+    "company": "Whatnot",
+    "location": "New South Wales, Australia (Hybrid — Sydney hub)",
+    "resume_file": "Madeli_van_Niekerk_-_Resu_Updated_Operations_Manager__Austr_2026-06-22.docx",
+    "match_pct": "62%",
+    "job_url": "",
+    "status": "Applied",
+    "notes": "**1.**\n**Before:** `Senior Data & Analytics Leader` *(headline/title)*\n**After:** `Operations Manager | Strategy & Execution | Data-Driven Decision-Making | Gen AI Practitioner`\n**Why:** The current title will cause ATS to miscategorise this as a data/analytics role before a human ever reads it — the headline must signal operations management first.\n\n---\n\n**2.**\n**Before:** `Drives complex, cross-functional initiatives from brief to outcome — maintaining stakeholder alignment throughout, as evidenced by operational reviews received from leadership at Foxtel and Pepper and end-to-end delivery of 10+ consulting engagements at MIP.`\n**After:** `Drives complex, cross-functional initiatives from ambiguous brief to measurable outcome — coordinating stakeholders, managing timelines and defining success metrics across concurrent programs, as evidenced by executive operational reviews at Foxtel and Pepper and end-to-end delivery of 10+ client engagements at MIP.`\n**Why:** Adds \"success metrics\" and \"timelines\" — exact JD language — and removes the passive \"as evidenced by\" construction in favour of active delivery framing.\n\n---\n\n**3.**\n**Before:** `Led Foxtel's enterprise AI adoption initiative end-to-end with comfort figuring things out without a playbook — developed the business case, secured C-suite buy-in, designed the pilot program structure, coordinated cross-functional stakeholders and implemented Gen AI-assisted workflows that accelerated customer insight turnaround; navigated",
+    "cover_letter": "",
+    "created_at": "2026-06-22T04:17:26.543794+00:00",
+    "updated_resume_file": "Madeli_van_Niekerk_-_Resu_Updated_Operations_Manager__Austr_2026-06-22.docx",
+    "user_id": "1836cee0-80cc-4b24-bf3b-3b4fe253ed0f"
   }
 ]
