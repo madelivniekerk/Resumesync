@@ -981,7 +981,7 @@ Rules:
 
 Return only the JSON array, no other text."""
 
-    def _sanitize_json(s: str) -> str:
+    def _sanitize_json(s: str) -> str:  # noqa: E301
         """Escape unescaped control characters inside JSON string values."""
         result = []
         in_string = False
@@ -1018,6 +1018,76 @@ Return only the JSON array, no other text."""
         except json.JSONDecodeError:
             updates = json.loads(_sanitize_json(json_str))
         return {'success': True, 'updates': updates}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+
+def generate_implied_to_exact_updates(resume_text: str, analysis_text: str, client):
+    """
+    Parse IMPLIED rows from the analysis keyword tables and generate find→replace
+    pairs that swap vague resume language for the job posting's exact terminology.
+    """
+    # Extract all IMPLIED rows from the markdown tables
+    implied_items = []
+    for row in re.finditer(
+        r'\|\s*([^|]+?)\s*\|\s*IMPLIED\s*\|\s*([^|]*?)\s*\|',
+        analysis_text, re.IGNORECASE
+    ):
+        term = row.group(1).strip()
+        note = row.group(2).strip()
+        if term and term not in ('Requirement', 'Skill / Tool', 'Qualification', 'Competency'):
+            implied_items.append({"term": term, "note": note})
+
+    if not implied_items:
+        return {'success': True, 'updates': [], 'message': 'No IMPLIED matches found in the analysis.'}
+
+    implied_list = "\n".join(
+        f"- Exact term needed: \"{i['term']}\" | Resume currently implies it via: {i['note']}"
+        for i in implied_items
+    )
+
+    prompt = f"""You are a precise resume editor. Your only job is to convert IMPLIED keyword matches into EXACT matches.
+
+The analysis has identified these terms as IMPLIED — the candidate has the experience but the resume uses vague or paraphrased language instead of the job posting's exact terminology:
+
+{implied_list}
+
+RESUME TEXT:
+{resume_text}
+
+For each IMPLIED item, find the specific phrase in the resume that implies this skill and replace it with the job posting's exact term — keeping everything else identical.
+
+Rules:
+- "find" MUST be copied verbatim from the resume (including bullet prefix characters)
+- Only change the terminology — do NOT rewrite the whole bullet
+- Do NOT add any skill or experience that isn't already in the resume
+- If you cannot find a clear phrase to change for an item, skip it
+- Each "find" must be unique — no duplicates
+
+Return ONLY a JSON array:
+```json
+[
+  {{
+    "find": "exact phrase from resume, copied verbatim",
+    "replace": "same phrase with the exact job posting terminology substituted in",
+    "description": "IMPLIED → EXACT: '[vague term]' → '[exact term]'"
+  }}
+]
+```
+
+Return only the JSON array, no other text."""
+
+    try:
+        message = client.messages.create(
+            model=MODEL_NAME,
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response_text = message.content[0].text.strip()
+        json_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', response_text)
+        json_str = json_match.group(1) if json_match else response_text
+        updates = json.loads(json_str)
+        return {'success': True, 'updates': updates, 'implied_count': len(implied_items)}
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
@@ -2786,9 +2856,35 @@ def main():
             )
 
             st.markdown('<div id="resume-updater-anchor"></div>', unsafe_allow_html=True)
-            col_upd = st.columns([1, 2, 1])[1]
-            with col_upd:
+            col_upd1, col_upd2, col_upd3 = st.columns([1, 1, 1])
+            with col_upd2:
                 update_btn = st.button("✨ Propose Resume Changes", type="primary", key="update_resume_btn", use_container_width=True)
+            with col_upd3:
+                boost_btn = st.button("🎯 Boost Score — Fix Implied Matches", key="boost_score_btn", use_container_width=True)
+
+            if boost_btn:
+                with st.spinner("Finding implied matches to convert..."):
+                    with st.status("Converting IMPLIED → EXACT matches...", expanded=True) as boost_status:
+                        boost_result = generate_implied_to_exact_updates(resume_text, result['analysis'], client)
+                        if not boost_result['success']:
+                            st.error(f"❌ {boost_result['error']}")
+                        elif not boost_result['updates']:
+                            st.info(boost_result.get('message', 'No implied matches to convert.'))
+                            boost_status.update(label="No implied matches found", state="complete")
+                        else:
+                            n = len(boost_result['updates'])
+                            implied_n = boost_result.get('implied_count', n)
+                            st.write(f"✅ Found {implied_n} implied matches — {n} terminology fix(es) ready for review")
+                            boost_status.update(label=f"{n} fix(es) ready — review below", state="complete")
+                            st.session_state['proposed_updates'] = boost_result['updates']
+                            st.session_state.pop('updated_resume_bytes', None)
+                _components.html(
+                    '<script>'
+                    'window.parent.document.getElementById("resume-updater-anchor")'
+                    '.scrollIntoView({behavior:"smooth",block:"start"});'
+                    '</script>',
+                    height=0,
+                )
 
             if update_btn:
                 st.session_state['_upd_guidance_saved'] = upd_guidance
