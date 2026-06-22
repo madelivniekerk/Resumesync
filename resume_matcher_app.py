@@ -804,7 +804,7 @@ def parse_analysis_fields(analysis_text: str) -> dict:
     """Extract job title, company, location and match % from analysis text."""
     fields = {'job_title': '', 'company': '', 'location': '', 'match_pct': ''}
 
-    score_match = re.search(r'COMPATIBILITY SCORE[:\s]+(\d+)%', analysis_text, re.IGNORECASE)
+    score_match = re.search(r'COMPATIBILITY SCORE[^0-9]*(\d+)%', analysis_text, re.IGNORECASE)
     if score_match:
         fields['match_pct'] = score_match.group(1) + '%'
 
@@ -3121,25 +3121,40 @@ def main():
                 updated_pct = st.session_state.get('updated_match_pct')
                 if updated_pct:
                     orig_pct = fields.get('match_pct', '')
+                    # Also try scanning the raw analysis text directly as a fallback
+                    if not orig_pct:
+                        _m = re.search(r'COMPATIBILITY SCORE[^0-9]*(\d+)%', result.get('analysis', ''), re.IGNORECASE)
+                        if _m:
+                            orig_pct = _m.group(1) + '%'
                     orig_num = int(re.search(r'\d+', orig_pct).group()) if re.search(r'\d+', orig_pct) else None
                     new_num  = int(re.search(r'\d+', updated_pct).group()) if re.search(r'\d+', updated_pct) else None
-                    if orig_num is not None and new_num is not None:
+
+                    if orig_num is not None and new_num is not None and orig_num != new_num:
+                        # Full before → after with delta badge
                         delta = new_num - orig_num
-                        if delta != 0:
-                            delta_str = f"+{delta}" if delta > 0 else str(delta)
-                            delta_color = "#7ad79f" if delta > 0 else "#ef4444"
-                            st.markdown(
-                                f'<div style="text-align:center;margin:8px 0 4px;">'
-                                f'<span style="font-family:\'Space Mono\',monospace;font-size:12px;color:#9fb6a8;">Compatibility: </span>'
-                                f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#9fb6a8;text-decoration:line-through;">{orig_pct}</span>'
-                                f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:17px;color:#6e8a7b;margin:0 6px;">→</span>'
-                                f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#ecf4ee;">{updated_pct}</span>'
-                                f'<span style="font-family:\'Space Mono\',monospace;font-size:11px;color:{delta_color};'
-                                f'background:{"rgba(122,215,159,0.12)" if delta > 0 else "rgba(239,68,68,0.10)"};'
-                                f'padding:2px 7px;border-radius:5px;margin-left:8px;">{delta_str} pts</span>'
-                                f'</div>',
-                                unsafe_allow_html=True
-                            )
+                        delta_str = f"+{delta}" if delta > 0 else str(delta)
+                        delta_color = "#7ad79f" if delta > 0 else "#ef4444"
+                        st.markdown(
+                            f'<div style="text-align:center;margin:8px 0 4px;">'
+                            f'<span style="font-family:\'Space Mono\',monospace;font-size:12px;color:#9fb6a8;">Compatibility: </span>'
+                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#9fb6a8;text-decoration:line-through;">{orig_pct}</span>'
+                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:17px;color:#6e8a7b;margin:0 6px;">→</span>'
+                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#ecf4ee;">{updated_pct}</span>'
+                            f'<span style="font-family:\'Space Mono\',monospace;font-size:11px;color:{delta_color};'
+                            f'background:{"rgba(122,215,159,0.12)" if delta > 0 else "rgba(239,68,68,0.10)"};'
+                            f'padding:2px 7px;border-radius:5px;margin-left:8px;">{delta_str} pts</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        # Show updated score on its own (no delta or delta = 0)
+                        st.markdown(
+                            f'<div style="text-align:center;margin:8px 0 4px;">'
+                            f'<span style="font-family:\'Space Mono\',monospace;font-size:12px;color:#9fb6a8;">Updated compatibility: </span>'
+                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#ecf4ee;">{updated_pct}</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
                 col_dl_upd = st.columns([1, 2, 1])[1]
                 with col_dl_upd:
                     st.download_button(
