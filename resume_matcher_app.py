@@ -1092,6 +1092,124 @@ Return only the JSON array, no other text."""
         return {'success': False, 'error': str(e)}
 
 
+def render_analysis(analysis_text: str):
+    """Render the analysis with styled keyword tables for the EXACT/IMPLIED/MISSING section."""
+
+    STATUS_STYLE = {
+        'exact':   ('✅ EXACT',   '#7ad79f', 'rgba(122,215,159,0.12)'),
+        'implied': ('🔶 IMPLIED', '#e0a14a', 'rgba(224,161,74,0.12)'),
+        'missing': ('❌ MISSING', '#ef4444', 'rgba(239,68,68,0.10)'),
+    }
+
+    def _status_badge(cell: str) -> str:
+        c = cell.strip().upper()
+        for key, (label, color, bg) in STATUS_STYLE.items():
+            if key in c.lower():
+                return (
+                    f'<span style="font-family:\'Space Mono\',monospace;font-size:10px;'
+                    f'font-weight:700;letter-spacing:0.06em;color:{color};'
+                    f'background:{bg};border-radius:5px;padding:2px 8px;white-space:nowrap;">'
+                    f'{label}</span>'
+                )
+        return cell.strip()
+
+    def _parse_md_table(block: str) -> list[list[str]]:
+        rows = []
+        for line in block.splitlines():
+            line = line.strip()
+            if not line.startswith('|') or re.match(r'^\|[-| ]+\|$', line):
+                continue
+            cells = [c.strip() for c in line.strip('|').split('|')]
+            rows.append(cells)
+        return rows
+
+    def _render_subsection_table(heading: str, table_rows: list[list[str]]) -> str:
+        if not table_rows:
+            return ''
+        header = table_rows[0]
+        body   = table_rows[1:]
+        th_cells = ''.join(
+            f'<th style="padding:8px 14px;text-align:left;font-family:\'Space Mono\',monospace;'
+            f'font-size:10px;letter-spacing:0.10em;text-transform:uppercase;color:#6e8a7b;'
+            f'border-bottom:1px solid rgba(159,182,168,0.15);white-space:nowrap;">{h}</th>'
+            for h in header
+        )
+        tr_rows = ''
+        for i, row in enumerate(body):
+            bg = 'rgba(255,255,255,0.02)' if i % 2 == 0 else 'transparent'
+            tds = ''
+            for j, cell in enumerate(row):
+                if j == 1:  # Status column
+                    content = _status_badge(cell)
+                else:
+                    content = f'<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ecf4ee;">{cell}</span>'
+                tds += (
+                    f'<td style="padding:8px 14px;vertical-align:top;'
+                    f'border-bottom:1px solid rgba(159,182,168,0.07);background:{bg};">'
+                    f'{content}</td>'
+                )
+            tr_rows += f'<tr>{tds}</tr>'
+        return (
+            f'<div style="margin:1.2rem 0 0.5rem;">'
+            f'<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
+            f'text-transform:uppercase;color:#7ad79f;margin:0 0 0.6rem;">{heading}</p>'
+            f'<div style="overflow-x:auto;border-radius:10px;border:1px solid rgba(159,182,168,0.12);">'
+            f'<table style="width:100%;border-collapse:collapse;">'
+            f'<thead><tr>{th_cells}</tr></thead>'
+            f'<tbody>{tr_rows}</tbody>'
+            f'</table></div></div>'
+        )
+
+    # Split the analysis into sections
+    section_pat = re.compile(r'(^##\s+.+$)', re.MULTILINE)
+    parts = section_pat.split(analysis_text)
+
+    i = 0
+    while i < len(parts):
+        chunk = parts[i]
+
+        # Section heading
+        if re.match(r'^##\s+', chunk):
+            heading_text = chunk.strip()
+            # Check if the NEXT chunk contains the keyword tables
+            content = parts[i + 1] if i + 1 < len(parts) else ''
+            if 'KEYWORD EXTRACTION' in heading_text.upper():
+                st.markdown(f'---\n{heading_text}')
+                # Parse subsections (### headings) within this content block
+                sub_pat = re.compile(r'(^###\s+.+$)', re.MULTILINE)
+                sub_parts = sub_pat.split(content)
+                j = 0
+                # Any leading text before first ###
+                if sub_parts[0].strip():
+                    st.markdown(sub_parts[0])
+                j = 1
+                while j < len(sub_parts):
+                    sub_heading = sub_parts[j].strip('# ').strip()
+                    sub_content = sub_parts[j + 1] if j + 1 < len(sub_parts) else ''
+                    rows = _parse_md_table(sub_content)
+                    if rows:
+                        html = _render_subsection_table(sub_heading, rows)
+                        st.markdown(html, unsafe_allow_html=True)
+                        # Render any non-table text after the table in this subsection
+                        non_table = re.sub(r'\|.*\|', '', sub_content).strip()
+                        if non_table:
+                            st.markdown(non_table)
+                    else:
+                        st.markdown(f'### {sub_heading}\n{sub_content}')
+                    j += 2
+                i += 2
+                continue
+            else:
+                st.markdown(f'{heading_text}\n{content}')
+                i += 2
+                continue
+
+        # Plain text before first heading
+        if chunk.strip():
+            st.markdown(chunk)
+        i += 1
+
+
 def re_score_resume(updated_text: str, job_content: str, client) -> int | None:
     """Quick re-score of the updated resume. Returns integer % or None on failure."""
     try:
@@ -2807,7 +2925,7 @@ def main():
                 st.rerun()
 
         st.markdown('<h2 style="color:#ecf4ee; font-size:1.8rem; font-weight:700; text-align:center; margin:2rem 0; font-family:Bricolage Grotesque,serif; letter-spacing:-0.02em;">📋 Analysis Results</h2>', unsafe_allow_html=True)
-        st.markdown(result['analysis'])
+        render_analysis(result['analysis'])
 
         # Build shared filename parts used across all downloads
         fields = parse_analysis_fields(result['analysis'])
