@@ -572,6 +572,104 @@ def extract_resume_text(uploaded_file):
 
 
 
+ATS_PATTERNS = [
+    ('Greenhouse',      r'boards\.greenhouse\.io|greenhouse\.io/embed',
+     '#3ab87a', '🌿',
+     "Greenhouse parses PDFs reasonably well but still prefers .docx. "
+     "Scoring is heavily keyword-frequency based — use the job posting's exact terms. "
+     "Single-column layout is safest. Standard section headings (Experience, Skills, Education) are required.",
+     ["Use exact keywords from the job description — frequency matters",
+      "Submit .docx over PDF when given the option",
+      "Include both acronym and full form for every key term (e.g. 'SQL (Structured Query Language)')",
+      "Avoid tables and text boxes — single-column only"]),
+
+    ('Lever',           r'jobs\.lever\.co',
+     '#4d90fe', '⚙️',
+     "Lever is one of the more modern ATS systems and handles PDFs well. "
+     "It emphasises keyword matching but also passes resumes to humans quickly — formatting matters more here than in older systems.",
+     ["PDF is fine, but .docx is still safer",
+      "Lever surfaces resumes to recruiters early — clean formatting and strong summary matter",
+      "Include a Skills section — Lever's parsing highlights it separately",
+      "Quantified achievements stand out since humans review quickly"]),
+
+    ('Workday',         r'myworkdayjobs\.com|wd\d+\.myworkdayjobs',
+     '#e87722', '🔶',
+     "Workday is used by large enterprises and is notoriously strict. "
+     "It often re-formats your resume entirely and pulls data into structured fields — "
+     "so your formatting matters less, but your keyword matches matter enormously.",
+     ["Workday strips most formatting — focus on keywords, not layout",
+      "Exact keyword matches are critical — Workday's scoring is very literal",
+      "Fill in every field manually even if it duplicates your resume",
+      "Keep the resume file itself simple — Workday may ignore complex layouts entirely"]),
+
+    ('Taleo',           r'taleo\.net|tbe\.taleo',
+     '#cc0000', '🔴',
+     "Taleo (used by large corporates, banks, government) is the strictest and oldest major ATS. "
+     "It is notoriously bad at parsing PDFs, tables, columns, and anything non-standard.",
+     ["Submit .docx — Taleo's PDF parsing is unreliable",
+      "Absolutely no tables, columns, text boxes, or headers/footers",
+      "Standard section names only: Experience, Education, Skills, Summary",
+      "Keyword matching is purely literal — no semantic understanding whatsoever",
+      "Dates must be formatted consistently (e.g. Jan 2022 – Mar 2024)"]),
+
+    ('Ashby',           r'jobs\.ashbyhq\.com',
+     '#7c3aed', '🟣',
+     "Ashby is a modern ATS used by tech startups. It handles formatting well and passes resumes to humans quickly.",
+     ["Clean formatting is appreciated — humans see your resume early",
+      "Skills section is scanned separately — include one",
+      "Keyword matching still matters but Ashby is more forgiving than Taleo/Workday"]),
+
+    ('SmartRecruiters', r'smartrecruiters\.com',
+     '#00b4d8', '🔵',
+     "SmartRecruiters handles modern formats well and is relatively lenient on formatting.",
+     ["PDF and .docx both work well",
+      "Keyword matching is important — include both acronyms and full terms",
+      "Skills section is highlighted in the recruiter view"]),
+
+    ('iCIMS',           r'icims\.com',
+     '#005eb8', '🏢',
+     "iCIMS is widely used in large enterprises and healthcare. It parses reasonably well but prefers simple formatting.",
+     ["Simple single-column layout strongly preferred",
+      "Submit .docx when possible",
+      "Keyword frequency matters — repeat key terms naturally across sections"]),
+
+    ('Workable',        r'apply\.workable\.com',
+     '#ff6b35', '🟠',
+     "Workable is used by SMEs and handles modern formats well. Resumes reach humans relatively quickly.",
+     ["Both PDF and .docx work fine",
+      "Include a Skills section — Workable highlights it in recruiter view",
+      "Quantified results help since humans review early"]),
+
+    ('BambooHR',        r'bamboohr\.com',
+     '#73c41d', '🌱',
+     "BambooHR is used by SMEs and is relatively lenient. Resumes often reach humans quickly.",
+     ["Standard formatting is fine — no major restrictions",
+      "Keyword matching still applies — mirror the job description language",
+      "Keep it clean and concise — hiring managers usually review directly"]),
+]
+
+
+def detect_ats(url: str) -> dict | None:
+    """Detect which ATS is being used from a job or application URL. Returns ATS info dict or None."""
+    if not url or url == 'Manual Input':
+        return None
+    for name, pattern, color, icon, summary, tips in ATS_PATTERNS:
+        if re.search(pattern, url, re.IGNORECASE):
+            return {'name': name, 'color': color, 'icon': icon,
+                    'summary': summary, 'tips': tips}
+    return None
+
+
+def detect_ats_from_text(text: str) -> dict | None:
+    """Scan pasted job description text for embedded ATS URLs."""
+    urls = re.findall(r'https?://[^\s\)"\'<>]+', text)
+    for url in urls:
+        result = detect_ats(url)
+        if result:
+            return result
+    return None
+
+
 def scrape_job_url(url: str) -> dict:
     try:
         headers = {
@@ -2865,6 +2963,11 @@ def main():
             manual_job_text = st.text_area("Job description", placeholder="Paste the full job description here...", height=100, label_visibility="collapsed")
             if manual_job_text:
                 st.markdown(f'<p style="font-size:0.75rem;color:#7ad79f;margin:4px 0 0;font-family:DM Sans,sans-serif;">✅ {len(manual_job_text)} characters</p>', unsafe_allow_html=True)
+            manual_apply_url = st.text_input(
+                "Application URL *(optional — detects your ATS)*",
+                placeholder="https://boards.greenhouse.io/company/jobs/...",
+                key="manual_apply_url"
+            )
 
     st.markdown("""
     <div style="border-top:1px solid rgba(159,182,168,0.07);margin:12px 0 4px;"></div>
@@ -2969,11 +3072,16 @@ def main():
                         st.info("💡 Switch to 'Paste job description manually'.")
                         return
                     job_content = job_data['content']
+                    st.session_state['detected_ats'] = detect_ats(job_url) or detect_ats_from_text(job_content)
                     st.write(f"✅ Fetched {len(job_content)} characters from job posting")
                     status.update(label="Job posting fetched!", state="complete")
             else:
                 job_content = manual_job_text
-                job_url = "Manual Input"
+                # Try to detect ATS from optional application URL or embedded URLs in the text
+                _manual_apply_url = st.session_state.get('manual_apply_url', '')
+                _detected_ats = detect_ats(_manual_apply_url) or detect_ats_from_text(manual_job_text)
+                st.session_state['detected_ats'] = _detected_ats
+                job_url = _manual_apply_url or "Manual Input"
                 st.success(f"✅ Using manually pasted job description ({len(job_content)} characters)")
 
             with st.status("Analysing with Claude AI...", expanded=True) as status:
@@ -3033,6 +3141,27 @@ def main():
         _fn_date = datetime.now().strftime('%Y-%m-%d')
         _fn_person = re.sub(r'[^\w\-]', '_', resume_filename.rsplit('.', 1)[0])[:25].strip('_')
         _fn_role = re.sub(r'[^\w\-]', '_', fields.get('job_title', 'Role').replace(' ', '_'))[:25].strip('_')
+
+        # ---- ATS Detection panel ----
+        _ats = st.session_state.get('detected_ats')
+        if _ats:
+            _tips_html = ''.join(
+                f'<li style="color:#ecf4ee;font-size:0.88rem;font-family:\'DM Sans\',sans-serif;'
+                f'line-height:1.7;margin-bottom:0.2rem;">{t}</li>'
+                for t in _ats['tips']
+            )
+            st.markdown(
+                f'<div style="background:rgba(255,255,255,0.03);border:1px solid {_ats["color"]}40;'
+                f'border-left:4px solid {_ats["color"]};border-radius:12px;padding:1.2rem 1.5rem;margin:0.5rem 0 1rem;">'
+                f'<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
+                f'text-transform:uppercase;color:{_ats["color"]};margin:0 0 0.4rem;">'
+                f'{_ats["icon"]} ATS Detected — {_ats["name"]}</p>'
+                f'<p style="color:#9fb6a8;font-size:0.88rem;font-family:\'DM Sans\',sans-serif;'
+                f'line-height:1.6;margin:0 0 0.8rem;">{_ats["summary"]}</p>'
+                f'<ul style="margin:0;padding-left:1.2rem;">{_tips_html}</ul>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
 
         # ---- Quick ATS pre-flight checks ----
         _ats_warnings = []
