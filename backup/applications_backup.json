@@ -318,5 +318,21 @@
     "created_at": "2026-06-22T04:17:26.543794+00:00",
     "updated_resume_file": "Madeli_van_Niekerk_-_Resu_Updated_Operations_Manager__Austr_2026-06-22.docx",
     "user_id": "1836cee0-80cc-4b24-bf3b-3b4fe253ed0f"
+  },
+  {
+    "id": "fe86f348-f58d-4487-943d-f32705a1b8b2",
+    "date": "2026-06-23",
+    "job_title": "Senior Manager, Insights",
+    "company": "News Corp Australia (Surry Hills, NSW — implied from context; company name not stated in posting but visible from URL/context)",
+    "location": "Surry Hills, New South Wales — Hybrid",
+    "resume_file": "Madeli van Niekerk - Resume -C - Minimal-.docx",
+    "match_pct": "88%",
+    "job_url": "https://www.linkedin.com/jobs/search-results/?currentJobId=4418929653&eBP=NOT_ELIGIBLE_FOR_CHARGING&refId=%2FgAUUG%2Fx5YTLTrvxzYUPTg%3D%3D&trackingId=qtZnx5gcR8HSSufFR%2FvxBA%3D%3D&keywords=Reporting%20Manager%20or%20Reporting%20Specialist%20or%20AI%20Developer%20or%20Data%20Specialist%20or%20Data%20Manager%2C%20on-site%20or%20hybrid&origin=PREFERENCES_LANDING&geoId=90009524",
+    "status": "Applied",
+    "notes": "**Recommendation 1 — Professional Summary Opening**\n\n**Before:**\n> Senior Data & Analytics Leader with 15+ years of experience delivering end-to-end data solutions across ETL/ELT pipelines, cloud data platforms and enterprise business intelligence.\n\n**After:**\n> Senior Insights Leader with 15+ years of experience translating complex subscriber, customer and audience data into clear, actionable insight that drives growth, retention and strategic decision-making across media, financial services and government.\n\n**Why:** The job ad explicitly says the role is \"not a deeply technical specialist role\" — leading with ETL pipelines and cloud platforms signals the wrong profile and will cost the candidate interview consideration regardless of ATS score.\n\n---\n\n**Recommendation 2 — Summary Technical Tagline**\n\n**Before:**\n> BI Specialist · ETL & Data Engineering · Gen AI Practitioner\n\n**After:**\n> Insights Leadership · Subscriber & Audience Analytics · Team Development & Capability Building\n\n**Why:** These three descriptors mirror the role's three core priorities and replace a tagline that actively misaligns the candidate with the job description.\n\n---\n\n**Recommendation 3 — Foxtel AI Adoption Bullet**\n\n**Before:**\n> Led Foxtel's AI adoption initiative: built the business case, managed stakeholder engagement and ran the pilot program — leveraging customer segmentation data and Gen AI-assisted analysis to accelerate customer insight turnaround and improve decision-making speed.\n\n**After:",
+    "cover_letter": "",
+    "created_at": "2026-06-23T11:36:42.643504+00:00",
+    "updated_resume_file": "Madeli_van_Niekerk_-_Resu_Updated_Senior_Manager__Insights_2026-06-23.docx",
+    "user_id": "1836cee0-80cc-4b24-bf3b-3b4fe253ed0f"
   }
 ]
