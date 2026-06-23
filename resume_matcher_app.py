@@ -3239,51 +3239,48 @@ def main():
             )
 
             st.markdown('<div id="resume-updater-anchor"></div>', unsafe_allow_html=True)
-            col_upd1, col_upd2, col_upd3 = st.columns([1, 1, 1])
-            with col_upd2:
-                update_btn = st.button("✨ Propose Resume Changes", type="primary", key="update_resume_btn", use_container_width=True)
-            with col_upd3:
-                boost_btn = st.button("🎯 Boost Score — Fix Implied Matches", key="boost_score_btn", use_container_width=True)
+            col_upd = st.columns([1, 2, 1])[1]
+            with col_upd:
+                improve_btn = st.button("✨ Propose Resume Changes", type="primary", key="update_resume_btn", use_container_width=True)
 
-            if boost_btn:
-                with st.spinner("Finding implied matches to convert..."):
-                    with st.status("Converting IMPLIED → EXACT matches...", expanded=True) as boost_status:
-                        boost_result = generate_implied_to_exact_updates(resume_text, result['analysis'], client)
-                        if not boost_result['success']:
-                            st.error(f"❌ {boost_result['error']}")
-                        elif not boost_result['updates']:
-                            st.info(boost_result.get('message', 'No implied matches to convert.'))
-                            boost_status.update(label="No implied matches found", state="complete")
-                        else:
-                            n = len(boost_result['updates'])
-                            implied_n = boost_result.get('implied_count', n)
-                            st.write(f"✅ Found {implied_n} implied matches — {n} terminology fix(es) ready for review")
-                            boost_status.update(label=f"{n} fix(es) ready — review below", state="complete")
-                            st.session_state['proposed_updates'] = boost_result['updates']
-                            st.session_state['update_source'] = 'boost'
-                            st.session_state.pop('updated_resume_bytes', None)
-                _components.html(
-                    '<script>'
-                    'window.parent.document.getElementById("resume-updater-anchor")'
-                    '.scrollIntoView({behavior:"smooth",block:"start"});'
-                    '</script>',
-                    height=0,
-                )
-
-            if update_btn:
+            if improve_btn:
                 st.session_state['_upd_guidance_saved'] = upd_guidance
-                with st.spinner("Generating proposed changes..."):
-                    with st.status("Analysing what can be improved...", expanded=True) as upd_status:
-                        upd_result = generate_resume_updates(resume_text, result['analysis'], client, user_guidance=upd_guidance)
-                        if not upd_result['success']:
-                            st.error(f"❌ Could not generate changes: {upd_result['error']}")
-                        else:
-                            st.write(f"✅ {len(upd_result['updates'])} proposed changes ready for review")
-                            upd_status.update(label="Proposals ready — please review below", state="complete")
-                            st.session_state['proposed_updates'] = upd_result['updates']
-                            st.session_state['update_source'] = 'regular'
-                            st.session_state.pop('updated_resume_bytes', None)
-                # Scroll back to the Resume Updater section, not the bottom of the page
+                all_updates = []
+                boost_implied_count = 0
+
+                with st.status("Improving your resume...", expanded=True) as upd_status:
+                    # Step 1 — general expression improvements + guidance metrics
+                    upd_status.write("Analysing improvements and applying your guidance...")
+                    upd_result = generate_resume_updates(resume_text, result['analysis'], client, user_guidance=upd_guidance)
+                    if upd_result['success']:
+                        all_updates.extend(upd_result['updates'])
+                        upd_status.write(f"✅ {len(upd_result['updates'])} expression improvement(s) found")
+                    else:
+                        upd_status.write(f"⚠️ Could not generate general changes: {upd_result['error']}")
+
+                    # Step 2 — implied → exact terminology boost
+                    upd_status.write("Converting implied keyword matches to exact terminology...")
+                    boost_result = generate_implied_to_exact_updates(resume_text, result['analysis'], client)
+                    if boost_result['success'] and boost_result['updates']:
+                        boost_implied_count = boost_result.get('implied_count', len(boost_result['updates']))
+                        # Deduplicate: boost changes take priority over any general change targeting the same text
+                        boost_finds = {u['find'] for u in boost_result['updates']}
+                        all_updates = [u for u in all_updates if u['find'] not in boost_finds]
+                        all_updates.extend(boost_result['updates'])
+                        upd_status.write(f"✅ {len(boost_result['updates'])} implied→exact terminology fix(es) added")
+                    elif boost_result['success']:
+                        upd_status.write("✅ No implied matches to convert — all keywords already exact")
+
+                    upd_status.update(label=f"{len(all_updates)} total change(s) ready for review", state="complete")
+
+                if all_updates:
+                    st.session_state['proposed_updates'] = all_updates
+                    st.session_state['update_source'] = 'boost' if boost_implied_count else 'regular'
+                    st.session_state['_boost_implied_count'] = boost_implied_count
+                    st.session_state.pop('updated_resume_bytes', None)
+                else:
+                    st.error("❌ Could not generate any changes.")
+
                 _components.html(
                     '<script>'
                     'window.parent.document.getElementById("resume-updater-anchor")'
