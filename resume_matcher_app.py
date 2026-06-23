@@ -680,21 +680,32 @@ Format each as:
 ## ATS FORMATTING FLAGS
 
 Flag any structural issues that cause ATS parsing failures:
-- Tables, text boxes, or multi-column layouts
-- Headers/footers containing key information
-- Non-standard section titles (e.g. "My Journey" instead of "Experience")
+- Tables, text boxes, or multi-column layouts (ATS often garbles text in these)
+- Headers/footers containing key information (most ATS ignore header/footer content)
+- Non-standard section titles (e.g. "My Journey" instead of "Experience", "My Toolkit" instead of "Skills")
 - Graphics or images in place of text
 - Unparseable date formats
+- **Missing Skills section** — a dedicated "Skills" or "Core Competencies" section is scanned separately by most ATS; flag if absent
+- **Resume length** — flag if resume appears over 2 pages (too long gets skimmed) or under 1 full page (looks thin)
 
 If none found, state: *No formatting issues detected.*
+
+## IMPACT SCORE
+
+Count bullet points in the Experience section. Categorise each as:
+- **Results-focused:** contains a metric, outcome, or business impact ("reduced by 30%", "increased revenue", "launched", "delivered", "saved X hours")
+- **Duty-focused:** describes a responsibility without measurable outcome ("responsible for", "managed", "assisted with", "involved in")
+
+Report as: **X of Y bullets show measurable impact (Z%)** then list the top 3 duty-focused bullets that most need converting to results-focused, with a suggested rewrite.
 
 ## ATS KEYWORD OPTIMISATION
 - **Must-add (hard filter risk):** exact terms the ATS almost certainly filters on
 - **Should-add (ranking boost):** phrases that increase ranking
 
-⚠️ KEYWORD EXACTNESS WARNING: Flag any case where the resume uses a vague or paraphrased term instead of the job ad's exact wording. ATS systems match literal strings — "SQL" ≠ "database querying", "Python" ≠ "scripting", "AWS" ≠ "cloud platforms", "Tableau" ≠ "visualisation tools". List each mismatch explicitly so the candidate knows to use the job ad's exact terminology.
+⚠️ KEYWORD EXACTNESS WARNING: ATS systems match literal strings. Flag every case where the resume uses a vague or paraphrased term instead of the job ad's exact wording.
+- "SQL" ≠ "database querying" · "Python" ≠ "scripting" · "AWS" ≠ "cloud platforms" · "Tableau" ≠ "visualisation tools"
+- **Acronym coverage:** for any key term that has both an acronym and a full form (e.g. "SEO / Search Engine Optimisation", "KPI / Key Performance Indicator", "ETL / Extract Transform Load"), flag if the resume includes only one form — ATS may index either, so both should appear at least once
 - Flag missing semantic phrases where relevant: "end-to-end ownership", "data-driven decision making", "cross-functional collaboration", "stakeholder management", "scalable solutions", "production-ready systems", "business insights"
-- Flag synonym mismatches explicitly: "SQL" is NOT "database querying", "Python" is NOT "scripting", "AWS" is NOT "cloud platforms"
 - Warn if the resume shows keyword stuffing — modern ATS platforms detect and penalise it
 
 ## COVER LETTER TALKING POINTS
@@ -3022,6 +3033,41 @@ def main():
         _fn_date = datetime.now().strftime('%Y-%m-%d')
         _fn_person = re.sub(r'[^\w\-]', '_', resume_filename.rsplit('.', 1)[0])[:25].strip('_')
         _fn_role = re.sub(r'[^\w\-]', '_', fields.get('job_title', 'Role').replace(' ', '_'))[:25].strip('_')
+
+        # ---- Quick ATS pre-flight checks ----
+        _ats_warnings = []
+        _resume_name_lower = resume_filename.lower()
+        if _resume_name_lower.endswith('.pdf'):
+            _ats_warnings.append(
+                '📄 <strong>File format:</strong> You uploaded a PDF. '
+                'Many ATS systems parse Word documents more reliably — '
+                'submit as <strong>.docx</strong> when the job application allows it.'
+            )
+        _word_count = len(resume_text.split())
+        if _word_count > 1100:
+            _ats_warnings.append(
+                f'📏 <strong>Resume length:</strong> ~{_word_count:,} words detected — this may span more than 2 pages. '
+                'Most ATS and recruiters prefer a 1–2 page resume; trim older or less relevant roles.'
+            )
+        elif _word_count < 250:
+            _ats_warnings.append(
+                f'📏 <strong>Resume length:</strong> Only ~{_word_count:,} words — your resume may look thin to both ATS and recruiters. '
+                'Expand bullet points with context and measurable outcomes.'
+            )
+        if _ats_warnings:
+            st.markdown(
+                '<div style="background:rgba(224,161,74,0.08);border-left:4px solid #e0a14a;'
+                'border-radius:12px;padding:1rem 1.5rem;margin:0.5rem 0 1rem;">'
+                '<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
+                'text-transform:uppercase;color:#e0a14a;margin:0 0 0.5rem;">⚠ ATS pre-flight</p>'
+                + ''.join(
+                    f'<p style="color:#ecf4ee;font-size:0.88rem;font-family:\'DM Sans\',sans-serif;'
+                    f'line-height:1.6;margin:0.3rem 0;">{w}</p>'
+                    for w in _ats_warnings
+                )
+                + '</div>',
+                unsafe_allow_html=True
+            )
 
         st.divider()
 
