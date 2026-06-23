@@ -1054,11 +1054,11 @@ Your task is to improve how existing experience is communicated — NOT to add e
 
 ⚠️ HONESTY RULES (non-negotiable):
 - NEVER add skills, tools, certifications, job titles, or responsibilities not already present in the resume
-- NEVER invent metrics, numbers, or achievements — only use figures already stated in the resume
+- NEVER invent metrics, numbers, or achievements that are not in either the resume OR the candidate guidance above
 - NEVER add experience with software, frameworks, or industries not mentioned in the resume
 - You MAY: use stronger action verbs, improve sentence structure, make achievements clearer, reframe existing content more powerfully, fix vague language
 - PRIORITISE these action verbs wherever they naturally fit existing content: Built, Designed, Developed, Automated, Optimised, Implemented, Led, Delivered, Reduced, Increased, Migrated, Integrated — replace weak or passive verbs with these where accurate
-- If the user has provided metrics in the guidance (%, time saved, revenue, cost reduction, efficiency, scale), work them into the relevant bullet points
+- ✅ CANDIDATE GUIDANCE IS TRUTH: any metrics, numbers, team sizes, or outcomes the candidate has provided in the guidance section (above) are real facts they are vouching for. You MUST weave these into the relevant bullet points — find the closest matching bullet and incorporate the figure. Do not skip them.
 - Where a bullet point is missing a quantified result and one could logically exist, note this in the description field (e.g. "Consider adding a metric here — what % improvement or time saving resulted?") so the user knows where to strengthen further
 - CRITICAL — technical keyword matching: if the job ad uses specific tool/technology names (e.g. "SQL", "Python", "Tableau", "AWS"), the resume must use those EXACT words — not synonyms or paraphrases. "SQL" not "database querying". "Python" not "scripting". "AWS" not "cloud platforms". "Tableau" not "visualisation tools". Where the candidate clearly has the skill but has used a vague term, replace it with the exact keyword from the job ad
 - SEMANTIC PHRASES — where naturally supported by existing experience, weave in AI-scoring phrases: "end-to-end ownership", "data-driven decision making", "cross-functional collaboration", "stakeholder management", "scalable solutions", "production-ready systems", "business insights" — only where they accurately describe what the candidate did
@@ -3297,12 +3297,25 @@ def main():
                 proposed = st.session_state['proposed_updates']
 
                 _saved_guidance = st.session_state.get('_upd_guidance_saved', '').strip()
-                if _saved_guidance:
+                _current_guidance = upd_guidance.strip() if upd_guidance else ''
+                if _current_guidance and _current_guidance != _saved_guidance:
+                    st.markdown(
+                        '<div style="background:rgba(224,161,74,0.10);border-left:3px solid #e0a14a;'
+                        'padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.8rem;font-family:\'DM Sans\',sans-serif;">'
+                        '<span style="color:#e0a14a;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                        'text-transform:uppercase;letter-spacing:0.1em;">⚠ Guidance updated</span>'
+                        '<span style="color:#9fb6a8;font-size:0.85rem;display:block;margin-top:0.3rem;">'
+                        'Your additional guidance changed after these proposals were generated. '
+                        'Click <strong style="color:#ecf4ee;">✨ Propose Resume Changes</strong> again to include it.'
+                        '</span></div>',
+                        unsafe_allow_html=True
+                    )
+                elif _saved_guidance:
                     st.markdown(
                         f'<div style="background:rgba(111,177,224,0.08);border-left:3px solid #6fb1e0;'
                         f'padding:0.5rem 0.9rem;border-radius:6px;margin-bottom:0.8rem;font-family:\'DM Sans\',sans-serif;">'
                         f'<span style="color:#6fb1e0;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                        f'text-transform:uppercase;letter-spacing:0.1em;">✓ Guidance applied: </span>'
+                        f'text-transform:uppercase;letter-spacing:0.1em;">✓ Guidance included: </span>'
                         f'<span style="color:#9fb6a8;font-size:0.82rem;">{_saved_guidance}</span>'
                         f'</div>',
                         unsafe_allow_html=True
