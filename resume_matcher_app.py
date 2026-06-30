@@ -1258,6 +1258,72 @@ Return only the JSON array, no other text."""
         return {'success': False, 'error': str(e)}
 
 
+def generate_removal_suggestions(resume_text: str, client) -> dict:
+    """
+    Identify unnecessary content to remove from the resume.
+    Returns find→replace pairs where replace='' means delete the line.
+    """
+    prompt = f"""You are a ruthless resume editor. Identify content in the resume below that should be REMOVED to make it tighter and stronger.
+
+RESUME:
+{resume_text}
+
+Find lines or bullet points that fall into these categories:
+
+1. DUTY-BASED BULLETS — bullets that only describe a responsibility with no outcome or metric.
+   Examples of phrases to flag: "Responsible for", "Assisted with", "Helped", "Involved in", "Supported", "Worked on", "Participated in", "Contributed to"
+
+2. DUPLICATES — the same skill or responsibility mentioned more than once across different roles. Keep it in the most recent role only; flag older duplicates for removal.
+
+3. FILLER LINES — "References available on request", hobbies/interests section content, generic objective statements with no specific value.
+
+4. OUTDATED ROLE BULLETS — if a role is 10+ years old and has more than 2 bullets, flag the weakest ones (duty-based, no metrics, outdated tech).
+
+5. VERBOSE PADDING — standalone sentences that restate something already said more concisely elsewhere.
+
+For each item you find, return:
+- "find": the EXACT text as it appears in the resume (copy it verbatim including bullet prefix characters)
+- "replace": "" (empty string — meaning delete this line)
+- "description": one short sentence starting with "REMOVE:" explaining why (e.g. "REMOVE: duty-based bullet with no outcome in 2012 role")
+- "type": "remove"
+
+Return ONLY a JSON array — no other text:
+```json
+[
+  {{
+    "find": "exact text from resume copied verbatim",
+    "replace": "",
+    "description": "REMOVE: reason",
+    "type": "remove"
+  }}
+]
+```
+
+Rules:
+- "find" MUST be copied verbatim from the resume — it must match exactly
+- Only flag lines you are confident should be removed — be selective, not exhaustive
+- Do NOT flag job titles, company names, dates, or qualifications
+- Maximum 8 removal suggestions — prioritise the highest-impact cuts"""
+
+    try:
+        message = client.messages.create(
+            model=MODEL_NAME,
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response_text = message.content[0].text.strip()
+        json_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', response_text)
+        json_str = json_match.group(1) if json_match else response_text
+        updates = json.loads(json_str)
+        # Ensure all removal items have type and empty replace
+        for u in updates:
+            u['type']    = 'remove'
+            u['replace'] = ''
+        return {'success': True, 'updates': updates}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+
 def estimate_pages(word_count: int) -> float:
     """Rough page estimate: ~400 resume words per page (accounting for whitespace/headers)."""
     return round(word_count / 400, 1)
@@ -1709,15 +1775,24 @@ def apply_updates_to_docx(file_bytes: bytes, updates: list, original_filename: s
         return True
 
     for update in updates:
-        find_text = update.get('find', '').strip()
+        find_text    = update.get('find', '').strip()
         replace_text = update.get('replace', '').strip()
-        if not find_text or not replace_text:
+        if not find_text:
             continue
 
         for para in _all_paragraphs(doc):
             if find_text in para.text:
-                if _replace_in_para(para, find_text, replace_text):
-                    applied += 1
+                if replace_text == '':
+                    # Deletion — remove the entire paragraph element
+                    try:
+                        p_elem = para._element
+                        p_elem.getparent().remove(p_elem)
+                        applied += 1
+                    except Exception:
+                        pass
+                else:
+                    if _replace_in_para(para, find_text, replace_text):
+                        applied += 1
                 break
 
     output = io.BytesIO()
@@ -3579,6 +3654,18 @@ def main():
                     elif boost_result['success']:
                         upd_status.write("✅ No implied matches to convert — all keywords already exact")
 
+                    # Step 3 — removal suggestions (unnecessary content)
+                    upd_status.write("Checking for unnecessary content to remove...")
+                    removal_result = generate_removal_suggestions(resume_text, client)
+                    if removal_result['success'] and removal_result['updates']:
+                        # Deduplicate against existing finds
+                        existing_finds = {u['find'] for u in all_updates}
+                        new_removals = [u for u in removal_result['updates'] if u['find'] not in existing_finds]
+                        all_updates.extend(new_removals)
+                        upd_status.write(f"✅ {len(new_removals)} unnecessary line(s) flagged for removal")
+                    elif removal_result['success']:
+                        upd_status.write("✅ No unnecessary content found")
+
                     upd_status.update(label=f"{len(all_updates)} total change(s) ready for review", state="complete")
 
                 if all_updates:
@@ -3634,36 +3721,52 @@ def main():
 
                 selected = []
                 for i, change in enumerate(proposed):
-                    find = change.get('find', '')
-                    replace = change.get('replace', '')
+                    find        = change.get('find', '')
+                    replace     = change.get('replace', '')
                     description = change.get('description', 'Improve phrasing')
+                    is_removal  = change.get('type') == 'remove' or replace == ''
 
                     with st.container():
                         checked = st.checkbox(f"**Change {i+1}:** {description}", value=True, key=f"chk_{i}")
-                        col_b, col_a = st.columns(2)
-                        with col_b:
+
+                        if is_removal:
+                            # Full-width red removal card
                             st.markdown(
-                                f'<div style="background:rgba(224,122,95,0.08);border-left:3px solid #e07a5f;'
-                                f'padding:0.6rem 0.8rem;border-radius:10px;font-size:0.82rem;'
-                                f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;">'
-                                f'<strong style="color:#e07a5f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                                f'letter-spacing:0.1em;text-transform:uppercase;">Before</strong><br>{find}</div>',
+                                f'<div style="background:rgba(224,80,70,0.08);border-left:3px solid #e05046;'
+                                f'padding:0.7rem 0.9rem;border-radius:10px;font-size:0.82rem;'
+                                f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;margin-bottom:0.8rem;">'
+                                f'<strong style="color:#e05046;font-size:0.72rem;font-family:\'Space Mono\',monospace;'
+                                f'letter-spacing:0.1em;text-transform:uppercase;">✂ Remove this line</strong><br>'
+                                f'<span style="text-decoration:line-through;opacity:0.65;">{find}</span></div>',
                                 unsafe_allow_html=True
                             )
-                        with col_a:
-                            st.markdown(
-                                f'<p style="color:#7ad79f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                                f'letter-spacing:0.1em;text-transform:uppercase;margin:0 0 0.3rem;">After — edit if needed</p>',
-                                unsafe_allow_html=True
-                            )
-                            edited_replace = st.text_area(
-                                f"After {i+1}",
-                                value=replace,
-                                height=150,
-                                key=f"edit_replace_{i}",
-                                label_visibility="collapsed"
-                            )
-                        st.markdown("<div style='margin-bottom:0.8rem'></div>", unsafe_allow_html=True)
+                            edited_replace = ''
+                        else:
+                            col_b, col_a = st.columns(2)
+                            with col_b:
+                                st.markdown(
+                                    f'<div style="background:rgba(224,122,95,0.08);border-left:3px solid #e07a5f;'
+                                    f'padding:0.6rem 0.8rem;border-radius:10px;font-size:0.82rem;'
+                                    f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;">'
+                                    f'<strong style="color:#e07a5f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                                    f'letter-spacing:0.1em;text-transform:uppercase;">Before</strong><br>{find}</div>',
+                                    unsafe_allow_html=True
+                                )
+                            with col_a:
+                                st.markdown(
+                                    f'<p style="color:#7ad79f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                                    f'letter-spacing:0.1em;text-transform:uppercase;margin:0 0 0.3rem;">After — edit if needed</p>',
+                                    unsafe_allow_html=True
+                                )
+                                edited_replace = st.text_area(
+                                    f"After {i+1}",
+                                    value=replace,
+                                    height=150,
+                                    key=f"edit_replace_{i}",
+                                    label_visibility="collapsed"
+                                )
+                            st.markdown("<div style='margin-bottom:0.8rem'></div>", unsafe_allow_html=True)
+
                         if checked:
                             selected.append({**change, 'replace': edited_replace})
 
