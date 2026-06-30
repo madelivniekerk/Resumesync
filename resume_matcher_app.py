@@ -823,6 +823,58 @@ Be direct. If the match is weak, say so and explain why.
         return {'success': False, 'error': str(e)}
 
 
+def _extract_applicant_name(resume_text: str) -> str:
+    """Pull the applicant's name from the top of the resume (usually the first non-empty line)."""
+    for line in resume_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        # Skip lines that look like contact details, section headers, or dates
+        if re.search(r'[@|/\\]|\d{4}|resume|curriculum|vitae|cv\b', line, re.IGNORECASE):
+            continue
+        # Likely a name: 2-4 words, mostly alpha, no punctuation beyond hyphens
+        words = line.split()
+        if 2 <= len(words) <= 5 and all(re.match(r"[A-Za-z\-'\.]+$", w) for w in words):
+            return line
+    return ""
+
+
+def _extract_applicant_phone(resume_text: str) -> str:
+    """Pull the first phone number found in the resume."""
+    m = re.search(
+        r'(\+?\d[\d\s\-().]{7,}\d)',
+        resume_text
+    )
+    return m.group(1).strip() if m else ""
+
+
+def _ensure_closing(letter: str, name: str, phone: str) -> str:
+    """
+    Guarantee the cover letter ends with a proper closing block.
+    If one already exists (any variant of Regards/Sincerely/Yours), replace it
+    with our canonical version. Otherwise append it.
+    """
+    closing_pat = re.compile(
+        r'(kind regards|warm regards|regards|sincerely|yours sincerely|yours faithfully|'
+        r'best regards|with regards|thank you)[,.]?\s*\n',
+        re.IGNORECASE
+    )
+    # Build the closing block
+    closing_lines = ["Kind regards,", ""]
+    if name:
+        closing_lines.append(name)
+    if phone:
+        closing_lines.append(phone)
+    closing_block = "\n".join(closing_lines)
+
+    # If a closing already exists, strip everything from it onward and replace
+    m = closing_pat.search(letter)
+    if m:
+        return letter[:m.start()].rstrip() + "\n\n" + closing_block
+    # No closing found — append it
+    return letter.rstrip() + "\n\n" + closing_block
+
+
 def generate_cover_letter(resume_text: str, job_content: str, job_url: str, analysis_text: str, client,
                           tone: str = "Professional", length: str = "Standard (300–350 words)",
                           incorporate_recs: bool = True, prior_letter: str = None,
@@ -833,6 +885,16 @@ def generate_cover_letter(resume_text: str, job_content: str, job_url: str, anal
         "4. Subtly weave in 1–2 of the specific improvement recommendations from the match analysis — show you understand what the role demands."
         if incorporate_recs else
         "4. Address any apparent gaps using transferable skills and relevant context."
+    )
+
+    applicant_name  = _extract_applicant_name(resume_text)
+    applicant_phone = _extract_applicant_phone(resume_text)
+    closing_name    = applicant_name  or "[Your Name]"
+    closing_phone   = applicant_phone or ""
+    closing_instruction = (
+        f"IMPORTANT — the final lines of the letter MUST be exactly:\n\n"
+        f"Kind regards,\n\n{closing_name}"
+        + (f"\n{closing_phone}" if closing_phone else "")
     )
 
     if prior_letter and change_instructions:
@@ -856,11 +918,7 @@ You previously wrote the cover letter below. The user has requested specific cha
 - Tone: {tone}
 - Length: {word_target} words
 - Do NOT include placeholder text or generic phrases.
-- Always end the letter with:
-  Kind regards,
-
-  [applicant's full name from the resume]
-  [applicant's phone number from the resume, if present]
+- {closing_instruction}
 
 Return only the revised cover letter, starting directly with the salutation.
 """
@@ -880,7 +938,7 @@ Based on this resume analysis and job posting, write a compelling cover letter.
 
 **Instructions:**
 1. Tone: {tone} — maintain this voice consistently throughout
-2. Length: {word_target} words
+2. Length: {word_target} words (body only — not counting the closing lines)
 3. Strong opening hook that immediately shows value — no "I am writing to apply" clichés
 {recs_line}
 5. Highlight 2–3 key achievements from the resume that directly match job requirements
@@ -890,11 +948,7 @@ Based on this resume analysis and job posting, write a compelling cover letter.
 
 Do NOT include placeholder text or generic phrases.
 Start directly with the salutation. Make it ready to copy-paste.
-End the letter with:
-  Kind regards,
-
-  [applicant's full name from the resume]
-  [applicant's phone number from the resume, if present]
+{closing_instruction}
 """
     try:
         message = client.messages.create(
@@ -902,7 +956,10 @@ End the letter with:
             max_tokens=2000,
             messages=[{"role": "user", "content": prompt}]
         )
-        return {'success': True, 'cover_letter': message.content[0].text}
+        letter = message.content[0].text
+        # Guarantee the closing is present and correct regardless of what Claude produced
+        letter = _ensure_closing(letter, applicant_name, applicant_phone)
+        return {'success': True, 'cover_letter': letter}
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
