@@ -3396,15 +3396,10 @@ def main():
             )
         _word_count = len(resume_text.split())
         _est_pages  = estimate_pages(_word_count)
-        _too_long   = _word_count > 700   # >~1.75 pages → prompt trim
-        if _too_long:
+        if _word_count < 250:
             _ats_warnings.append(
-                f'📏 <strong>Resume length:</strong> ~{_word_count:,} words detected (≈{_est_pages} pages). '
-                'Most recruiters and ATS prefer a maximum of 2 pages — see the trim tool below.'
-            )
-        elif _word_count < 250:
-            _ats_warnings.append(
-                f'📏 <strong>Resume length:</strong> Only ~{_word_count:,} words — your resume may look thin to both ATS and recruiters. '
+                f'📏 <strong>Resume length:</strong> Only ~{_word_count:,} words extracted — your resume may look thin, '
+                'or the file may be image-based (try uploading as .docx). '
                 'Expand bullet points with context and measurable outcomes.'
             )
         if _ats_warnings:
@@ -3422,35 +3417,33 @@ def main():
                 unsafe_allow_html=True
             )
 
-        # ── Resume Trim ──────────────────────────────────────────────────────
-        if _too_long:
-            st.markdown(
-                '<div style="background:rgba(224,161,74,0.06);border:1.5px solid rgba(224,161,74,0.30);'
-                'border-radius:14px;padding:1.2rem 1.5rem;margin:0.5rem 0 1.2rem;">'
-                '<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
-                'text-transform:uppercase;color:#e0a14a;margin:0 0 0.5rem;">✂ Resume too long?</p>'
-                f'<p style="color:#ecf4ee;font-size:0.92rem;font-family:\'DM Sans\',sans-serif;line-height:1.6;margin:0 0 0.6rem;">'
-                f'Your resume is approximately <strong>{_est_pages} pages</strong>. '
-                'Most employers read no further than page 2 — a tighter resume gets more attention, not less. '
-                'The AI will cut low-impact content, condense older roles, and sharpen your summary '
-                'while keeping every fact exactly as you wrote it.</p>'
-                '<p style="color:#9fb6a8;font-size:0.82rem;font-family:\'DM Sans\',sans-serif;margin:0;">'
-                '⚠ Nothing is fabricated — only existing content is reorganised or removed.</p>'
-                '</div>',
-                unsafe_allow_html=True
-            )
+        # ── Resume Trim — always visible after analysis ───────────────────────
+        st.markdown(
+            '<div style="background:rgba(224,161,74,0.06);border:1.5px solid rgba(224,161,74,0.30);'
+            'border-radius:14px;padding:1.2rem 1.5rem;margin:0.5rem 0 1.2rem;">'
+            '<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
+            'text-transform:uppercase;color:#e0a14a;margin:0 0 0.5rem;">✂ Trim My Resume</p>'
+            f'<p style="color:#ecf4ee;font-size:0.92rem;font-family:\'DM Sans\',sans-serif;line-height:1.6;margin:0 0 0.4rem;">'
+            f'<strong>{_word_count:,} words detected (~{_est_pages} pages).</strong> '
+            'Most employers stop reading after page 2. The AI will cut low-impact content, '
+            'condense older roles, and sharpen your summary — keeping every fact intact.</p>'
+            '<p style="color:#9fb6a8;font-size:0.82rem;font-family:\'DM Sans\',sans-serif;margin:0;">'
+            'Nothing is fabricated — only existing content is reorganised or removed.</p>'
+            '</div>',
+            unsafe_allow_html=True
+        )
 
-            _trim_target = st.radio(
-                "Target length",
-                ["2 pages (recommended)", "1 page (very tight)"],
-                horizontal=True,
-                key="trim_target"
-            )
-            _trim_pages = 2 if "2 pages" in _trim_target else 1
+        _trim_target = st.radio(
+            "Target length",
+            ["2 pages (recommended)", "1 page (very tight)"],
+            horizontal=True,
+            key="trim_target"
+        )
+        _trim_pages = 2 if "2 pages" in _trim_target else 1
 
-            col_trim = st.columns([1, 2, 1])[1]
-            with col_trim:
-                trim_btn = st.button("✂ Trim My Resume", key="trim_resume_btn", use_container_width=True)
+        col_trim = st.columns([1, 2, 1])[1]
+        with col_trim:
+            trim_btn = st.button("✂ Trim My Resume", key="trim_resume_btn", use_container_width=True)
 
             if trim_btn:
                 with st.status("Trimming your resume...", expanded=True) as trim_status:
@@ -3464,54 +3457,54 @@ def main():
                         st.error(f"❌ Could not trim resume: {trim_result['error']}")
                         trim_status.update(label="Failed", state="error")
 
-            if st.session_state.get('trimmed_resume_text'):
-                trimmed_text = st.session_state['trimmed_resume_text']
-                cuts_summary  = st.session_state.get('trimmed_resume_cuts', '')
-                _trimmed_words = len(trimmed_text.split())
-                _trimmed_pages = estimate_pages(_trimmed_words)
+        if st.session_state.get('trimmed_resume_text'):
+            trimmed_text   = st.session_state['trimmed_resume_text']
+            cuts_summary   = st.session_state.get('trimmed_resume_cuts', '')
+            _trimmed_words = len(trimmed_text.split())
+            _trimmed_pages = estimate_pages(_trimmed_words)
 
-                st.markdown(
-                    f'<div style="background:rgba(122,215,159,0.06);border-left:4px solid #7ad79f;'
-                    f'border-radius:12px;padding:1rem 1.5rem;margin:0.8rem 0 0.5rem;">'
-                    f'<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
-                    f'text-transform:uppercase;color:#7ad79f;margin:0 0 0.4rem;">✓ Trimmed</p>'
-                    f'<p style="color:#ecf4ee;font-size:0.9rem;font-family:\'DM Sans\',sans-serif;margin:0;">'
-                    f'Reduced from <strong>~{_est_pages} pages</strong> to <strong>~{_trimmed_pages} pages</strong> '
-                    f'({_word_count:,} → {_trimmed_words:,} words).</p>'
-                    f'</div>',
-                    unsafe_allow_html=True
+            st.markdown(
+                f'<div style="background:rgba(122,215,159,0.06);border-left:4px solid #7ad79f;'
+                f'border-radius:12px;padding:1rem 1.5rem;margin:0.8rem 0 0.5rem;">'
+                f'<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
+                f'text-transform:uppercase;color:#7ad79f;margin:0 0 0.4rem;">✓ Trimmed</p>'
+                f'<p style="color:#ecf4ee;font-size:0.9rem;font-family:\'DM Sans\',sans-serif;margin:0;">'
+                f'Reduced from <strong>~{_est_pages} pages</strong> to <strong>~{_trimmed_pages} pages</strong> '
+                f'({_word_count:,} → {_trimmed_words:,} words).</p>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+            if cuts_summary:
+                with st.expander("What was removed and why", expanded=False):
+                    st.markdown(cuts_summary)
+
+            with st.expander("Preview trimmed resume", expanded=False):
+                st.text_area(
+                    "Trimmed text (read-only preview)",
+                    value=trimmed_text,
+                    height=400,
+                    disabled=True,
+                    key="trimmed_preview"
                 )
 
-                if cuts_summary:
-                    with st.expander("What was removed and why", expanded=False):
-                        st.markdown(cuts_summary)
+            _trimmed_docx = build_plain_docx(trimmed_text)
+            _trim_fname   = (resume_filename.rsplit('.', 1)[0] if resume_filename else "resume") + "_trimmed.docx"
+            col_dl = st.columns([1, 2, 1])[1]
+            with col_dl:
+                st.download_button(
+                    "⬇ Download Trimmed Resume (.docx)",
+                    data=_trimmed_docx,
+                    file_name=_trim_fname,
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                    key="dl_trimmed"
+                )
 
-                with st.expander("Preview trimmed resume", expanded=False):
-                    st.text_area(
-                        "Trimmed text (read-only preview)",
-                        value=trimmed_text,
-                        height=400,
-                        disabled=True,
-                        key="trimmed_preview"
-                    )
-
-                _trimmed_docx = build_plain_docx(trimmed_text)
-                _trim_fname   = (resume_filename.rsplit('.', 1)[0] if resume_filename else "resume") + "_trimmed.docx"
-                col_dl = st.columns([1, 2, 1])[1]
-                with col_dl:
-                    st.download_button(
-                        "⬇ Download Trimmed Resume (.docx)",
-                        data=_trimmed_docx,
-                        file_name=_trim_fname,
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        use_container_width=True,
-                        key="dl_trimmed"
-                    )
-
-                if st.button("🗑 Clear trimmed version", key="clear_trim"):
-                    st.session_state.pop('trimmed_resume_text', None)
-                    st.session_state.pop('trimmed_resume_cuts', None)
-                    st.rerun()
+            if st.button("🗑 Clear trimmed version", key="clear_trim"):
+                st.session_state.pop('trimmed_resume_text', None)
+                st.session_state.pop('trimmed_resume_cuts', None)
+                st.rerun()
 
         st.divider()
 
