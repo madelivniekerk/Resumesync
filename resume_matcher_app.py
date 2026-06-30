@@ -1268,43 +1268,67 @@ def trim_resume(resume_text: str, client, target_pages: int = 2) -> dict:
     Ask Claude to produce a trimmed version of the resume, removing unnecessary content
     and strengthening the summary. Returns {'success', 'trimmed_text', 'cuts_summary'}.
     """
-    target_words = target_pages * 400
-    prompt = f"""You are a senior career coach and resume editor. The resume below is too long for most employers, who expect a maximum of {target_pages} pages.
+    current_words = len(resume_text.split())
+    # Hard ceiling: 550 words per page (generous — DOCX formatting will tighten it further)
+    max_words = target_pages * 550
+    must_cut  = max(0, current_words - max_words)
 
-**TASK:** Produce a tighter, stronger version of this resume that fits within approximately {target_words} words (~{target_pages} pages).
+    prompt = f"""You are a ruthless-but-fair resume editor. Your ONLY job is to cut this resume down to fit {target_pages} pages.
+
+CURRENT LENGTH: {current_words} words
+HARD MAXIMUM: {max_words} words
+YOU MUST REMOVE AT LEAST: {must_cut} words
+
+This is not optional. The output MUST be under {max_words} words. Count carefully before finishing.
 
 **RESUME:**
 {resume_text}
 
-**RULES:**
-1. NEVER fabricate, add, or embellish any experience, skill, qualification, or metric not already in the resume.
-2. Do NOT remove any job title, company name, date range, or qualification — these are facts.
-3. What you CAN cut or condense:
-   - Roles older than 10–12 years (reduce to one-line entries or remove entirely if irrelevant)
-   - Duplicate or very similar bullet points across roles
-   - Generic duty-based bullets with no measurable outcome ("responsible for", "assisted with")
-   - Verbose or padded sentences that say the same thing in more words
-   - Outdated technologies or tools no longer relevant to the candidate's current direction
-   - An overly long professional summary (cap at 3–4 punchy sentences)
-   - Hobbies/interests sections (rarely read by recruiters or ATS)
-4. STRENGTHEN the professional summary — make it sharp, specific, and lead with the candidate's strongest value proposition.
-5. Keep the highest-impact bullets: those with metrics, outcomes, or strong action verbs.
-6. Preserve all section headings and the overall structure of the resume.
+**WHAT TO CUT — work through these in order until you hit the word limit:**
 
-Return your response in this exact format:
+STEP 1 — Cut entire sections that add no value:
+- Hobbies / Interests / Personal sections → DELETE entirely
+- "References available on request" lines → DELETE
+- Objective statements (replace with a tight 3-sentence summary if none exists)
+
+STEP 2 — Condense old roles (10+ years ago):
+- Keep ONLY: job title, company, dates, and ONE bullet (the most impressive)
+- Delete every other bullet from those roles
+
+STEP 3 — Slash duty-based bullets ruthlessly:
+- Delete any bullet starting with: "Responsible for", "Assisted with", "Helped", "Involved in", "Supported", "Worked on"
+- These add word count with zero impact — cut them all
+
+STEP 4 — Cut duplicate or near-duplicate bullets:
+- If the same skill or responsibility appears in more than one role, keep it ONCE in the most recent role, delete the rest
+
+STEP 5 — Tighten remaining bullets:
+- Cut every bullet to one line — remove padding words ("successfully", "effectively", "various", "a number of", "in order to")
+- Every bullet must lead with a strong action verb
+
+STEP 6 — Cap the summary:
+- Maximum 3 sentences. Cut the rest.
+
+**RULES (non-negotiable):**
+- NEVER fabricate or add anything not already in the resume
+- Keep ALL job titles, company names, and date ranges
+- Keep ALL qualifications and certifications
+- Keep the highest-impact bullets (those with numbers, percentages, or clear outcomes)
+
+Return your response in this EXACT format with no extra text:
 
 TRIMMED_RESUME_START
-[the full trimmed resume text, preserving section headings and bullet formatting]
+[full trimmed resume — MUST be under {max_words} words]
 TRIMMED_RESUME_END
 
 CUTS_SUMMARY_START
-[a brief bullet list of what was removed or condensed and why — be specific, e.g. "Removed 3 duty-based bullets from 2015 role — no outcomes listed"]
+[bullet list of what was cut and from which role]
 CUTS_SUMMARY_END"""
 
     try:
         message = client.messages.create(
             model=MODEL_NAME,
-            max_tokens=3000,
+            max_tokens=4000,
             messages=[{"role": "user", "content": prompt}]
         )
         raw = message.content[0].text
@@ -1327,34 +1351,70 @@ CUTS_SUMMARY_END"""
 
 
 def build_plain_docx(text: str, filename_hint: str = "resume") -> bytes:
-    """Convert plain trimmed resume text back into a clean DOCX."""
-    doc = Document()
-    # Narrow margins
-    for section in doc.sections:
-        section.top_margin    = Inches(0.7)
-        section.bottom_margin = Inches(0.7)
-        section.left_margin   = Inches(0.85)
-        section.right_margin  = Inches(0.85)
+    """Convert plain trimmed resume text into a compact, tight DOCX (no Word default bloat)."""
+    from docx.oxml.ns import qn
+    from docx.oxml   import OxmlElement
 
+    def _set_line_spacing(paragraph, lines=1.0):
+        pf = paragraph.paragraph_format
+        pf.line_spacing_rule = 0   # exact
+        pf.line_spacing      = Pt(13)
+
+    def _zero_space(paragraph, before=0, after=2):
+        pf = paragraph.paragraph_format
+        pf.space_before = Pt(before)
+        pf.space_after  = Pt(after)
+
+    doc = Document()
+
+    # Narrow margins
+    for sec in doc.sections:
+        sec.top_margin    = Inches(0.6)
+        sec.bottom_margin = Inches(0.6)
+        sec.left_margin   = Inches(0.75)
+        sec.right_margin  = Inches(0.75)
+
+    # Kill default Normal style spacing
+    normal = doc.styles['Normal']
+    normal.paragraph_format.space_before = Pt(0)
+    normal.paragraph_format.space_after  = Pt(0)
+    normal.font.size = Pt(10.5)
+
+    blank_count = 0   # collapse multiple blank lines into one
     for line in text.splitlines():
         stripped = line.strip()
+
         if not stripped:
-            doc.add_paragraph("")
+            blank_count += 1
+            if blank_count == 1:          # allow single blank separator
+                p = doc.add_paragraph("")
+                _zero_space(p, before=0, after=0)
             continue
-        # Section headings: ALL CAPS lines or lines ending with ':'
-        if stripped.isupper() and len(stripped) > 3:
-            p = doc.add_paragraph(stripped)
-            p.style = doc.styles['Heading 2']
-            run = p.runs[0] if p.runs else p.add_run(stripped)
+        blank_count = 0
+
+        # Section heading: ALL CAPS line, 4+ chars
+        if stripped.isupper() and len(stripped) >= 4 and not stripped.startswith(('•', '-', '·', '*', '–')):
+            p = doc.add_paragraph()
+            _zero_space(p, before=6, after=2)
+            run = p.add_run(stripped)
             run.bold = True
             run.font.size = Pt(11)
-        # Bullet lines
-        elif stripped.startswith(('•', '-', '·', '*', '–')):
-            p = doc.add_paragraph(stripped[1:].strip(), style='List Bullet')
-            p.paragraph_format.space_after = Pt(2)
+        # Bullet line
+        elif stripped[0] in ('•', '-', '·', '*', '–'):
+            p = doc.add_paragraph()
+            _zero_space(p, before=0, after=1)
+            _set_line_spacing(p)
+            p.paragraph_format.left_indent   = Inches(0.2)
+            p.paragraph_format.first_line_indent = Inches(-0.15)
+            run = p.add_run("• " + stripped[1:].strip())
+            run.font.size = Pt(10.5)
+        # Normal text
         else:
-            p = doc.add_paragraph(stripped)
-            p.paragraph_format.space_after = Pt(2)
+            p = doc.add_paragraph()
+            _zero_space(p, before=0, after=2)
+            _set_line_spacing(p)
+            run = p.add_run(stripped)
+            run.font.size = Pt(10.5)
 
     buf = io.BytesIO()
     doc.save(buf)
