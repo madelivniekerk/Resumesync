@@ -1087,20 +1087,66 @@ def generate_tracker_excel(tracker_data: list) -> bytes:
 
 # ============= RESUME UPDATER =============
 
-def generate_resume_updates(resume_text: str, analysis_text: str, client, user_guidance: str = ""):
+def generate_guidance_updates(resume_text: str, user_guidance: str, client):
+    """
+    Apply the candidate's OWN stated facts/metrics/tone instructions as locked find→replace pairs.
+    These are treated as ground truth — not suggestions — and run before any AI improvements.
+    """
+    prompt = f"""You are a resume editor. The candidate has provided SPECIFIC facts or instructions below.
+These are truths they are vouching for — your ONLY job is to weave them into the most relevant bullets.
+
+CANDIDATE INSTRUCTIONS (must be applied exactly):
+{user_guidance.strip()}
+
+RESUME TEXT:
+{resume_text}
+
+Rules:
+- Find the single most relevant existing bullet point for each instruction and incorporate it naturally
+- Do NOT add new bullets; modify an existing one
+- Do NOT fabricate anything beyond what the candidate stated
+- "find" must be copied verbatim from the resume (including bullet prefix characters)
+- Keep the same format/prefix as the original bullet
+- Return ONLY a JSON array — no other text
+
+```json
+[
+  {{
+    "find": "exact text verbatim from resume",
+    "replace": "improved version incorporating the candidate's stated fact",
+    "description": "Applied candidate guidance: [their instruction]",
+    "type": "user_guidance"
+  }}
+]
+```"""
+
+    try:
+        resp = client.messages.create(
+            model=MODEL_NAME,
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = resp.content[0].text.strip()
+        # strip markdown fence if present
+        if '```' in raw:
+            raw = re.sub(r'```(?:json)?\s*', '', raw).strip().rstrip('`').strip()
+        updates = json.loads(raw)
+        for u in updates:
+            u['type'] = 'user_guidance'
+        return {'success': True, 'updates': updates}
+    except Exception as e:
+        return {'success': False, 'updates': [], 'error': str(e)}
+
+
+def generate_resume_updates(resume_text: str, analysis_text: str, client):
     """
     Ask Claude to return targeted find→replace pairs based on recommendations.
     Strictly forbidden from fabricating skills or experience not in the original resume.
+    User guidance is applied separately as a locked Step 0 in generate_guidance_updates().
     """
-    guidance_block = ""
-    if user_guidance and user_guidance.strip():
-        guidance_block = (
-            f"\n⭐ CANDIDATE GUIDANCE — apply this first, it takes priority over general rules:\n"
-            f"{user_guidance.strip()}\n"
-        )
 
     prompt = f"""You are a professional resume editor with a strict honesty policy.
-{guidance_block}
+
 **CURRENT RESUME TEXT:**
 {resume_text}
 
@@ -3670,18 +3716,31 @@ section.main .block-container{padding-bottom:5rem!important;}
                 improve_btn = st.button("✨ Propose Resume Changes", type="primary", key="update_resume_btn", use_container_width=True)
 
             if improve_btn:
-                upd_guidance = st.session_state.get('upd_guidance', '')
+                upd_guidance = st.session_state.get('upd_guidance', '').strip()
                 st.session_state['_upd_guidance_saved'] = upd_guidance
                 all_updates = []
+                guidance_finds = set()
                 boost_implied_count = 0
 
                 with st.status("Improving your resume...", expanded=True) as upd_status:
-                    # Step 1 — general expression improvements + guidance metrics
-                    upd_status.write("Analysing improvements and applying your guidance...")
-                    upd_result = generate_resume_updates(resume_text, result['analysis'], client, user_guidance=upd_guidance)
+                    # Step 0 — user guidance (locked, highest priority)
+                    if upd_guidance:
+                        upd_status.write("Applying your guidance first...")
+                        guidance_result = generate_guidance_updates(resume_text, upd_guidance, client)
+                        if guidance_result['success'] and guidance_result['updates']:
+                            all_updates.extend(guidance_result['updates'])
+                            guidance_finds = {u['find'] for u in guidance_result['updates']}
+                            upd_status.write(f"✅ {len(guidance_result['updates'])} guidance change(s) locked in")
+                        elif not guidance_result['success']:
+                            upd_status.write(f"⚠️ Could not apply guidance: {guidance_result['error']}")
+
+                    # Step 1 — general expression improvements (skip any bullet already touched by guidance)
+                    upd_status.write("Analysing general improvements...")
+                    upd_result = generate_resume_updates(resume_text, result['analysis'], client)
                     if upd_result['success']:
-                        all_updates.extend(upd_result['updates'])
-                        upd_status.write(f"✅ {len(upd_result['updates'])} expression improvement(s) found")
+                        new_general = [u for u in upd_result['updates'] if u['find'] not in guidance_finds]
+                        all_updates.extend(new_general)
+                        upd_status.write(f"✅ {len(new_general)} expression improvement(s) found")
                     else:
                         upd_status.write(f"⚠️ Could not generate general changes: {upd_result['error']}")
 
@@ -3690,9 +3749,9 @@ section.main .block-container{padding-bottom:5rem!important;}
                     boost_result = generate_implied_to_exact_updates(resume_text, result['analysis'], client)
                     if boost_result['success'] and boost_result['updates']:
                         boost_implied_count = boost_result.get('implied_count', len(boost_result['updates']))
-                        # Deduplicate: boost changes take priority over any general change targeting the same text
                         boost_finds = {u['find'] for u in boost_result['updates']}
-                        all_updates = [u for u in all_updates if u['find'] not in boost_finds]
+                        # Boost takes priority over general but not over user guidance
+                        all_updates = [u for u in all_updates if u.get('type') == 'user_guidance' or u['find'] not in boost_finds]
                         all_updates.extend(boost_result['updates'])
                         upd_status.write(f"✅ {len(boost_result['updates'])} implied→exact terminology fix(es) added")
                     elif boost_result['success']:
@@ -3702,7 +3761,6 @@ section.main .block-container{padding-bottom:5rem!important;}
                     upd_status.write("Checking for unnecessary content to remove...")
                     removal_result = generate_removal_suggestions(resume_text, client)
                     if removal_result['success'] and removal_result['updates']:
-                        # Deduplicate against existing finds
                         existing_finds = {u['find'] for u in all_updates}
                         new_removals = [u for u in removal_result['updates'] if u['find'] not in existing_finds]
                         all_updates.extend(new_removals)
@@ -3766,16 +3824,18 @@ section.main .block-container{padding-bottom:5rem!important;}
 
                 selected = []
                 for i, change in enumerate(proposed):
-                    find        = change.get('find', '')
-                    replace     = change.get('replace', '')
-                    description = change.get('description', 'Improve phrasing')
-                    is_removal  = change.get('type') == 'remove' or replace == ''
+                    find           = change.get('find', '')
+                    replace        = change.get('replace', '')
+                    description    = change.get('description', 'Improve phrasing')
+                    change_type    = change.get('type', '')
+                    is_removal     = change_type == 'remove' or replace == ''
+                    is_user_guided = change_type == 'user_guidance'
 
+                    label_prefix = "⭐ YOUR GUIDANCE — " if is_user_guided else f"Change {i+1}: "
                     with st.container():
-                        checked = st.checkbox(f"**Change {i+1}:** {description}", value=True, key=f"chk_{i}")
+                        checked = st.checkbox(f"**{label_prefix}**{description}", value=True, key=f"chk_{i}")
 
                         if is_removal:
-                            # Full-width red removal card
                             st.markdown(
                                 f'<div style="background:rgba(224,80,70,0.08);border-left:3px solid #e05046;'
                                 f'padding:0.7rem 0.9rem;border-radius:10px;font-size:0.82rem;'
@@ -3787,14 +3847,16 @@ section.main .block-container{padding-bottom:5rem!important;}
                             )
                             edited_replace = ''
                         else:
+                            before_border = '#e0a14a' if is_user_guided else '#e07a5f'
+                            before_bg     = 'rgba(224,161,74,0.08)' if is_user_guided else 'rgba(224,122,95,0.08)'
                             col_b, col_a = st.columns(2)
                             with col_b:
                                 st.markdown(
-                                    f'<div style="background:rgba(224,122,95,0.08);border-left:3px solid #e07a5f;'
+                                    f'<div style="background:{before_bg};border-left:3px solid {before_border};'
                                     f'padding:0.6rem 0.8rem;border-radius:10px;font-size:0.82rem;'
                                     f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;">'
-                                    f'<strong style="color:#e07a5f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                                    f'letter-spacing:0.1em;text-transform:uppercase;">Before</strong><br>{find}</div>',
+                                    f'<strong style="color:{before_border};font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                                    f'letter-spacing:0.1em;text-transform:uppercase;">{"⭐ Your guidance — before" if is_user_guided else "Before"}</strong><br>{find}</div>',
                                     unsafe_allow_html=True
                                 )
                             with col_a:
@@ -4141,7 +4203,7 @@ section.main .block-container{padding-bottom:5rem!important;}
         )
         if _guidance_prompt:
             st.session_state['upd_guidance'] = _guidance_prompt
-            st.rerun()
+            st.toast(f"Guidance saved: \"{_guidance_prompt[:60]}{'…' if len(_guidance_prompt) > 60 else ''}\" — click Propose Resume Changes to apply it.", icon="✅")
 
 
 if _IMPORT_ERROR:
