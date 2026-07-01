@@ -1364,87 +1364,64 @@ def estimate_pages(word_count: int) -> float:
 
 def trim_resume(resume_text: str, client, target_pages: int = 2) -> dict:
     """
-    Ask Claude to produce a trimmed version of the resume, removing unnecessary content
-    and strengthening the summary. Returns {'success', 'trimmed_text', 'cuts_summary'}.
+    Ask Claude to identify what to cut/condense, returning find→replace pairs
+    that can be applied to the original DOCX to preserve formatting.
+    replace='' means delete the line entirely; non-empty replace means condense.
     """
     current_words = len(resume_text.split())
-    # Hard ceiling: 550 words per page (generous — DOCX formatting will tighten it further)
-    max_words = target_pages * 550
-    must_cut  = max(0, current_words - max_words)
+    max_words     = target_pages * 550
+    must_cut      = max(0, current_words - max_words)
 
-    prompt = f"""You are a ruthless-but-fair resume editor. Your ONLY job is to cut this resume down to fit {target_pages} pages.
+    prompt = f"""You are a ruthless resume editor. Identify what to CUT or CONDENSE from the resume below to bring it to {target_pages} pages.
 
-CURRENT LENGTH: {current_words} words
-HARD MAXIMUM: {max_words} words
-YOU MUST REMOVE AT LEAST: {must_cut} words
+CURRENT LENGTH: {current_words} words  |  TARGET MAX: {max_words} words  |  MUST CUT: {must_cut} words
 
-This is not optional. The output MUST be under {max_words} words. Count carefully before finishing.
-
-**RESUME:**
+RESUME:
 {resume_text}
 
-**WHAT TO CUT — work through these in order until you hit the word limit:**
+Work through in priority order:
+1. DELETE entirely: Hobbies/Interests, "References available on request", generic objective statements
+2. CONDENSE old roles (10+ years ago): reduce to title/company/dates + ONE best bullet — return the multi-bullet block as find with a single-bullet replacement
+3. DELETE duty-based bullets with no outcome ("Responsible for", "Assisted with", "Helped", "Involved in", "Supported")
+4. DELETE duplicate bullets that appear in multiple roles (keep only the most recent instance)
+5. CONDENSE verbose bullets: tighten to one line, remove filler words
 
-STEP 1 — Cut entire sections that add no value:
-- Hobbies / Interests / Personal sections → DELETE entirely
-- "References available on request" lines → DELETE
-- Objective statements (replace with a tight 3-sentence summary if none exists)
+Return ONLY a JSON array — no other text:
+```json
+[
+  {{
+    "find": "exact text from resume copied verbatim (including bullet symbols if present)",
+    "replace": "",
+    "description": "REMOVE: reason"
+  }},
+  {{
+    "find": "exact multi-line block to replace",
+    "replace": "condensed single line",
+    "description": "CONDENSE: reason"
+  }}
+]
+```
 
-STEP 2 — Condense old roles (10+ years ago):
-- Keep ONLY: job title, company, dates, and ONE bullet (the most impressive)
-- Delete every other bullet from those roles
-
-STEP 3 — Slash duty-based bullets ruthlessly:
-- Delete any bullet starting with: "Responsible for", "Assisted with", "Helped", "Involved in", "Supported", "Worked on"
-- These add word count with zero impact — cut them all
-
-STEP 4 — Cut duplicate or near-duplicate bullets:
-- If the same skill or responsibility appears in more than one role, keep it ONCE in the most recent role, delete the rest
-
-STEP 5 — Tighten remaining bullets:
-- Cut every bullet to one line — remove padding words ("successfully", "effectively", "various", "a number of", "in order to")
-- Every bullet must lead with a strong action verb
-
-STEP 6 — Cap the summary:
-- Maximum 3 sentences. Cut the rest.
-
-**RULES (non-negotiable):**
-- NEVER fabricate or add anything not already in the resume
-- Keep ALL job titles, company names, and date ranges
-- Keep ALL qualifications and certifications
-- Keep the highest-impact bullets (those with numbers, percentages, or clear outcomes)
-
-Return your response in this EXACT format with no extra text:
-
-TRIMMED_RESUME_START
-[full trimmed resume — MUST be under {max_words} words]
-TRIMMED_RESUME_END
-
-CUTS_SUMMARY_START
-[bullet list of what was cut and from which role]
-CUTS_SUMMARY_END"""
+Rules:
+- "find" MUST be verbatim from the resume — it must match exactly including spacing and punctuation
+- NEVER delete job titles, company names, date ranges, qualifications, or results-based bullets (those with %, $, numbers)
+- Aim for {must_cut}+ words removed across all changes
+- Maximum 12 items — prioritise highest-word-count cuts first"""
 
     try:
         message = client.messages.create(
             model=MODEL_NAME,
-            max_tokens=4000,
+            max_tokens=3000,
             messages=[{"role": "user", "content": prompt}]
         )
-        raw = message.content[0].text
-
-        trimmed = ""
-        cuts = ""
-        m = re.search(r'TRIMMED_RESUME_START\s*(.*?)\s*TRIMMED_RESUME_END', raw, re.DOTALL)
-        if m:
-            trimmed = m.group(1).strip()
-        c = re.search(r'CUTS_SUMMARY_START\s*(.*?)\s*CUTS_SUMMARY_END', raw, re.DOTALL)
-        if c:
-            cuts = c.group(1).strip()
-
-        if not trimmed:
-            return {'success': False, 'error': 'Could not parse trimmed resume from response.'}
-
-        return {'success': True, 'trimmed_text': trimmed, 'cuts_summary': cuts}
+        raw = message.content[0].text.strip()
+        json_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', raw)
+        json_str = json_match.group(1) if json_match else raw
+        pairs = json.loads(json_str)
+        # Tag all as trim type
+        for p in pairs:
+            p['type'] = 'trim'
+        return {'success': True, 'pairs': pairs}
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
@@ -3570,7 +3547,8 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
                             'cover_letter', 'tracker_saved', 'proposed_updates',
                             'updated_resume_bytes', 'updated_resume_name', 'updated_match_pct',
                             'upd_guidance', '_upd_guidance_saved',
-                            'trimmed_resume_text', 'trimmed_resume_cuts', 'analysis_chat']:
+                            'trimmed_resume_text', 'trimmed_resume_cuts', 'analysis_chat',
+                            'trim_docx_bytes', 'trim_pairs', 'trim_applied_count']:
                     st.session_state.pop(key, None)
                 st.rerun()
 
@@ -3666,65 +3644,49 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
         with col_trim:
             trim_btn = st.button("✂ Trim My Resume", key="trim_resume_btn", use_container_width=True)
 
-            if trim_btn:
-                with st.status("Trimming your resume...", expanded=True) as trim_status:
-                    trim_status.write(f"Identifying low-impact content to remove (target: {_trim_pages} pages)...")
-                    trim_result = trim_resume(resume_text, client, target_pages=_trim_pages)
-                    if trim_result['success']:
-                        st.session_state['trimmed_resume_text'] = trim_result['trimmed_text']
-                        st.session_state['trimmed_resume_cuts'] = trim_result['cuts_summary']
-                        trim_status.update(label="Resume trimmed!", state="complete")
-                    else:
-                        st.error(f"❌ Could not trim resume: {trim_result['error']}")
-                        trim_status.update(label="Failed", state="error")
+        if trim_btn:
+            with st.status("Trimming your resume...", expanded=True) as trim_status:
+                trim_status.write(f"Identifying cuts to reach {_trim_pages} pages...")
+                trim_result = trim_resume(resume_text, client, target_pages=_trim_pages)
+                if trim_result['success']:
+                    pairs = trim_result['pairs']
+                    trim_status.write(f"Applying {len(pairs)} cut(s) to your original document...")
+                    _base_bytes = st.session_state.get('resume_file_bytes')
+                    if _base_bytes:
+                        _trimmed_bytes, _applied = apply_updates_to_docx(_base_bytes, pairs, resume_filename)
+                        st.session_state['trim_docx_bytes']   = _trimmed_bytes
+                        st.session_state['trim_pairs']        = pairs
+                        st.session_state['trim_applied_count'] = _applied
+                        # Clear any previous proposed changes — they were based on the untrimmed doc
+                        for _k in ['proposed_updates', 'updated_resume_bytes', 'updated_resume_name',
+                                   'updated_match_pct', 'upd_guidance', '_upd_guidance_saved']:
+                            st.session_state.pop(_k, None)
+                    trim_status.update(label=f"✓ {len(pairs)} item(s) removed — proceed to Update My Resume below", state="complete")
+                else:
+                    st.error(f"❌ Trim failed: {trim_result['error']}")
 
-        if st.session_state.get('trimmed_resume_text'):
-            trimmed_text   = st.session_state['trimmed_resume_text']
-            cuts_summary   = st.session_state.get('trimmed_resume_cuts', '')
-            _trimmed_words = len(trimmed_text.split())
-            _trimmed_pages = estimate_pages(_trimmed_words)
-
+        if st.session_state.get('trim_docx_bytes'):
+            _pairs        = st.session_state.get('trim_pairs', [])
+            _applied      = st.session_state.get('trim_applied_count', 0)
             st.markdown(
-                f'<div style="background:rgba(122,215,159,0.06);border-left:4px solid #7ad79f;'
-                f'border-radius:12px;padding:1rem 1.5rem;margin:0.8rem 0 0.5rem;">'
-                f'<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
-                f'text-transform:uppercase;color:#7ad79f;margin:0 0 0.4rem;">✓ Trimmed</p>'
-                f'<p style="color:#ecf4ee;font-size:0.9rem;font-family:\'DM Sans\',sans-serif;margin:0;">'
-                f'Reduced from <strong>~{_est_pages} pages</strong> to <strong>~{_trimmed_pages} pages</strong> '
-                f'({_word_count:,} → {_trimmed_words:,} words).</p>'
+                f'<div style="background:rgba(122,215,159,0.06);border-left:3px solid #7ad79f;'
+                f'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.5rem;">'
+                f'<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+                f'text-transform:uppercase;color:#7ad79f;">✓ Trimmed — {_applied} item(s) removed</span>'
+                f'<span style="color:#9fb6a8;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
+                f'display:block;margin-top:0.25rem;">Scroll down to <strong style="color:#ecf4ee;">✨ Update My Resume</strong> '
+                f'to improve what remains, then download your final document.</span>'
                 f'</div>',
                 unsafe_allow_html=True
             )
+            if _pairs:
+                with st.expander(f"What was cut ({len(_pairs)} items)", expanded=False):
+                    for p in _pairs:
+                        st.markdown(f'- {p.get("description","")}: `{p.get("find","")[:80]}`')
 
-            if cuts_summary:
-                with st.expander("What was removed and why", expanded=False):
-                    st.markdown(cuts_summary)
-
-            with st.expander("Preview trimmed resume", expanded=False):
-                st.text_area(
-                    "Trimmed text (read-only preview)",
-                    value=trimmed_text,
-                    height=400,
-                    disabled=True,
-                    key="trimmed_preview"
-                )
-
-            _trimmed_docx = build_plain_docx(trimmed_text)
-            _trim_fname   = (resume_filename.rsplit('.', 1)[0] if resume_filename else "resume") + "_trimmed.docx"
-            col_dl = st.columns([1, 2, 1])[1]
-            with col_dl:
-                st.download_button(
-                    "⬇ Download Trimmed Resume (.docx)",
-                    data=_trimmed_docx,
-                    file_name=_trim_fname,
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    use_container_width=True,
-                    key="dl_trimmed"
-                )
-
-            if st.button("🗑 Clear trimmed version", key="clear_trim"):
-                st.session_state.pop('trimmed_resume_text', None)
-                st.session_state.pop('trimmed_resume_cuts', None)
+            if st.button("↩ Undo trim", key="clear_trim"):
+                for _k in ['trim_docx_bytes', 'trim_pairs', 'trim_applied_count']:
+                    st.session_state.pop(_k, None)
                 st.rerun()
 
         st.divider()
@@ -3932,8 +3894,10 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
                     )
 
                 if apply_btn and selected:
+                    # Use trimmed DOCX as base if the user trimmed first; else use original
+                    _base_for_update = st.session_state.get('trim_docx_bytes') or st.session_state['resume_file_bytes']
                     updated_bytes, applied = apply_updates_to_docx(
-                        st.session_state['resume_file_bytes'],
+                        _base_for_update,
                         selected,
                         resume_filename
                     )
