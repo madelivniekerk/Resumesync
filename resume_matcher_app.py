@@ -3195,70 +3195,7 @@ def main():
                 st.session_state.pop(_k, None)
             st.rerun()
 
-        # ── Ask Claude — only shown when analysis is available ────────────────
-        if st.session_state.get('analysis_result'):
-            _sb_resume  = st.session_state.get('resume_text', '')
-            _sb_job     = st.session_state.get('job_content', '')
-            _sb_analysis = st.session_state['analysis_result'].get('analysis', '')
-
-            st.markdown(
-                '<div style="border-top:1px solid rgba(159,182,168,0.15);margin:0.8rem 0 0.5rem;"></div>'
-                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.16em;'
-                'text-transform:uppercase;color:#7ad79f;">💬 Ask Claude</span>',
-                unsafe_allow_html=True
-            )
-
-            if 'analysis_chat' not in st.session_state:
-                st.session_state['analysis_chat'] = []
-            _chat_hist = st.session_state['analysis_chat']
-
-            if not _chat_hist:
-                st.markdown(
-                    '<p style="color:#6e8a7b;font-size:0.70rem;font-family:\'DM Sans\',sans-serif;'
-                    'margin:0.3rem 0 0.4rem;font-style:italic;line-height:1.4;">'
-                    'Ask about gaps, keywords, how to frame your experience…</p>',
-                    unsafe_allow_html=True
-                )
-
-            for _turn in _chat_hist:
-                if _turn['role'] == 'user':
-                    st.markdown(
-                        f'<div style="background:rgba(122,215,159,0.08);border-left:2px solid #7ad79f;'
-                        f'border-radius:5px;padding:0.3rem 0.5rem;margin:0.2rem 0;font-size:0.72rem;'
-                        f'font-family:\'DM Sans\',sans-serif;color:#ecf4ee;">{_turn["content"]}</div>',
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.markdown(
-                        f'<div style="background:rgba(255,255,255,0.03);border-left:2px solid rgba(159,182,168,0.25);'
-                        f'border-radius:5px;padding:0.3rem 0.5rem;margin:0.2rem 0 0.4rem;font-size:0.72rem;'
-                        f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;line-height:1.45;">{_turn["content"]}</div>',
-                        unsafe_allow_html=True
-                    )
-
-            with st.form(key="analysis_chat_form", clear_on_submit=True):
-                _chat_q = st.text_area(
-                    "Q",
-                    placeholder="e.g. Which missing keyword matters most?",
-                    height=55,
-                    label_visibility="collapsed",
-                    key="chat_question_input"
-                )
-                _chat_submit = st.form_submit_button("Ask →", use_container_width=True, type="secondary")
-
-            if _chat_submit and _chat_q.strip():
-                with st.spinner(""):
-                    _answer = analysis_chat_response(
-                        _chat_q.strip(), _sb_resume, _sb_job, _sb_analysis, _chat_hist, client
-                    )
-                st.session_state['analysis_chat'].append({'role': 'user',      'content': _chat_q.strip()})
-                st.session_state['analysis_chat'].append({'role': 'assistant', 'content': _answer})
-                st.rerun()
-
-            if _chat_hist:
-                if st.button("Clear chat", key="clear_analysis_chat", use_container_width=True):
-                    st.session_state['analysis_chat'] = []
-                    st.rerun()
+        pass  # chat is handled via st.chat_input() at the bottom of main()
 
     # ── Workspace compact CSS ─────────────────────────────────────────────────
     st.markdown("""
@@ -3285,6 +3222,14 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
 [data-testid="stRadio"] label p{font-size:0.78rem!important;}
 /* Form submit button smaller and unstyled */
 [data-testid="stFormSubmitButton"] button{font-size:0.78rem!important;padding:0.25rem 0.6rem!important;}
+/* Extra bottom padding so content isn't hidden behind the fixed chat bar */
+section.main .block-container{padding-bottom:5rem!important;}
+/* Style the chat input bar to match dark theme */
+[data-testid="stChatInput"]{background:#0c2019!important;border-top:1px solid rgba(159,182,168,0.15)!important;}
+[data-testid="stChatInput"] textarea{background:#0c2019!important;color:#ecf4ee!important;font-family:'DM Sans',sans-serif!important;font-size:0.82rem!important;}
+[data-testid="stChatInput"] button{color:#7ad79f!important;}
+/* Chat message bubbles */
+[data-testid="stChatMessage"]{background:transparent!important;padding:0.3rem 0!important;}
 </style>""", unsafe_allow_html=True)
 
     # ── Compact welcome topbar (matches handoff App design — lean workspace, not landing hero) ──
@@ -3562,6 +3507,27 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
             unsafe_allow_html=True
         )
         render_analysis(result['analysis'])
+
+        # ── Chat messages (shown above the fixed input bar) ───────────────────
+        if st.session_state.get('analysis_chat'):
+            st.markdown(
+                '<div style="display:flex;align-items:center;gap:8px;margin:0.8rem 0 0.4rem;">'
+                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.16em;'
+                'text-transform:uppercase;color:#7ad79f;">💬 Ask Claude</span>'
+                '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+            for turn in st.session_state['analysis_chat']:
+                if turn['role'] == 'user':
+                    with st.chat_message("user"):
+                        st.markdown(turn['content'])
+                else:
+                    with st.chat_message("assistant"):
+                        st.markdown(turn['content'])
+            if st.button("Clear chat", key="clear_analysis_chat_main"):
+                st.session_state['analysis_chat'] = []
+                st.rerun()
 
         # Build shared filename parts used across all downloads
         fields = parse_analysis_fields(result['analysis'])
@@ -4201,6 +4167,28 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
         '</div>',
         unsafe_allow_html=True
     )
+
+    # ── Fixed bottom chat bar — only shown when an analysis is active ─────────
+    if st.session_state.get('analysis_result'):
+        _chat_prompt = st.chat_input("Ask Claude about your analysis…")
+        if _chat_prompt:
+            _hist  = st.session_state.get('analysis_chat', [])
+            _res   = st.session_state.get('analysis_result', {})
+            _client = get_client()
+            if _client:
+                _answer = analysis_chat_response(
+                    _chat_prompt,
+                    st.session_state.get('resume_text', ''),
+                    st.session_state.get('job_content', ''),
+                    _res.get('analysis', ''),
+                    _hist,
+                    _client
+                )
+                if 'analysis_chat' not in st.session_state:
+                    st.session_state['analysis_chat'] = []
+                st.session_state['analysis_chat'].append({'role': 'user',      'content': _chat_prompt})
+                st.session_state['analysis_chat'].append({'role': 'assistant', 'content': _answer})
+                st.rerun()
 
 
 if _IMPORT_ERROR:
