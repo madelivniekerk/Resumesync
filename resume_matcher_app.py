@@ -3212,11 +3212,76 @@ def main():
                 use_container_width=True
             )
 
-        st.markdown("<div style='height:1rem;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:0.5rem;'></div>", unsafe_allow_html=True)
         if st.button("Sign out", key="sign_out_btn", use_container_width=True):
             for _k in ['auth_user_id','auth_email','auth_token','auth_refresh','user_profile','otp_sent_email']:
                 st.session_state.pop(_k, None)
             st.rerun()
+
+        # ── Ask Claude — only shown when analysis is available ────────────────
+        if st.session_state.get('analysis_result'):
+            _sb_resume  = st.session_state.get('resume_text', '')
+            _sb_job     = st.session_state.get('job_content', '')
+            _sb_analysis = st.session_state['analysis_result'].get('analysis', '')
+
+            st.markdown(
+                '<div style="border-top:1px solid rgba(159,182,168,0.15);margin:0.8rem 0 0.5rem;"></div>'
+                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.16em;'
+                'text-transform:uppercase;color:#7ad79f;">💬 Ask Claude</span>',
+                unsafe_allow_html=True
+            )
+
+            if 'analysis_chat' not in st.session_state:
+                st.session_state['analysis_chat'] = []
+            _chat_hist = st.session_state['analysis_chat']
+
+            if not _chat_hist:
+                st.markdown(
+                    '<p style="color:#6e8a7b;font-size:0.70rem;font-family:\'DM Sans\',sans-serif;'
+                    'margin:0.3rem 0 0.4rem;font-style:italic;line-height:1.4;">'
+                    'Ask about gaps, keywords, how to frame your experience…</p>',
+                    unsafe_allow_html=True
+                )
+
+            for _turn in _chat_hist:
+                if _turn['role'] == 'user':
+                    st.markdown(
+                        f'<div style="background:rgba(122,215,159,0.08);border-left:2px solid #7ad79f;'
+                        f'border-radius:5px;padding:0.3rem 0.5rem;margin:0.2rem 0;font-size:0.72rem;'
+                        f'font-family:\'DM Sans\',sans-serif;color:#ecf4ee;">{_turn["content"]}</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(
+                        f'<div style="background:rgba(255,255,255,0.03);border-left:2px solid rgba(159,182,168,0.25);'
+                        f'border-radius:5px;padding:0.3rem 0.5rem;margin:0.2rem 0 0.4rem;font-size:0.72rem;'
+                        f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;line-height:1.45;">{_turn["content"]}</div>',
+                        unsafe_allow_html=True
+                    )
+
+            with st.form(key="analysis_chat_form", clear_on_submit=True):
+                _chat_q = st.text_area(
+                    "Q",
+                    placeholder="e.g. Which missing keyword matters most?",
+                    height=55,
+                    label_visibility="collapsed",
+                    key="chat_question_input"
+                )
+                _chat_submit = st.form_submit_button("Ask →", use_container_width=True, type="secondary")
+
+            if _chat_submit and _chat_q.strip():
+                with st.spinner(""):
+                    _answer = analysis_chat_response(
+                        _chat_q.strip(), _sb_resume, _sb_job, _sb_analysis, _chat_hist, client
+                    )
+                st.session_state['analysis_chat'].append({'role': 'user',      'content': _chat_q.strip()})
+                st.session_state['analysis_chat'].append({'role': 'assistant', 'content': _answer})
+                st.rerun()
+
+            if _chat_hist:
+                if st.button("Clear chat", key="clear_analysis_chat", use_container_width=True):
+                    st.session_state['analysis_chat'] = []
+                    st.rerun()
 
     # ── Workspace compact CSS ─────────────────────────────────────────────────
     st.markdown("""
@@ -3519,70 +3584,6 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
             unsafe_allow_html=True
         )
         render_analysis(result['analysis'])
-
-        # ── Ask Claude — lives in the sidebar so it stays visible while scrolling ──
-        with st.sidebar:
-            st.markdown(
-                '<div style="border-top:1px solid rgba(159,182,168,0.12);margin:0.8rem 0 0.6rem;"></div>'
-                '<div style="display:flex;align-items:center;gap:6px;margin-bottom:0.5rem;">'
-                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.16em;'
-                'text-transform:uppercase;color:#7ad79f;">💬 Ask Claude</span>'
-                '</div>',
-                unsafe_allow_html=True
-            )
-
-            if 'analysis_chat' not in st.session_state:
-                st.session_state['analysis_chat'] = []
-            chat_history = st.session_state['analysis_chat']
-
-            if not chat_history:
-                st.markdown(
-                    '<p style="color:#6e8a7b;font-size:0.72rem;font-family:\'DM Sans\',sans-serif;'
-                    'margin:0 0 0.5rem;font-style:italic;line-height:1.4;">'
-                    'Ask about keyword gaps, experience framing, salary, anything…</p>',
-                    unsafe_allow_html=True
-                )
-
-            for turn in chat_history:
-                if turn['role'] == 'user':
-                    st.markdown(
-                        f'<div style="background:rgba(122,215,159,0.08);border-left:2px solid #7ad79f;'
-                        f'border-radius:5px;padding:0.3rem 0.6rem;margin:0.2rem 0;font-size:0.74rem;'
-                        f'font-family:\'DM Sans\',sans-serif;color:#ecf4ee;">{turn["content"]}</div>',
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.markdown(
-                        f'<div style="background:rgba(255,255,255,0.03);border-left:2px solid rgba(159,182,168,0.25);'
-                        f'border-radius:5px;padding:0.3rem 0.6rem;margin:0.2rem 0 0.5rem;font-size:0.74rem;'
-                        f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;line-height:1.5;">{turn["content"]}</div>',
-                        unsafe_allow_html=True
-                    )
-
-            with st.form(key="analysis_chat_form", clear_on_submit=True):
-                chat_q = st.text_area(
-                    "Question",
-                    placeholder="Ask about gaps, keywords, phrasing…",
-                    height=60,
-                    label_visibility="collapsed",
-                    key="chat_question_input"
-                )
-                chat_submit = st.form_submit_button("Ask →", use_container_width=True, type="secondary")
-
-            if chat_submit and chat_q.strip():
-                with st.spinner(""):
-                    answer = analysis_chat_response(
-                        chat_q.strip(), resume_text, job_content,
-                        result['analysis'], chat_history, client
-                    )
-                st.session_state['analysis_chat'].append({'role': 'user',    'content': chat_q.strip()})
-                st.session_state['analysis_chat'].append({'role': 'assistant', 'content': answer})
-                st.rerun()
-
-            if chat_history:
-                if st.button("Clear chat", key="clear_analysis_chat", use_container_width=True):
-                    st.session_state['analysis_chat'] = []
-                    st.rerun()
 
         # Build shared filename parts used across all downloads
         fields = parse_analysis_fields(result['analysis'])
