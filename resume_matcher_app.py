@@ -3241,8 +3241,16 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
 [data-testid="stTextArea"] textarea{font-size:0.78rem!important;line-height:1.3!important;}
 /* Radio labels */
 [data-testid="stRadio"] label p{font-size:0.78rem!important;}
-/* Form submit button smaller */
+/* Form submit button smaller and unstyled */
 [data-testid="stFormSubmitButton"] button{font-size:0.78rem!important;padding:0.25rem 0.6rem!important;}
+/* Sticky chat column — targets the column that contains .rs-chat-header */
+[data-testid="stHorizontalBlock"]:has(.rs-chat-header) > [data-testid="column"]:last-child {
+    position: sticky;
+    top: 1rem;
+    align-self: flex-start;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+}
 </style>""", unsafe_allow_html=True)
 
     # ── Compact welcome topbar (matches handoff App design — lean workspace, not landing hero) ──
@@ -3525,7 +3533,7 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
 
         with col_chat:
             st.markdown(
-                '<div style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.6rem;">'
+                '<div class="rs-chat-header" style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.6rem;">'
                 '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
                 'text-transform:uppercase;color:#7ad79f;">💬 Ask Claude</span>'
                 '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
@@ -3574,7 +3582,7 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
                     label_visibility="collapsed",
                     key="chat_question_input"
                 )
-                chat_submit = st.form_submit_button("Ask →", use_container_width=True)
+                chat_submit = st.form_submit_button("Ask →", use_container_width=True, type="secondary")
 
             if chat_submit and chat_q.strip():
                 with st.spinner(""):
