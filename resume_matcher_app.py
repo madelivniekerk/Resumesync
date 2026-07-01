@@ -3243,14 +3243,6 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
 [data-testid="stRadio"] label p{font-size:0.78rem!important;}
 /* Form submit button smaller and unstyled */
 [data-testid="stFormSubmitButton"] button{font-size:0.78rem!important;padding:0.25rem 0.6rem!important;}
-/* Sticky chat column — targets the column that contains .rs-chat-header */
-[data-testid="stHorizontalBlock"]:has(.rs-chat-header) > [data-testid="column"]:last-child {
-    position: sticky;
-    top: 1rem;
-    align-self: flex-start;
-    max-height: calc(100vh - 4rem);
-    overflow-y: auto;
-}
 </style>""", unsafe_allow_html=True)
 
     # ── Compact welcome topbar (matches handoff App design — lean workspace, not landing hero) ──
@@ -3517,43 +3509,37 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
                     st.session_state.pop(key, None)
                 st.rerun()
 
-        # ── Two-column layout: analysis left, Claude chat right ──────────────
-        col_analysis, col_chat = st.columns([3, 1], gap="medium")
+        # ── Analysis full-width ───────────────────────────────────────────────
+        st.markdown(
+            '<div style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.4rem;">'
+            '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
+            'text-transform:uppercase;color:#7ad79f;">📋 Analysis Results</span>'
+            '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
+            '</div>',
+            unsafe_allow_html=True
+        )
+        render_analysis(result['analysis'])
 
-        with col_analysis:
+        # ── Ask Claude — lives in the sidebar so it stays visible while scrolling ──
+        with st.sidebar:
             st.markdown(
-                '<div style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.4rem;">'
-                '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
-                'text-transform:uppercase;color:#7ad79f;">📋 Analysis Results</span>'
-                '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
-                '</div>',
-                unsafe_allow_html=True
-            )
-            render_analysis(result['analysis'])
-
-        with col_chat:
-            st.markdown(
-                '<div class="rs-chat-header" style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.6rem;">'
-                '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
+                '<div style="border-top:1px solid rgba(159,182,168,0.12);margin:0.8rem 0 0.6rem;"></div>'
+                '<div style="display:flex;align-items:center;gap:6px;margin-bottom:0.5rem;">'
+                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.16em;'
                 'text-transform:uppercase;color:#7ad79f;">💬 Ask Claude</span>'
-                '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
                 '</div>',
                 unsafe_allow_html=True
             )
 
-            # Chat history
             if 'analysis_chat' not in st.session_state:
                 st.session_state['analysis_chat'] = []
-
             chat_history = st.session_state['analysis_chat']
 
-            # Render existing messages
             if not chat_history:
                 st.markdown(
-                    '<p style="color:#6e8a7b;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
-                    'margin:0 0 0.6rem;font-style:italic;">'
-                    'Ask anything about your analysis — keyword gaps, how to frame experience, '
-                    'which role to highlight, salary negotiation…</p>',
+                    '<p style="color:#6e8a7b;font-size:0.72rem;font-family:\'DM Sans\',sans-serif;'
+                    'margin:0 0 0.5rem;font-style:italic;line-height:1.4;">'
+                    'Ask about keyword gaps, experience framing, salary, anything…</p>',
                     unsafe_allow_html=True
                 )
 
@@ -3561,24 +3547,23 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
                 if turn['role'] == 'user':
                     st.markdown(
                         f'<div style="background:rgba(122,215,159,0.08);border-left:2px solid #7ad79f;'
-                        f'border-radius:6px;padding:0.4rem 0.7rem;margin:0.3rem 0;font-size:0.80rem;'
+                        f'border-radius:5px;padding:0.3rem 0.6rem;margin:0.2rem 0;font-size:0.74rem;'
                         f'font-family:\'DM Sans\',sans-serif;color:#ecf4ee;">{turn["content"]}</div>',
                         unsafe_allow_html=True
                     )
                 else:
                     st.markdown(
-                        f'<div style="background:rgba(255,255,255,0.03);border-left:2px solid rgba(159,182,168,0.3);'
-                        f'border-radius:6px;padding:0.4rem 0.7rem;margin:0.3rem 0 0.6rem;font-size:0.80rem;'
-                        f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;line-height:1.55;">{turn["content"]}</div>',
+                        f'<div style="background:rgba(255,255,255,0.03);border-left:2px solid rgba(159,182,168,0.25);'
+                        f'border-radius:5px;padding:0.3rem 0.6rem;margin:0.2rem 0 0.5rem;font-size:0.74rem;'
+                        f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;line-height:1.5;">{turn["content"]}</div>',
                         unsafe_allow_html=True
                     )
 
-            # Input
             with st.form(key="analysis_chat_form", clear_on_submit=True):
                 chat_q = st.text_area(
                     "Question",
                     placeholder="Ask about gaps, keywords, phrasing…",
-                    height=52,
+                    height=60,
                     label_visibility="collapsed",
                     key="chat_question_input"
                 )
