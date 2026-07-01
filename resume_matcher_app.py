@@ -1324,6 +1324,39 @@ Rules:
         return {'success': False, 'error': str(e)}
 
 
+def analysis_chat_response(question: str, resume_text: str, job_content: str,
+                           analysis_text: str, history: list, client) -> str:
+    """Reply to a user question in the context of their resume, job posting and analysis."""
+    system = (
+        "You are a concise, expert career advisor embedded inside ResumeSync. "
+        "The user is reviewing their resume-vs-job analysis and can ask you follow-up questions. "
+        "You have full context: their resume, the job posting, and the compatibility analysis already produced. "
+        "Keep answers SHORT — 2–4 sentences unless a list genuinely helps. "
+        "Never fabricate experience the user doesn't have. "
+        "Be direct and actionable."
+    )
+    context_block = (
+        f"<resume>\n{resume_text[:3000]}\n</resume>\n\n"
+        f"<job_posting>\n{job_content[:2000]}\n</job_posting>\n\n"
+        f"<analysis>\n{analysis_text[:3000]}\n</analysis>"
+    )
+    messages = [{"role": "user", "content": context_block},
+                {"role": "assistant", "content": "I have read the resume, job posting and analysis. Ask me anything."}]
+    for turn in history:
+        messages.append({"role": turn["role"], "content": turn["content"]})
+    messages.append({"role": "user", "content": question})
+    try:
+        resp = client.messages.create(
+            model=MODEL_NAME,
+            max_tokens=600,
+            system=system,
+            messages=messages
+        )
+        return resp.content[0].text.strip()
+    except Exception as e:
+        return f"⚠️ Could not get a response: {e}"
+
+
 def estimate_pages(word_count: int) -> float:
     """Rough page estimate: ~400 resume words per page (accounting for whitespace/headers)."""
     return round(word_count / 400, 1)
@@ -1525,8 +1558,8 @@ def render_analysis(analysis_text: str):
         header = table_rows[0]
         body   = table_rows[1:]
         th_cells = ''.join(
-            f'<th style="padding:8px 14px;text-align:left;font-family:\'Space Mono\',monospace;'
-            f'font-size:10px;letter-spacing:0.10em;text-transform:uppercase;color:#6e8a7b;'
+            f'<th style="padding:4px 10px;text-align:left;font-family:\'Space Mono\',monospace;'
+            f'font-size:9px;letter-spacing:0.10em;text-transform:uppercase;color:#6e8a7b;'
             f'border-bottom:1px solid rgba(159,182,168,0.15);white-space:nowrap;">{h}</th>'
             for h in header
         )
@@ -1538,18 +1571,18 @@ def render_analysis(analysis_text: str):
                 if j == 1:  # Status column
                     content = _status_badge(cell)
                 else:
-                    content = f'<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ecf4ee;">{cell}</span>'
+                    content = f'<span style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:#ecf4ee;">{cell}</span>'
                 tds += (
-                    f'<td style="padding:8px 14px;vertical-align:top;'
+                    f'<td style="padding:4px 10px;vertical-align:top;'
                     f'border-bottom:1px solid rgba(159,182,168,0.07);background:{bg};">'
                     f'{content}</td>'
                 )
             tr_rows += f'<tr>{tds}</tr>'
         return (
-            f'<div style="margin:1.2rem 0 0.5rem;">'
-            f'<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
-            f'text-transform:uppercase;color:#7ad79f;margin:0 0 0.6rem;">{heading}</p>'
-            f'<div style="overflow-x:auto;border-radius:10px;border:1px solid rgba(159,182,168,0.12);">'
+            f'<div style="margin:0.4rem 0 0.2rem;">'
+            f'<p style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+            f'text-transform:uppercase;color:#7ad79f;margin:0 0 0.3rem;">{heading}</p>'
+            f'<div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(159,182,168,0.12);">'
             f'<table style="width:100%;border-collapse:collapse;">'
             f'<thead><tr>{th_cells}</tr></thead>'
             f'<tbody>{tr_rows}</tbody>'
@@ -1570,7 +1603,15 @@ def render_analysis(analysis_text: str):
             # Check if the NEXT chunk contains the keyword tables
             content = parts[i + 1] if i + 1 < len(parts) else ''
             if 'KEYWORD EXTRACTION' in heading_text.upper():
-                st.markdown(f'---\n{heading_text}')
+                heading_label = heading_text.lstrip('#').strip()
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;gap:8px;margin:0.8rem 0 0.3rem;">'
+                    f'<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.16em;'
+                    f'text-transform:uppercase;color:#7ad79f;white-space:nowrap;">{heading_label}</span>'
+                    f'<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
                 # Parse subsections (### headings) within this content block
                 sub_pat = re.compile(r'(^###\s+.+$)', re.MULTILINE)
                 sub_parts = sub_pat.split(content)
@@ -1596,7 +1637,17 @@ def render_analysis(analysis_text: str):
                 i += 2
                 continue
             else:
-                st.markdown(f'{heading_text}\n{content}')
+                heading_label = heading_text.lstrip('#').strip()
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;gap:8px;margin:0.8rem 0 0.25rem;">'
+                    f'<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.16em;'
+                    f'text-transform:uppercase;color:#7ad79f;white-space:nowrap;">{heading_label}</span>'
+                    f'<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+                if content.strip():
+                    st.markdown(content)
                 i += 2
                 continue
 
@@ -3167,6 +3218,26 @@ def main():
                 st.session_state.pop(_k, None)
             st.rerun()
 
+    # ── Workspace compact CSS — tighten markdown headings, table spacing, panels ──
+    st.markdown("""
+<style>
+/* Shrink markdown h2/h3 headings in the results area */
+[data-testid="stMarkdownContainer"] h2{font-size:0.95rem!important;font-weight:700!important;
+  margin:0.8rem 0 0.2rem!important;letter-spacing:-0.01em!important;color:#ecf4ee!important;}
+[data-testid="stMarkdownContainer"] h3{font-size:0.82rem!important;font-weight:600!important;
+  margin:0.5rem 0 0.15rem!important;color:#9fb6a8!important;}
+/* Tighten paragraph margins in results blocks */
+[data-testid="stMarkdownContainer"] p{margin-block-end:0.25rem!important;}
+/* Thinner Streamlit dividers */
+hr{margin:0.5rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
+/* Tighten stVerticalBlock gap between result elements */
+[data-testid="stVerticalBlock"]>[data-testid="stVerticalBlockBorderWrapper"]{gap:0!important;}
+/* Checkbox labels smaller */
+[data-testid="stCheckbox"] label p{font-size:0.82rem!important;line-height:1.3!important;}
+/* Text area font smaller */
+[data-testid="stTextArea"] textarea{font-size:0.8rem!important;line-height:1.35!important;}
+</style>""", unsafe_allow_html=True)
+
     # ── Compact welcome topbar (matches handoff App design — lean workspace, not landing hero) ──
     st.markdown("""
     <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;
@@ -3390,7 +3461,8 @@ def main():
         # Clear previous comparison results before storing new ones
         for _k in ['cover_letter', 'proposed_updates', 'updated_resume_bytes',
                    'updated_resume_name', 'updated_match_pct', 'tracker_saved',
-                   '_confirm_leave_tracker', 'upd_guidance', '_upd_guidance_saved']:
+                   '_confirm_leave_tracker', 'upd_guidance', '_upd_guidance_saved',
+                   'analysis_chat']:
             st.session_state.pop(_k, None)
 
         st.session_state['analysis_result'] = result
@@ -3426,12 +3498,91 @@ def main():
                             'cover_letter', 'tracker_saved', 'proposed_updates',
                             'updated_resume_bytes', 'updated_resume_name', 'updated_match_pct',
                             'upd_guidance', '_upd_guidance_saved',
-                            'trimmed_resume_text', 'trimmed_resume_cuts']:
+                            'trimmed_resume_text', 'trimmed_resume_cuts', 'analysis_chat']:
                     st.session_state.pop(key, None)
                 st.rerun()
 
-        st.markdown('<h2 style="color:#ecf4ee; font-size:1.8rem; font-weight:700; text-align:center; margin:2rem 0; font-family:Bricolage Grotesque,serif; letter-spacing:-0.02em;">📋 Analysis Results</h2>', unsafe_allow_html=True)
-        render_analysis(result['analysis'])
+        # ── Two-column layout: analysis left, Claude chat right ──────────────
+        col_analysis, col_chat = st.columns([3, 2], gap="medium")
+
+        with col_analysis:
+            st.markdown(
+                '<div style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.4rem;">'
+                '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
+                'text-transform:uppercase;color:#7ad79f;">📋 Analysis Results</span>'
+                '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+            render_analysis(result['analysis'])
+
+        with col_chat:
+            st.markdown(
+                '<div style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.6rem;">'
+                '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
+                'text-transform:uppercase;color:#7ad79f;">💬 Ask Claude</span>'
+                '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+            # Chat history
+            if 'analysis_chat' not in st.session_state:
+                st.session_state['analysis_chat'] = []
+
+            chat_history = st.session_state['analysis_chat']
+
+            # Render existing messages
+            if not chat_history:
+                st.markdown(
+                    '<p style="color:#6e8a7b;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
+                    'margin:0 0 0.6rem;font-style:italic;">'
+                    'Ask anything about your analysis — keyword gaps, how to frame experience, '
+                    'which role to highlight, salary negotiation…</p>',
+                    unsafe_allow_html=True
+                )
+
+            for turn in chat_history:
+                if turn['role'] == 'user':
+                    st.markdown(
+                        f'<div style="background:rgba(122,215,159,0.08);border-left:2px solid #7ad79f;'
+                        f'border-radius:6px;padding:0.4rem 0.7rem;margin:0.3rem 0;font-size:0.80rem;'
+                        f'font-family:\'DM Sans\',sans-serif;color:#ecf4ee;">{turn["content"]}</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(
+                        f'<div style="background:rgba(255,255,255,0.03);border-left:2px solid rgba(159,182,168,0.3);'
+                        f'border-radius:6px;padding:0.4rem 0.7rem;margin:0.3rem 0 0.6rem;font-size:0.80rem;'
+                        f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;line-height:1.55;">{turn["content"]}</div>',
+                        unsafe_allow_html=True
+                    )
+
+            # Input
+            with st.form(key="analysis_chat_form", clear_on_submit=True):
+                chat_q = st.text_area(
+                    "Question",
+                    placeholder="e.g. Which missing keyword should I prioritise? How do I address the experience gap?",
+                    height=72,
+                    label_visibility="collapsed",
+                    key="chat_question_input"
+                )
+                chat_submit = st.form_submit_button("Ask →", use_container_width=True)
+
+            if chat_submit and chat_q.strip():
+                with st.spinner(""):
+                    answer = analysis_chat_response(
+                        chat_q.strip(), resume_text, job_content,
+                        result['analysis'], chat_history, client
+                    )
+                st.session_state['analysis_chat'].append({'role': 'user',    'content': chat_q.strip()})
+                st.session_state['analysis_chat'].append({'role': 'assistant', 'content': answer})
+                st.rerun()
+
+            if chat_history:
+                if st.button("Clear chat", key="clear_analysis_chat", use_container_width=True):
+                    st.session_state['analysis_chat'] = []
+                    st.rerun()
 
         # Build shared filename parts used across all downloads
         fields = parse_analysis_fields(result['analysis'])
@@ -3443,19 +3594,17 @@ def main():
         _ats = st.session_state.get('detected_ats')
         if _ats:
             _tips_html = ''.join(
-                f'<li style="color:#ecf4ee;font-size:0.88rem;font-family:\'DM Sans\',sans-serif;'
-                f'line-height:1.7;margin-bottom:0.2rem;">{t}</li>'
+                f'<li style="color:#ecf4ee;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
+                f'line-height:1.5;margin-bottom:0.1rem;">{t}</li>'
                 for t in _ats['tips']
             )
             st.markdown(
-                f'<div style="background:rgba(255,255,255,0.03);border:1px solid {_ats["color"]}40;'
-                f'border-left:4px solid {_ats["color"]};border-radius:12px;padding:1.2rem 1.5rem;margin:0.5rem 0 1rem;">'
-                f'<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
-                f'text-transform:uppercase;color:{_ats["color"]};margin:0 0 0.4rem;">'
-                f'{_ats["icon"]} ATS Detected — {_ats["name"]}</p>'
-                f'<p style="color:#9fb6a8;font-size:0.88rem;font-family:\'DM Sans\',sans-serif;'
-                f'line-height:1.6;margin:0 0 0.8rem;">{_ats["summary"]}</p>'
-                f'<ul style="margin:0;padding-left:1.2rem;">{_tips_html}</ul>'
+                f'<div style="background:rgba(255,255,255,0.02);border-left:3px solid {_ats["color"]};'
+                f'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.4rem;">'
+                f'<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+                f'text-transform:uppercase;color:{_ats["color"]};">'
+                f'{_ats["icon"]} {_ats["name"]} — {_ats["summary"]}</span>'
+                f'<ul style="margin:0.3rem 0 0;padding-left:1.1rem;">{_tips_html}</ul>'
                 f'</div>',
                 unsafe_allow_html=True
             )
@@ -3479,13 +3628,12 @@ def main():
             )
         if _ats_warnings:
             st.markdown(
-                '<div style="background:rgba(224,161,74,0.08);border-left:4px solid #e0a14a;'
-                'border-radius:12px;padding:1rem 1.5rem;margin:0.5rem 0 1rem;">'
-                '<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
-                'text-transform:uppercase;color:#e0a14a;margin:0 0 0.5rem;">⚠ ATS pre-flight</p>'
+                '<div style="background:rgba(224,161,74,0.08);border-left:3px solid #e0a14a;'
+                'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.5rem;">'
+                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+                'text-transform:uppercase;color:#e0a14a;">⚠ ATS &nbsp;</span>'
                 + ''.join(
-                    f'<p style="color:#ecf4ee;font-size:0.88rem;font-family:\'DM Sans\',sans-serif;'
-                    f'line-height:1.6;margin:0.3rem 0;">{w}</p>'
+                    f'<span style="color:#ecf4ee;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;">{w}&nbsp; </span>'
                     for w in _ats_warnings
                 )
                 + '</div>',
@@ -3494,16 +3642,13 @@ def main():
 
         # ── Resume Trim — always visible after analysis ───────────────────────
         st.markdown(
-            '<div style="background:rgba(224,161,74,0.06);border:1.5px solid rgba(224,161,74,0.30);'
-            'border-radius:14px;padding:1.2rem 1.5rem;margin:0.5rem 0 1.2rem;">'
-            '<p style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:0.14em;'
-            'text-transform:uppercase;color:#e0a14a;margin:0 0 0.5rem;">✂ Trim My Resume</p>'
-            f'<p style="color:#ecf4ee;font-size:0.92rem;font-family:\'DM Sans\',sans-serif;line-height:1.6;margin:0 0 0.4rem;">'
-            f'<strong>{_word_count:,} words detected (~{_est_pages} pages).</strong> '
-            'Most employers stop reading after page 2. The AI will cut low-impact content, '
-            'condense older roles, and sharpen your summary — keeping every fact intact.</p>'
-            '<p style="color:#9fb6a8;font-size:0.82rem;font-family:\'DM Sans\',sans-serif;margin:0;">'
-            'Nothing is fabricated — only existing content is reorganised or removed.</p>'
+            '<div style="background:rgba(224,161,74,0.06);border-left:3px solid rgba(224,161,74,0.50);'
+            'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.4rem;'
+            'display:flex;align-items:baseline;gap:0.6rem;flex-wrap:wrap;">'
+            '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+            'text-transform:uppercase;color:#e0a14a;white-space:nowrap;">✂ Trim</span>'
+            f'<span style="color:#9fb6a8;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;">'
+            f'{_word_count:,} words (~{_est_pages} pages) — AI removes low-impact content, condenses old roles. Facts stay intact.</span>'
             '</div>',
             unsafe_allow_html=True
         )
@@ -3584,29 +3729,33 @@ def main():
         st.divider()
 
         # ============= RESUME UPDATER =============
-        st.markdown('<h2 style="color:#ecf4ee; font-size:1.6rem; font-weight:700; margin:1rem 0 0.5rem; font-family:\'Bricolage Grotesque\',system-ui,sans-serif; letter-spacing:-0.02em;">✨ Update My Resume</h2>', unsafe_allow_html=True)
+        st.markdown(
+            '<div style="display:flex;align-items:center;gap:8px;margin:0.8rem 0 0.4rem;">'
+            '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
+            'text-transform:uppercase;color:#7ad79f;">✨ Update My Resume</span>'
+            '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
+            '</div>',
+            unsafe_allow_html=True
+        )
 
         if st.session_state.get('resume_is_docx'):
             st.markdown(
-                '<div style="background:rgba(122,215,159,0.06);padding:1rem 1.5rem;border-radius:12px;'
-                'border-left:4px solid #7ad79f;margin-bottom:1rem;">'
-                '<p style="color:#9fb6a8;font-size:0.9rem;margin:0;font-family:\'DM Sans\',sans-serif;line-height:1.6;">'
-                'Improves how your existing experience is expressed — stronger verbs, clearer outcomes. '
-                '<strong style="color:#ecf4ee;">Will never add skills or experience you don\'t have.</strong> '
-                'You review and approve every change before it\'s applied.</p>'
+                '<div style="background:rgba(122,215,159,0.06);padding:0.55rem 0.9rem;border-radius:10px;'
+                'border-left:3px solid #7ad79f;margin-bottom:0.6rem;">'
+                '<p style="color:#9fb6a8;font-size:0.82rem;margin:0;font-family:\'DM Sans\',sans-serif;line-height:1.5;">'
+                'Stronger verbs, clearer outcomes — <strong style="color:#ecf4ee;">never adds skills you don\'t have.</strong> '
+                'Review and approve every change before it\'s applied.</p>'
                 '</div>',
                 unsafe_allow_html=True
             )
 
             st.markdown(
-                '<div style="background:rgba(111,177,224,0.08);padding:1rem 1.5rem;border-radius:12px;'
-                'border-left:4px solid #6fb1e0;margin-bottom:1rem;">'
+                '<div style="background:rgba(111,177,224,0.08);padding:0.55rem 0.9rem;border-radius:10px;'
+                'border-left:3px solid #6fb1e0;margin-bottom:0.6rem;">'
                 '<p style="color:#6fb1e0;font-family:\'Space Mono\',monospace;font-size:9px;'
-                'letter-spacing:0.14em;text-transform:uppercase;margin:0 0 0.5rem;">Tip — quantified impact</p>'
-                '<p style="color:#9fb6a8;font-size:0.88rem;margin:0 0 0.5rem;font-family:\'DM Sans\',sans-serif;line-height:1.6;">'
-                'AI systems heavily favour measurable results. If you know any of these, add them to the guidance box below and the AI will work them in:</p>'
-                '<p style="color:#ecf4ee;font-size:0.85rem;margin:0;font-family:\'DM Sans\',sans-serif;line-height:1.8;">'
-                '📊 <b>%</b> &nbsp;·&nbsp; ⏱ <b>time saved</b> &nbsp;·&nbsp; 💰 <b>revenue / cost reduction</b> &nbsp;·&nbsp; ⚡ <b>efficiency gain</b> &nbsp;·&nbsp; 📈 <b>scale</b> (users, datasets, systems)<br>'
+                'letter-spacing:0.14em;text-transform:uppercase;margin:0 0 0.3rem;">Tip — quantified impact</p>'
+                '<p style="color:#ecf4ee;font-size:0.81rem;margin:0;font-family:\'DM Sans\',sans-serif;line-height:1.6;">'
+                '📊 <b>%</b> &nbsp;·&nbsp; ⏱ <b>time saved</b> &nbsp;·&nbsp; 💰 <b>revenue / cost</b> &nbsp;·&nbsp; ⚡ <b>efficiency</b> &nbsp;·&nbsp; 📈 <b>scale</b><br>'
                 '<span style="color:#6e8a7b;font-size:0.82rem;">'
                 'e.g. "reduced processing time by 35%" &nbsp;·&nbsp; "increased accuracy by 20%" &nbsp;·&nbsp; "supported 5M+ records daily"'
                 '</span></p>'
@@ -3616,8 +3765,8 @@ def main():
 
             upd_guidance = st.text_area(
                 "Additional guidance *(optional)*",
-                placeholder="Add any metrics you know, e.g. 'reduced costs by 30%', 'managed a team of 8', 'processed 2M records daily'. Also: emphasise leadership, lead with Python skills, make it more senior in tone.",
-                height=150,
+                placeholder="Metrics, tone, focus: e.g. 'reduced costs by 30%', 'managed 8 people', 'make it more senior'.",
+                height=80,
                 key="upd_guidance"
             )
 
@@ -3714,8 +3863,9 @@ def main():
                     )
 
                 st.markdown(
-                    '<p style="font-family:\'DM Sans\',sans-serif;font-weight:600;color:#ecf4ee;'
-                    'margin:1.5rem 0 0.5rem;">Review each proposed change — tick only the ones that are true for you:</p>',
+                    '<p style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+                    'text-transform:uppercase;color:#7ad79f;margin:0.6rem 0 0.4rem;">'
+                    'Review changes — untick any you want to skip:</p>',
                     unsafe_allow_html=True
                 )
 
@@ -3761,7 +3911,7 @@ def main():
                                 edited_replace = st.text_area(
                                     f"After {i+1}",
                                     value=replace,
-                                    height=150,
+                                    height=90,
                                     key=f"edit_replace_{i}",
                                     label_visibility="collapsed"
                                 )
