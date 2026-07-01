@@ -1323,40 +1323,6 @@ Rules:
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
-
-def analysis_chat_response(question: str, resume_text: str, job_content: str,
-                           analysis_text: str, history: list, client) -> str:
-    """Reply to a user question in the context of their resume, job posting and analysis."""
-    system = (
-        "You are a concise, expert career advisor embedded inside ResumeSync. "
-        "The user is reviewing their resume-vs-job analysis and can ask you follow-up questions. "
-        "You have full context: their resume, the job posting, and the compatibility analysis already produced. "
-        "Keep answers SHORT — 2–4 sentences unless a list genuinely helps. "
-        "Never fabricate experience the user doesn't have. "
-        "Be direct and actionable."
-    )
-    context_block = (
-        f"<resume>\n{resume_text[:3000]}\n</resume>\n\n"
-        f"<job_posting>\n{job_content[:2000]}\n</job_posting>\n\n"
-        f"<analysis>\n{analysis_text[:3000]}\n</analysis>"
-    )
-    messages = [{"role": "user", "content": context_block},
-                {"role": "assistant", "content": "I have read the resume, job posting and analysis. Ask me anything."}]
-    for turn in history:
-        messages.append({"role": turn["role"], "content": turn["content"]})
-    messages.append({"role": "user", "content": question})
-    try:
-        resp = client.messages.create(
-            model=MODEL_NAME,
-            max_tokens=600,
-            system=system,
-            messages=messages
-        )
-        return resp.content[0].text.strip()
-    except Exception as e:
-        return f"⚠️ Could not get a response: {e}"
-
-
 def estimate_pages(word_count: int) -> float:
     """Rough page estimate: ~400 resume words per page (accounting for whitespace/headers)."""
     return round(word_count / 400, 1)
@@ -3517,27 +3483,6 @@ section.main .block-container{padding-bottom:5rem!important;}
         )
         render_analysis(result['analysis'])
 
-        # ── Chat messages (shown above the fixed input bar) ───────────────────
-        if st.session_state.get('analysis_chat'):
-            st.markdown(
-                '<div style="display:flex;align-items:center;gap:8px;margin:0.8rem 0 0.4rem;">'
-                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.16em;'
-                'text-transform:uppercase;color:#7ad79f;">💬 Ask Claude</span>'
-                '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
-                '</div>',
-                unsafe_allow_html=True
-            )
-            for turn in st.session_state['analysis_chat']:
-                if turn['role'] == 'user':
-                    with st.chat_message("user"):
-                        st.markdown(turn['content'])
-                else:
-                    with st.chat_message("assistant"):
-                        st.markdown(turn['content'])
-            if st.button("Clear chat", key="clear_analysis_chat_main"):
-                st.session_state['analysis_chat'] = []
-                st.rerun()
-
         # Build shared filename parts used across all downloads
         fields = parse_analysis_fields(result['analysis'])
         _fn_date = datetime.now().strftime('%Y-%m-%d')
@@ -3701,12 +3646,23 @@ section.main .block-container{padding-bottom:5rem!important;}
                 unsafe_allow_html=True
             )
 
-            upd_guidance = st.text_area(
-                "Additional guidance *(optional)*",
-                placeholder="Metrics, tone, focus: e.g. 'reduced costs by 30%', 'managed 8 people', 'make it more senior'.",
-                height=80,
-                key="upd_guidance"
-            )
+            _guidance_val = st.session_state.get('upd_guidance', '').strip()
+            if _guidance_val:
+                c1, c2 = st.columns([10, 1])
+                with c1:
+                    st.markdown(
+                        f'<div style="background:rgba(111,177,224,0.08);border-left:3px solid #6fb1e0;'
+                        f'padding:0.4rem 0.9rem;border-radius:6px;margin-bottom:0.6rem;font-family:\'DM Sans\',sans-serif;">'
+                        f'<span style="color:#6fb1e0;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                        f'text-transform:uppercase;letter-spacing:0.1em;">Guidance: </span>'
+                        f'<span style="color:#ecf4ee;font-size:0.82rem;">{_guidance_val}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+                with c2:
+                    if st.button("✕", key="clear_guidance", help="Clear guidance"):
+                        st.session_state.pop('upd_guidance', None)
+                        st.rerun()
 
             st.markdown('<div id="resume-updater-anchor"></div>', unsafe_allow_html=True)
             col_upd = st.columns([1, 2, 1])[1]
@@ -3714,6 +3670,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                 improve_btn = st.button("✨ Propose Resume Changes", type="primary", key="update_resume_btn", use_container_width=True)
 
             if improve_btn:
+                upd_guidance = st.session_state.get('upd_guidance', '')
                 st.session_state['_upd_guidance_saved'] = upd_guidance
                 all_updates = []
                 boost_implied_count = 0
@@ -3776,7 +3733,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                 proposed = st.session_state['proposed_updates']
 
                 _saved_guidance = st.session_state.get('_upd_guidance_saved', '').strip()
-                _current_guidance = upd_guidance.strip() if upd_guidance else ''
+                _current_guidance = st.session_state.get('upd_guidance', '').strip()
                 if _current_guidance and _current_guidance != _saved_guidance:
                     st.markdown(
                         '<div style="background:rgba(224,161,74,0.10);border-left:3px solid #e0a14a;'
@@ -4177,27 +4134,14 @@ section.main .block-container{padding-bottom:5rem!important;}
         unsafe_allow_html=True
     )
 
-    # ── Fixed bottom chat bar — only shown when an analysis is active ─────────
-    if st.session_state.get('analysis_result'):
-        _chat_prompt = st.chat_input("Ask Claude about your analysis…")
-        if _chat_prompt:
-            _hist  = st.session_state.get('analysis_chat', [])
-            _res   = st.session_state.get('analysis_result', {})
-            _client = get_client()
-            if _client:
-                _answer = analysis_chat_response(
-                    _chat_prompt,
-                    st.session_state.get('resume_text', ''),
-                    st.session_state.get('job_content', ''),
-                    _res.get('analysis', ''),
-                    _hist,
-                    _client
-                )
-                if 'analysis_chat' not in st.session_state:
-                    st.session_state['analysis_chat'] = []
-                st.session_state['analysis_chat'].append({'role': 'user',      'content': _chat_prompt})
-                st.session_state['analysis_chat'].append({'role': 'assistant', 'content': _answer})
-                st.rerun()
+    # ── Fixed bottom guidance bar — shown when analysis is active and resume is .docx ──
+    if st.session_state.get('analysis_result') and st.session_state.get('resume_is_docx'):
+        _guidance_prompt = st.chat_input(
+            "Add guidance for resume update… e.g. 'reduced costs by 30%', 'managed 8 people', 'make it more senior'"
+        )
+        if _guidance_prompt:
+            st.session_state['upd_guidance'] = _guidance_prompt
+            st.rerun()
 
 
 if _IMPORT_ERROR:
