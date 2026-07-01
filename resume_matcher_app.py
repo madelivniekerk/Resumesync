@@ -3237,12 +3237,12 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
 /* Extra bottom padding so content isn't hidden behind the fixed chat bar */
 section.main .block-container{padding-bottom:5rem!important;}
 /* Fixed bottom container */
-[data-testid="stBottom"]{background:#ffffff!important;border-top:1px solid rgba(0,0,0,0.10)!important;padding:0.5rem 1rem!important;}
+[data-testid="stBottom"]{background:#ffffff!important;border-top:1px solid rgba(0,0,0,0.10)!important;padding:0.25rem 1rem!important;}
 [data-testid="stBottom"] > *{background:#ffffff!important;}
 /* Chat input field */
-[data-testid="stChatInput"]{background:#ffffff!important;border:1px solid rgba(0,0,0,0.18)!important;border-radius:10px!important;box-shadow:none!important;}
+[data-testid="stChatInput"]{background:#ffffff!important;border:1px solid rgba(0,0,0,0.18)!important;border-radius:8px!important;box-shadow:none!important;}
 [data-testid="stChatInput"]:focus-within{border-color:rgba(0,0,0,0.35)!important;box-shadow:none!important;}
-[data-testid="stChatInput"] textarea{background:#ffffff!important;color:#111111!important;font-family:'DM Sans',sans-serif!important;font-size:0.82rem!important;}
+[data-testid="stChatInput"] textarea{background:#ffffff!important;color:#111111!important;font-family:'DM Sans',sans-serif!important;font-size:0.82rem!important;min-height:36px!important;max-height:36px!important;padding:0.4rem 0.6rem!important;resize:none!important;}
 [data-testid="stChatInput"] textarea::placeholder{color:#888888!important;}
 /* Send button */
 [data-testid="stChatInput"] button{background:transparent!important;color:#444444!important;border:none!important;}
@@ -4202,8 +4202,9 @@ section.main .block-container{padding-bottom:5rem!important;}
             "Add guidance for resume update… e.g. 'reduced costs by 30%', 'managed 8 people', 'make it more senior'"
         )
         if _guidance_prompt:
-            st.session_state['upd_guidance'] = _guidance_prompt
-            st.toast(f"Guidance saved: \"{_guidance_prompt[:60]}{'…' if len(_guidance_prompt) > 60 else ''}\" — click Propose Resume Changes to apply it.", icon="✅")
+            _existing = st.session_state.get('upd_guidance', '').strip()
+            st.session_state['upd_guidance'] = (_existing + '; ' + _guidance_prompt) if _existing else _guidance_prompt
+            st.toast(f"Added: \"{_guidance_prompt[:60]}{'…' if len(_guidance_prompt) > 60 else ''}\"", icon="✅")
 
 
 if _IMPORT_ERROR:
