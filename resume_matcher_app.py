@@ -3236,18 +3236,18 @@ hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
 [data-testid="stFormSubmitButton"] button{font-size:0.78rem!important;padding:0.25rem 0.6rem!important;}
 /* Extra bottom padding so content isn't hidden behind the fixed chat bar */
 section.main .block-container{padding-bottom:5rem!important;}
-/* Fixed bottom container — kill white background */
-[data-testid="stBottom"]{background:#071512!important;border-top:1px solid rgba(159,182,168,0.15)!important;padding:0.5rem 1rem!important;}
-[data-testid="stBottom"] > *{background:#071512!important;}
+/* Fixed bottom container */
+[data-testid="stBottom"]{background:#ffffff!important;border-top:1px solid rgba(0,0,0,0.10)!important;padding:0.5rem 1rem!important;}
+[data-testid="stBottom"] > *{background:#ffffff!important;}
 /* Chat input field */
-[data-testid="stChatInput"]{background:#0c2019!important;border:1px solid rgba(159,182,168,0.20)!important;border-radius:10px!important;box-shadow:none!important;}
-[data-testid="stChatInput"]:focus-within{border-color:rgba(122,215,159,0.45)!important;box-shadow:none!important;}
-[data-testid="stChatInput"] textarea{background:#0c2019!important;color:#ecf4ee!important;font-family:'DM Sans',sans-serif!important;font-size:0.82rem!important;}
-[data-testid="stChatInput"] textarea::placeholder{color:#6e8a7b!important;}
+[data-testid="stChatInput"]{background:#ffffff!important;border:1px solid rgba(0,0,0,0.18)!important;border-radius:10px!important;box-shadow:none!important;}
+[data-testid="stChatInput"]:focus-within{border-color:rgba(0,0,0,0.35)!important;box-shadow:none!important;}
+[data-testid="stChatInput"] textarea{background:#ffffff!important;color:#111111!important;font-family:'DM Sans',sans-serif!important;font-size:0.82rem!important;}
+[data-testid="stChatInput"] textarea::placeholder{color:#888888!important;}
 /* Send button */
-[data-testid="stChatInput"] button{background:transparent!important;color:#7ad79f!important;border:none!important;}
-[data-testid="stChatInput"] button:hover{color:#ecf4ee!important;background:rgba(122,215,159,0.10)!important;}
-/* Remove any red outline/shadow */
+[data-testid="stChatInput"] button{background:transparent!important;color:#444444!important;border:none!important;}
+[data-testid="stChatInput"] button:hover{color:#111111!important;background:rgba(0,0,0,0.06)!important;}
+/* Remove any outline/shadow */
 [data-testid="stChatInput"] *{outline:none!important;box-shadow:none!important;}
 /* Chat message bubbles */
 [data-testid="stChatMessage"]{background:transparent!important;padding:0.3rem 0!important;}
