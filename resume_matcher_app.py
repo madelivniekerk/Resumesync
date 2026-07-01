@@ -3218,24 +3218,31 @@ def main():
                 st.session_state.pop(_k, None)
             st.rerun()
 
-    # ── Workspace compact CSS — tighten markdown headings, table spacing, panels ──
+    # ── Workspace compact CSS ─────────────────────────────────────────────────
     st.markdown("""
 <style>
-/* Shrink markdown h2/h3 headings in the results area */
-[data-testid="stMarkdownContainer"] h2{font-size:0.95rem!important;font-weight:700!important;
-  margin:0.8rem 0 0.2rem!important;letter-spacing:-0.01em!important;color:#ecf4ee!important;}
-[data-testid="stMarkdownContainer"] h3{font-size:0.82rem!important;font-weight:600!important;
-  margin:0.5rem 0 0.15rem!important;color:#9fb6a8!important;}
-/* Tighten paragraph margins in results blocks */
-[data-testid="stMarkdownContainer"] p{margin-block-end:0.25rem!important;}
-/* Thinner Streamlit dividers */
-hr{margin:0.5rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
-/* Tighten stVerticalBlock gap between result elements */
-[data-testid="stVerticalBlock"]>[data-testid="stVerticalBlockBorderWrapper"]{gap:0!important;}
-/* Checkbox labels smaller */
-[data-testid="stCheckbox"] label p{font-size:0.82rem!important;line-height:1.3!important;}
-/* Text area font smaller */
-[data-testid="stTextArea"] textarea{font-size:0.8rem!important;line-height:1.35!important;}
+/* Kill oversized markdown headings everywhere in the workspace */
+h1,h2,h3,h4{line-height:1.2!important;}
+[data-testid="stMarkdownContainer"] h1,
+.stMarkdown h1{font-size:0.95rem!important;font-weight:700!important;margin:0.5rem 0 0.15rem!important;color:#ecf4ee!important;}
+[data-testid="stMarkdownContainer"] h2,
+.stMarkdown h2{font-size:0.82rem!important;font-weight:600!important;margin:0.4rem 0 0.1rem!important;color:#ecf4ee!important;}
+[data-testid="stMarkdownContainer"] h3,
+.stMarkdown h3{font-size:0.76rem!important;font-weight:600!important;margin:0.3rem 0 0.1rem!important;color:#9fb6a8!important;}
+[data-testid="stMarkdownContainer"] h4,
+.stMarkdown h4{font-size:0.72rem!important;font-weight:600!important;margin:0.2rem 0 0.05rem!important;color:#9fb6a8!important;}
+/* Tighten paragraph margins */
+[data-testid="stMarkdownContainer"] p,.stMarkdown p{margin-block-end:0.2rem!important;font-size:0.82rem!important;}
+/* Thinner dividers */
+hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
+/* Checkbox labels */
+[data-testid="stCheckbox"] label p{font-size:0.78rem!important;line-height:1.25!important;}
+/* Text area */
+[data-testid="stTextArea"] textarea{font-size:0.78rem!important;line-height:1.3!important;}
+/* Radio labels */
+[data-testid="stRadio"] label p{font-size:0.78rem!important;}
+/* Form submit button smaller */
+[data-testid="stFormSubmitButton"] button{font-size:0.78rem!important;padding:0.25rem 0.6rem!important;}
 </style>""", unsafe_allow_html=True)
 
     # ── Compact welcome topbar (matches handoff App design — lean workspace, not landing hero) ──
@@ -3503,7 +3510,7 @@ hr{margin:0.5rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
                 st.rerun()
 
         # ── Two-column layout: analysis left, Claude chat right ──────────────
-        col_analysis, col_chat = st.columns([3, 2], gap="medium")
+        col_analysis, col_chat = st.columns([3, 1], gap="medium")
 
         with col_analysis:
             st.markdown(
@@ -3562,8 +3569,8 @@ hr{margin:0.5rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
             with st.form(key="analysis_chat_form", clear_on_submit=True):
                 chat_q = st.text_area(
                     "Question",
-                    placeholder="e.g. Which missing keyword should I prioritise? How do I address the experience gap?",
-                    height=72,
+                    placeholder="Ask about gaps, keywords, phrasing…",
+                    height=52,
                     label_visibility="collapsed",
                     key="chat_question_input"
                 )
