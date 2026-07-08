@@ -3334,6 +3334,11 @@ h1,h2,h3,h4{line-height:1.2!important;}
 .stMarkdown h4{font-size:0.72rem!important;font-weight:600!important;margin:0.2rem 0 0.05rem!important;color:#9fb6a8!important;}
 /* Tighten paragraph margins */
 [data-testid="stMarkdownContainer"] p,.stMarkdown p{margin-block-end:0.2rem!important;font-size:0.82rem!important;}
+/* Analysis results body — smaller text, scoped so it doesn't affect the rest of the app */
+.st-key-analysis_results_body [data-testid="stMarkdownContainer"] p,
+.st-key-analysis_results_body [data-testid="stMarkdownContainer"] li{
+    font-size:0.74rem!important;line-height:1.5!important;
+}
 /* Thinner dividers */
 hr{margin:0.4rem 0!important;border-color:rgba(159,182,168,0.12)!important;}
 /* Checkbox labels */
@@ -3655,7 +3660,8 @@ section.main .block-container{padding-bottom:5rem!important;}
             '</div>',
             unsafe_allow_html=True
         )
-        render_analysis(result['analysis'])
+        with st.container(key="analysis_results_body"):
+            render_analysis(result['analysis'])
 
         # Build shared filename parts used across all downloads
         fields = parse_analysis_fields(result['analysis'])
@@ -3844,7 +3850,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                         '<pre style="background:#0d1f16;color:#ecf4ee;border:1px solid rgba(159,182,168,0.25);'
                         'border-radius:8px;padding:0.75rem 0.9rem;max-height:260px;overflow-y:auto;'
                         'white-space:pre-wrap;word-break:break-word;font-family:\'DM Sans\',sans-serif;'
-                        'font-size:0.58rem;line-height:1.4;margin:0 0 0.6rem;">'
+                        'font-size:0.53rem;line-height:1.35;margin:0 0 0.6rem;">'
                         + html.escape(_ats_struct['strict_text'] or "(no plain-paragraph text found)")
                         + '</pre>',
                         unsafe_allow_html=True
@@ -3856,7 +3862,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                             '<pre style="background:#0d1f16;color:#e0a14a;border:1px solid rgba(224,161,74,0.35);'
                             'border-radius:8px;padding:0.75rem 0.9rem;max-height:140px;overflow-y:auto;'
                             'white-space:pre-wrap;word-break:break-word;font-family:\'DM Sans\',sans-serif;'
-                            'font-size:0.58rem;line-height:1.4;margin:0;">'
+                            'font-size:0.53rem;line-height:1.35;margin:0;">'
                             + html.escape(_dropped)
                             + '</pre>',
                             unsafe_allow_html=True
