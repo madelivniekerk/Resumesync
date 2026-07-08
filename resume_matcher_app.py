@@ -29,6 +29,7 @@ try:
     from docx import Document
     from docx.shared import Pt, RGBColor, Inches
     from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
     import pypdf
     import io
     import base64
@@ -547,6 +548,73 @@ def extract_text_from_docx(file):
         return "\n".join(texts)
     except Exception as e:
         return f"Error reading Word document: {str(e)}"
+
+
+def analyze_docx_ats_structure(file_bytes: bytes) -> dict:
+    """Inspect a DOCX's actual structure to simulate what a strict ATS parser
+    (Taleo/Workday-style: paragraphs only, no tables, no headers/footers, no text boxes)
+    would extract versus a lenient one (Greenhouse/Lever-style: paragraphs + tables)."""
+    doc = Document(io.BytesIO(file_bytes))
+
+    strict_lines = [p.text for p in doc.paragraphs if p.text.strip()]
+    strict_text = "\n".join(strict_lines)
+
+    table_lines = []
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    if para.text.strip():
+                        table_lines.append(para.text)
+    table_text = "\n".join(table_lines)
+
+    header_footer_lines = []
+    for section in doc.sections:
+        for part in (section.header, section.footer):
+            if part is not None and not part.is_linked_to_previous:
+                for para in part.paragraphs:
+                    if para.text.strip():
+                        header_footer_lines.append(para.text)
+    header_footer_text = "\n".join(header_footer_lines)
+
+    lenient_text = strict_text + (("\n" + table_text) if table_text else "")
+
+    has_multicolumn = False
+    for section in doc.sections:
+        cols_el = section._sectPr.find(qn('w:cols'))
+        if cols_el is not None:
+            num = cols_el.get(qn('w:num'))
+            if num and int(num) > 1:
+                has_multicolumn = True
+                break
+
+    has_textboxes = doc.element.body.find('.//' + qn('w:txbxContent')) is not None
+
+    has_skills_section = any(
+        len(line.strip()) < 40 and re.search(r'skill|competenc', line, re.IGNORECASE)
+        for line in strict_lines
+    )
+
+    contact_pattern = re.compile(r'[\w.+-]+@[\w-]+\.[\w.-]+|(\+?\d[\d\-\s()]{7,}\d)')
+    has_contact_in_header_footer = bool(contact_pattern.search(header_footer_text))
+
+    total_chars = len(strict_text) + len(table_text) + len(header_footer_text)
+    at_risk_chars = len(table_text) + len(header_footer_text)
+    at_risk_pct = round(100 * at_risk_chars / total_chars) if total_chars else 0
+
+    return {
+        'strict_text': strict_text,
+        'lenient_text': lenient_text,
+        'table_text': table_text,
+        'header_footer_text': header_footer_text,
+        'has_tables': len(doc.tables) > 0,
+        'table_count': len(doc.tables),
+        'has_multicolumn': has_multicolumn,
+        'has_textboxes': has_textboxes,
+        'has_skills_section': has_skills_section,
+        'has_contact_in_header_footer': has_contact_in_header_footer,
+        'at_risk_pct': at_risk_pct,
+    }
 
 
 def extract_text_from_txt(file):
@@ -3239,10 +3307,14 @@ section.main .block-container{padding-bottom:5rem!important;}
 /* Fixed bottom container */
 [data-testid="stBottom"]{background:#ffffff!important;border-top:1px solid rgba(0,0,0,0.10)!important;padding:0.25rem 1rem!important;}
 [data-testid="stBottom"] > *{background:#ffffff!important;}
+[data-testid="stBottom"] .block-container{padding:0.2rem 1rem!important;}
+[data-testid="stBottomBlockContainer"]{padding:0.2rem 1rem!important;}
+[data-testid="stBottom"] [data-testid="stVerticalBlock"]{gap:0!important;}
 /* Chat input field */
 [data-testid="stChatInput"]{background:#ffffff!important;border:1px solid rgba(0,0,0,0.18)!important;border-radius:8px!important;box-shadow:none!important;}
 [data-testid="stChatInput"]:focus-within{border-color:rgba(0,0,0,0.35)!important;box-shadow:none!important;}
-[data-testid="stChatInput"] textarea{background:#ffffff!important;color:#111111!important;font-family:'DM Sans',sans-serif!important;font-size:0.82rem!important;min-height:36px!important;max-height:36px!important;padding:0.4rem 0.6rem!important;resize:none!important;}
+[data-testid="stChatInputContainer"]{padding:0.15rem 0.3rem!important;min-height:0!important;}
+[data-testid="stChatInput"] textarea{background:#ffffff!important;color:#111111!important;font-family:'DM Sans',sans-serif!important;font-size:0.82rem!important;min-height:28px!important;max-height:28px!important;line-height:1.3!important;padding:0.3rem 0.5rem!important;resize:none!important;}
 [data-testid="stChatInput"] textarea::placeholder{color:#888888!important;}
 /* Send button */
 [data-testid="stChatInput"] button{background:transparent!important;color:#444444!important;border:none!important;}
@@ -3495,6 +3567,8 @@ section.main .block-container{padding-bottom:5rem!important;}
             decrement_credits(auth_user_id)
             st.session_state['_last_analysis_key'] = _analysis_key
 
+        st.session_state['_scroll_to_results'] = True
+
     # Results
     if 'analysis_result' in st.session_state:
         result = st.session_state['analysis_result']
@@ -3502,6 +3576,17 @@ section.main .block-container{padding-bottom:5rem!important;}
         job_content = st.session_state['job_content']
         job_url = st.session_state['job_url']
         resume_filename = st.session_state['resume_filename']
+
+        st.markdown('<div id="analysis-results-anchor"></div>', unsafe_allow_html=True)
+
+        if st.session_state.pop('_scroll_to_results', False):
+            _components.html(
+                '<script>'
+                'window.parent.document.getElementById("analysis-results-anchor")'
+                '.scrollIntoView({behavior:"smooth",block:"start"});'
+                '</script>',
+                height=0,
+            )
 
         st.divider()
 
@@ -3583,6 +3668,111 @@ section.main .block-container{padding-bottom:5rem!important;}
                 )
                 + '</div>',
                 unsafe_allow_html=True
+            )
+
+        # ---- ATS Parse Preview — what the robot actually sees ----
+        if _resume_name_lower.endswith('.docx'):
+            try:
+                _ats_struct = analyze_docx_ats_structure(st.session_state.get('resume_file_bytes'))
+            except Exception:
+                _ats_struct = None
+
+            if _ats_struct:
+                _struct_warnings = []
+                if _ats_struct['has_tables']:
+                    _struct_warnings.append(
+                        f"🔲 <strong>{_ats_struct['table_count']} table(s) detected</strong> — strict ATS platforms "
+                        "(Taleo, Workday) often drop table content entirely or scramble its reading order."
+                    )
+                if _ats_struct['has_multicolumn']:
+                    _struct_warnings.append(
+                        "▥ <strong>Multi-column layout detected</strong> — many ATS read left-to-right across the "
+                        "whole line, interleaving your columns into garbled text."
+                    )
+                if _ats_struct['has_textboxes']:
+                    _struct_warnings.append(
+                        "🔳 <strong>Text box(es) detected</strong> — most ATS cannot read text inside text boxes at all; "
+                        "that content is effectively invisible to the parser."
+                    )
+                if _ats_struct['has_contact_in_header_footer']:
+                    _struct_warnings.append(
+                        "📵 <strong>Contact info found in the header/footer</strong> — most ATS ignore headers and "
+                        "footers completely, meaning your email or phone number may never reach the parsed profile."
+                    )
+                if not _ats_struct['has_skills_section']:
+                    _struct_warnings.append(
+                        "🏷️ <strong>No dedicated Skills section found</strong> — ATS platforms scan a Skills/Core "
+                        "Competencies heading separately from your work history; add one if you don't have it."
+                    )
+
+                st.markdown(
+                    '<div style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.4rem;">'
+                    '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
+                    'text-transform:uppercase;color:#7ad79f;">🔬 ATS Parse Preview</span>'
+                    '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+
+                if _struct_warnings:
+                    st.markdown(
+                        '<div style="background:rgba(224,122,95,0.08);border-left:3px solid #e07a5f;'
+                        'border-radius:8px;padding:0.5rem 0.9rem;margin:0 0 0.4rem;">'
+                        + ''.join(
+                            f'<p style="color:#ecf4ee;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;'
+                            f'margin:0.15rem 0;">{w}</p>'
+                            for w in _struct_warnings
+                        )
+                        + '</div>',
+                        unsafe_allow_html=True
+                    )
+                    if _ats_struct['at_risk_pct'] > 0:
+                        st.markdown(
+                            f'<p style="color:#9fb6a8;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
+                            f'margin:0.3rem 0 0.5rem;">~<strong style="color:#e07a5f;">{_ats_struct["at_risk_pct"]}%</strong> '
+                            f'of your extracted content lives in tables/headers/footers — the parts most at risk of '
+                            f'being dropped by a strict ATS.</p>',
+                            unsafe_allow_html=True
+                        )
+                else:
+                    st.markdown(
+                        '<div style="background:rgba(122,215,159,0.06);border-left:3px solid #7ad79f;'
+                        'border-radius:8px;padding:0.5rem 0.9rem;margin:0 0 0.4rem;">'
+                        '<p style="color:#ecf4ee;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;margin:0;">'
+                        '✅ Clean structure — no tables, columns, text boxes, or header-only contact info detected. '
+                        'This resume should parse consistently across ATS platforms.</p>'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
+
+                with st.expander("👁 See exactly what a strict ATS extracts from your file"):
+                    st.caption(
+                        "This is your resume with formatting stripped — paragraphs only, no tables, no "
+                        "headers/footers. It's the closest approximation of what Taleo/Workday-style parsers read."
+                    )
+                    st.text_area(
+                        "Strict ATS extraction",
+                        value=_ats_struct['strict_text'] or "(no plain-paragraph text found)",
+                        height=260,
+                        key="ats_strict_preview",
+                        label_visibility="collapsed",
+                        disabled=True,
+                    )
+                    if _ats_struct['table_text'] or _ats_struct['header_footer_text']:
+                        st.caption("Content found only in tables/headers/footers (at risk of being dropped):")
+                        _dropped = "\n".join(filter(None, [_ats_struct['table_text'], _ats_struct['header_footer_text']]))
+                        st.text_area(
+                            "At-risk content",
+                            value=_dropped,
+                            height=140,
+                            key="ats_dropped_preview",
+                            label_visibility="collapsed",
+                            disabled=True,
+                        )
+        elif _resume_name_lower.endswith('.pdf'):
+            st.caption(
+                "🔬 ATS Parse Preview is available for .docx uploads — structural checks (tables, columns, "
+                "text boxes) need the document's underlying layout, which isn't inspectable in a PDF."
             )
 
         # ── Resume Trim — always visible after analysis ───────────────────────
@@ -4111,6 +4301,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                             st.write("✅ Cover letter updated!")
                             regen_status.update(label="Done!", state="complete")
                             st.session_state['cover_letter'] = cl_result['cover_letter']
+                            st.session_state['cl_edit_area'] = cl_result['cover_letter']
                             st.rerun()
 
         st.divider()
