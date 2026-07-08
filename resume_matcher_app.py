@@ -3844,7 +3844,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                         '<pre style="background:#0d1f16;color:#ecf4ee;border:1px solid rgba(159,182,168,0.25);'
                         'border-radius:8px;padding:0.75rem 0.9rem;max-height:260px;overflow-y:auto;'
                         'white-space:pre-wrap;word-break:break-word;font-family:\'DM Sans\',sans-serif;'
-                        'font-size:0.78rem;line-height:1.5;margin:0 0 0.6rem;">'
+                        'font-size:0.68rem;line-height:1.45;margin:0 0 0.6rem;">'
                         + html.escape(_ats_struct['strict_text'] or "(no plain-paragraph text found)")
                         + '</pre>',
                         unsafe_allow_html=True
@@ -3856,7 +3856,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                             '<pre style="background:#0d1f16;color:#e0a14a;border:1px solid rgba(224,161,74,0.35);'
                             'border-radius:8px;padding:0.75rem 0.9rem;max-height:140px;overflow-y:auto;'
                             'white-space:pre-wrap;word-break:break-word;font-family:\'DM Sans\',sans-serif;'
-                            'font-size:0.78rem;line-height:1.5;margin:0;">'
+                            'font-size:0.68rem;line-height:1.45;margin:0;">'
                             + html.escape(_dropped)
                             + '</pre>',
                             unsafe_allow_html=True
