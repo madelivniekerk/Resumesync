@@ -3370,6 +3370,14 @@ section.main .block-container{padding-bottom:5rem!important;}
 [data-testid="stChatInput"] *{outline:none!important;box-shadow:none!important;}
 /* Chat message bubbles */
 [data-testid="stChatMessage"]{background:transparent!important;padding:0.3rem 0!important;}
+/* Expander — default light theme clashes with the dark workspace */
+[data-testid="stExpander"]{background:transparent!important;border:1px solid rgba(159,182,168,0.25)!important;border-radius:8px!important;}
+[data-testid="stExpander"] summary{background:#0d1f16!important;border-radius:8px!important;}
+[data-testid="stExpander"] summary:hover{background:#132a1f!important;}
+[data-testid="stExpander"] summary p,
+[data-testid="stExpander"] summary span{color:#ecf4ee!important;}
+[data-testid="stExpander"] summary svg{fill:#ecf4ee!important;}
+[data-testid="stExpander"] [data-testid="stExpanderDetails"]{background:#0d1f16!important;border-radius:0 0 8px 8px!important;}
 </style>""", unsafe_allow_html=True)
 
     # ── Compact welcome topbar (matches handoff App design — lean workspace, not landing hero) ──
@@ -3652,6 +3660,8 @@ section.main .block-container{padding-bottom:5rem!important;}
                 st.rerun()
 
         # ── Analysis full-width ───────────────────────────────────────────────
+        fields = parse_analysis_fields(result['analysis'])
+
         st.markdown(
             '<div style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.4rem;">'
             '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
@@ -3660,11 +3670,33 @@ section.main .block-container{padding-bottom:5rem!important;}
             '</div>',
             unsafe_allow_html=True
         )
+
+        # ---- Prominent match score badge ----
+        _score_raw = fields.get('match_pct', '').replace('%', '').strip()
+        if _score_raw.isdigit():
+            _score_val = int(_score_raw)
+            if _score_val >= 80:
+                _score_color, _score_bg, _score_tier = '#7ad79f', 'rgba(122,215,159,0.10)', 'Strong fit'
+            elif _score_val >= 60:
+                _score_color, _score_bg, _score_tier = '#e0a14a', 'rgba(224,161,74,0.10)', 'Good fit'
+            else:
+                _score_color, _score_bg, _score_tier = '#e07a5f', 'rgba(224,122,95,0.10)', 'Needs work'
+            st.markdown(
+                f'<div style="background:{_score_bg};border:1px solid {_score_color};border-radius:14px;'
+                f'padding:1rem 1.2rem;margin:0 0 0.8rem;display:flex;align-items:baseline;gap:0.6rem;'
+                f'justify-content:center;">'
+                f'<span style="font-family:\'Bricolage Grotesque\',serif;font-size:3rem;font-weight:800;'
+                f'color:{_score_color};line-height:1;">{_score_val}%</span>'
+                f'<span style="font-family:\'Space Mono\',monospace;font-size:0.85rem;letter-spacing:0.05em;'
+                f'text-transform:uppercase;color:{_score_color};">{_score_tier}</span>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
         with st.container(key="analysis_results_body"):
             render_analysis(result['analysis'])
 
         # Build shared filename parts used across all downloads
-        fields = parse_analysis_fields(result['analysis'])
         _fn_date = datetime.now().strftime('%Y-%m-%d')
         _fn_person = re.sub(r'[^\w\-]', '_', resume_filename.rsplit('.', 1)[0])[:25].strip('_')
         _fn_role = re.sub(r'[^\w\-]', '_', fields.get('job_title', 'Role').replace(' ', '_'))[:25].strip('_')
