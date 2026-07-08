@@ -3637,8 +3637,11 @@ section.main .block-container{padding-bottom:5rem!important;}
         if st.session_state.pop('_scroll_to_results', False):
             _components.html(
                 '<script>'
-                'window.parent.document.getElementById("analysis-results-anchor")'
-                '.scrollIntoView({behavior:"smooth",block:"start"});'
+                'function _scrollToResults(){'
+                '  var el = window.parent.document.getElementById("analysis-results-anchor");'
+                '  if (el) el.scrollIntoView({behavior:"smooth",block:"start"});'
+                '}'
+                '[200, 600, 1200, 2000].forEach(function(ms){ setTimeout(_scrollToResults, ms); });'
                 '</script>',
                 height=0,
             )
