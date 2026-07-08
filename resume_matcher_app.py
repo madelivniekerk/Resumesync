@@ -3842,6 +3842,11 @@ section.main .block-container{padding-bottom:5rem!important;}
                             )
                             st.session_state['ats_fixed_docx_bytes'] = _fixed_bytes
                             st.session_state['ats_fixed_notes'] = _fix_notes
+                            # Downstream trim/update results were based on the pre-fix document — invalidate them
+                            for _k in ['trim_docx_bytes', 'trim_pairs', 'trim_applied_count',
+                                       'proposed_updates', 'updated_resume_bytes', 'updated_resume_name',
+                                       'updated_match_pct']:
+                                st.session_state.pop(_k, None)
 
                         if st.session_state.get('ats_fixed_docx_bytes'):
                             st.markdown(
@@ -3854,6 +3859,9 @@ section.main .block-container{padding-bottom:5rem!important;}
                                     f'margin:0.3rem 0 0;">{html.escape(n)}</p>'
                                     for n in st.session_state.get('ats_fixed_notes', [])
                                 )
+                                + '<p style="color:#9fb6a8;font-size:0.76rem;font-family:\'DM Sans\',sans-serif;'
+                                + 'margin:0.4rem 0 0;">This version is now the base for Trim and Update My Resume below, '
+                                + 'so your final download includes these fixes too.</p>'
                                 + '</div>',
                                 unsafe_allow_html=True
                             )
@@ -3940,7 +3948,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                 if trim_result['success']:
                     pairs = trim_result['pairs']
                     trim_status.write(f"Applying {len(pairs)} cut(s) to your original document...")
-                    _base_bytes = st.session_state.get('resume_file_bytes')
+                    _base_bytes = st.session_state.get('ats_fixed_docx_bytes') or st.session_state.get('resume_file_bytes')
                     if _base_bytes:
                         _trimmed_bytes, _applied = apply_updates_to_docx(_base_bytes, pairs, resume_filename)
                         st.session_state['trim_docx_bytes']   = _trimmed_bytes
@@ -4211,8 +4219,13 @@ section.main .block-container{padding-bottom:5rem!important;}
                     )
 
                 if apply_btn and selected:
-                    # Use trimmed DOCX as base if the user trimmed first; else use original
-                    _base_for_update = st.session_state.get('trim_docx_bytes') or st.session_state['resume_file_bytes']
+                    # Prefer the trimmed DOCX (which itself builds on the ATS-fixed version if that ran first),
+                    # else the ATS-fixed version directly, else the original upload
+                    _base_for_update = (
+                        st.session_state.get('trim_docx_bytes')
+                        or st.session_state.get('ats_fixed_docx_bytes')
+                        or st.session_state['resume_file_bytes']
+                    )
                     updated_bytes, applied = apply_updates_to_docx(
                         _base_for_update,
                         selected,
