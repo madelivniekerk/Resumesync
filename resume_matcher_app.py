@@ -17,6 +17,7 @@ try:
     import streamlit.components.v1 as _components
     import os
     import re
+    import html
     import json
     import hashlib
     import urllib.parse
@@ -615,6 +616,47 @@ def analyze_docx_ats_structure(file_bytes: bytes) -> dict:
         'has_contact_in_header_footer': has_contact_in_header_footer,
         'at_risk_pct': at_risk_pct,
     }
+
+
+def build_ats_safe_docx(file_bytes: bytes, struct: dict) -> tuple:
+    """Non-destructively duplicate content that lives in tables/headers/footers as
+    plain paragraphs, so a strict ATS parser (which skips tables and headers/footers)
+    still captures it. Original tables/headers/footers are left untouched — this only
+    adds visible lines, it never deletes or rewrites existing content."""
+    doc = Document(io.BytesIO(file_bytes))
+    fixes = []
+
+    if struct.get('has_contact_in_header_footer') and struct.get('header_footer_text'):
+        contact_line = struct['header_footer_text'].replace('\n', '   |   ')
+        new_para = doc.add_paragraph()
+        run = new_para.add_run(contact_line)
+        run.bold = True
+        body = doc.element.body
+        body.remove(new_para._p)
+        body.insert(0, new_para._p)
+        _preview = contact_line[:70] + ('…' if len(contact_line) > 70 else '')
+        fixes.append(f'Added your header/footer contact info as a visible line at the top: "{_preview}"')
+
+    if doc.tables:
+        for i, table in enumerate(doc.tables, start=1):
+            cell_texts = []
+            for row in table.rows:
+                for cell in row.cells:
+                    t = cell.text.strip()
+                    if t and t not in cell_texts:
+                        cell_texts.append(t)
+            if not cell_texts:
+                continue
+            flattened = ' • '.join(cell_texts)
+            new_para = doc.add_paragraph()
+            new_para.add_run(flattened)
+            table._tbl.addnext(new_para._p)
+            _preview = flattened[:70] + ('…' if len(flattened) > 70 else '')
+            fixes.append(f'Added a plain-text line under table {i} duplicating its content: "{_preview}"')
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue(), fixes
 
 
 def extract_text_from_txt(file):
@@ -3549,7 +3591,7 @@ section.main .block-container{padding-bottom:5rem!important;}
         for _k in ['cover_letter', 'proposed_updates', 'updated_resume_bytes',
                    'updated_resume_name', 'updated_match_pct', 'tracker_saved',
                    '_confirm_leave_tracker', 'upd_guidance', '_upd_guidance_saved',
-                   'analysis_chat']:
+                   'analysis_chat', 'ats_fixed_docx_bytes', 'ats_fixed_notes']:
             st.session_state.pop(_k, None)
 
         st.session_state['analysis_result'] = result
@@ -3599,7 +3641,8 @@ section.main .block-container{padding-bottom:5rem!important;}
                             'updated_resume_bytes', 'updated_resume_name', 'updated_match_pct',
                             'upd_guidance', '_upd_guidance_saved',
                             'trimmed_resume_text', 'trimmed_resume_cuts', 'analysis_chat',
-                            'trim_docx_bytes', 'trim_pairs', 'trim_applied_count']:
+                            'trim_docx_bytes', 'trim_pairs', 'trim_applied_count',
+                            'ats_fixed_docx_bytes', 'ats_fixed_notes']:
                     st.session_state.pop(key, None)
                 st.rerun()
 
@@ -3734,6 +3777,53 @@ section.main .block-container{padding-bottom:5rem!important;}
                             f'being dropped by a strict ATS.</p>',
                             unsafe_allow_html=True
                         )
+
+                    _fixable = _ats_struct['has_tables'] or _ats_struct['has_contact_in_header_footer']
+                    if _fixable:
+                        if _ats_struct['has_multicolumn'] or _ats_struct['has_textboxes']:
+                            st.markdown(
+                                '<p style="color:#9fb6a8;font-size:0.76rem;font-family:\'DM Sans\',sans-serif;'
+                                'margin:0 0 0.4rem;">Multi-column layout and text boxes can\'t be safely auto-fixed — '
+                                'they need re-formatting in Word. The table/header issues below can be fixed automatically.</p>',
+                                unsafe_allow_html=True
+                            )
+                        col_fix = st.columns([1, 2, 1])[1]
+                        with col_fix:
+                            _fix_btn = st.button(
+                                "🔧 Fix ATS-risk content",
+                                key="fix_ats_risk_btn",
+                                use_container_width=True,
+                                type="primary",
+                            )
+                        if _fix_btn:
+                            _fixed_bytes, _fix_notes = build_ats_safe_docx(
+                                st.session_state.get('resume_file_bytes'), _ats_struct
+                            )
+                            st.session_state['ats_fixed_docx_bytes'] = _fixed_bytes
+                            st.session_state['ats_fixed_notes'] = _fix_notes
+
+                        if st.session_state.get('ats_fixed_docx_bytes'):
+                            st.markdown(
+                                '<div style="background:rgba(122,215,159,0.06);border-left:3px solid #7ad79f;'
+                                'border-radius:8px;padding:0.5rem 0.9rem;margin:0.4rem 0;">'
+                                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+                                'text-transform:uppercase;color:#7ad79f;">✓ Fixed — nothing removed, only added</span>'
+                                + ''.join(
+                                    f'<p style="color:#ecf4ee;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
+                                    f'margin:0.3rem 0 0;">{html.escape(n)}</p>'
+                                    for n in st.session_state.get('ats_fixed_notes', [])
+                                )
+                                + '</div>',
+                                unsafe_allow_html=True
+                            )
+                            st.download_button(
+                                label="💾 Download ATS-Safe Version (.docx)",
+                                data=st.session_state['ats_fixed_docx_bytes'],
+                                file_name=f"ATSSafe_{_fn_person}_{_fn_date}.docx",
+                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                key="download_ats_safe",
+                                use_container_width=True
+                            )
                 else:
                     st.markdown(
                         '<div style="background:rgba(122,215,159,0.06);border-left:3px solid #7ad79f;'
@@ -3750,24 +3840,26 @@ section.main .block-container{padding-bottom:5rem!important;}
                         "This is your resume with formatting stripped — paragraphs only, no tables, no "
                         "headers/footers. It's the closest approximation of what Taleo/Workday-style parsers read."
                     )
-                    st.text_area(
-                        "Strict ATS extraction",
-                        value=_ats_struct['strict_text'] or "(no plain-paragraph text found)",
-                        height=260,
-                        key="ats_strict_preview",
-                        label_visibility="collapsed",
-                        disabled=True,
+                    st.markdown(
+                        '<pre style="background:#0d1f16;color:#ecf4ee;border:1px solid rgba(159,182,168,0.25);'
+                        'border-radius:8px;padding:0.75rem 0.9rem;max-height:260px;overflow-y:auto;'
+                        'white-space:pre-wrap;word-break:break-word;font-family:\'DM Sans\',sans-serif;'
+                        'font-size:0.78rem;line-height:1.5;margin:0 0 0.6rem;">'
+                        + html.escape(_ats_struct['strict_text'] or "(no plain-paragraph text found)")
+                        + '</pre>',
+                        unsafe_allow_html=True
                     )
                     if _ats_struct['table_text'] or _ats_struct['header_footer_text']:
                         st.caption("Content found only in tables/headers/footers (at risk of being dropped):")
                         _dropped = "\n".join(filter(None, [_ats_struct['table_text'], _ats_struct['header_footer_text']]))
-                        st.text_area(
-                            "At-risk content",
-                            value=_dropped,
-                            height=140,
-                            key="ats_dropped_preview",
-                            label_visibility="collapsed",
-                            disabled=True,
+                        st.markdown(
+                            '<pre style="background:#0d1f16;color:#e0a14a;border:1px solid rgba(224,161,74,0.35);'
+                            'border-radius:8px;padding:0.75rem 0.9rem;max-height:140px;overflow-y:auto;'
+                            'white-space:pre-wrap;word-break:break-word;font-family:\'DM Sans\',sans-serif;'
+                            'font-size:0.78rem;line-height:1.5;margin:0;">'
+                            + html.escape(_dropped)
+                            + '</pre>',
+                            unsafe_allow_html=True
                         )
         elif _resume_name_lower.endswith('.pdf'):
             st.caption(
