@@ -1007,16 +1007,21 @@ def generate_cover_letter(resume_text: str, job_content: str, job_url: str, anal
         + (f"\n{closing_phone}" if closing_phone else "")
     )
 
-    if prior_letter and change_instructions:
+    if prior_letter:
+        effective_instructions = change_instructions or (
+            "No specific changes were requested — rewrite this with a noticeably different opening hook, "
+            "sentence structure and phrasing throughout, as an alternative take. Keep the same facts, tone, "
+            "and length; do not just reword a sentence or two."
+        )
         prompt = f"""You are an expert career coach and professional cover letter writer.
 
-You previously wrote the cover letter below. The user has requested specific changes. Apply them faithfully while keeping everything else intact.
+You previously wrote the cover letter below. The user has requested changes. Apply them faithfully while keeping everything else intact.
 
 **CURRENT COVER LETTER:**
 {prior_letter}
 
 **REQUESTED CHANGES:**
-{change_instructions}
+{effective_instructions}
 
 **CONTEXT — MY RESUME:**
 {resume_text}
