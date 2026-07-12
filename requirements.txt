@@ -7,7 +7,3 @@ pypdf==6.12.2
 openpyxl==3.1.5
 httpx==0.28.1
 supabase==2.30.0
-lxml==5.3.0
-cryptography==42.0.8
-numpy==2.3.3
-pillow==10.4.0
