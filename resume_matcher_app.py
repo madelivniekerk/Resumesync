@@ -4157,8 +4157,8 @@ section.main .block-container{padding-bottom:5rem!important;}
                             # Size both blocks off the same estimate so Before/After match exactly
                             _content_len = max(len(find), len(replace))
                             _line_breaks = find.count('\n') + replace.count('\n')
-                            _est_lines = max(3, min(20, (_content_len // 48) + _line_breaks + 2))
-                            _box_h = _est_lines * 21 + 24
+                            _est_lines = max(2, min(16, (_content_len // 62) + _line_breaks + 1))
+                            _box_h = max(70, _est_lines * 19 + 14)
 
                             col_b, col_a = st.columns(2)
                             with col_b:
