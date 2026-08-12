@@ -4154,26 +4154,36 @@ section.main .block-container{padding-bottom:5rem!important;}
                         else:
                             before_border = '#e0a14a' if is_user_guided else '#e07a5f'
                             before_bg     = 'rgba(224,161,74,0.08)' if is_user_guided else 'rgba(224,122,95,0.08)'
+                            # Size both blocks off the same estimate so Before/After match exactly
+                            _content_len = max(len(find), len(replace))
+                            _line_breaks = find.count('\n') + replace.count('\n')
+                            _est_lines = max(3, min(20, (_content_len // 48) + _line_breaks + 2))
+                            _box_h = _est_lines * 21 + 24
+
                             col_b, col_a = st.columns(2)
                             with col_b:
                                 st.markdown(
                                     f'<div style="background:{before_bg};border-left:3px solid {before_border};'
                                     f'padding:0.6rem 0.8rem;border-radius:10px;font-size:0.82rem;'
-                                    f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;">'
+                                    f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;'
+                                    f'height:{_box_h}px;overflow-y:auto;box-sizing:border-box;">'
                                     f'<strong style="color:{before_border};font-size:0.75rem;font-family:\'Space Mono\',monospace;'
                                     f'letter-spacing:0.1em;text-transform:uppercase;">{"⭐ Your guidance — before" if is_user_guided else "Before"}</strong><br>{find}</div>',
                                     unsafe_allow_html=True
                                 )
                             with col_a:
                                 st.markdown(
-                                    f'<p style="color:#7ad79f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                                    f'letter-spacing:0.1em;text-transform:uppercase;margin:0 0 0.3rem;">After — edit if needed</p>',
+                                    f'<p style="margin:0 0 0.3rem;">'
+                                    f'<span style="color:#7ad79f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                                    f'letter-spacing:0.1em;text-transform:uppercase;">After</span>'
+                                    f'<span style="color:#6e8a7b;font-size:0.68rem;font-family:\'DM Sans\',sans-serif;'
+                                    f'font-style:italic;"> — edit if needed</span></p>',
                                     unsafe_allow_html=True
                                 )
                                 edited_replace = st.text_area(
                                     f"After {i+1}",
                                     value=replace,
-                                    height=90,
+                                    height=_box_h,
                                     key=f"edit_replace_{i}",
                                     label_visibility="collapsed"
                                 )
