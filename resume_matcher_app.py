@@ -3643,7 +3643,6 @@ section.main .block-container{padding-bottom:5rem!important;}
                             'updated_resume_bytes', 'updated_resume_name', 'updated_match_pct',
                             'upd_guidance', '_upd_guidance_saved',
                             'trimmed_resume_text', 'trimmed_resume_cuts', 'analysis_chat',
-                            'trim_docx_bytes', 'trim_pairs', 'trim_applied_count',
                             'ats_fixed_docx_bytes', 'ats_fixed_notes']:
                     st.session_state.pop(key, None)
                 st.rerun()
@@ -3837,9 +3836,8 @@ section.main .block-container{padding-bottom:5rem!important;}
                             )
                             st.session_state['ats_fixed_docx_bytes'] = _fixed_bytes
                             st.session_state['ats_fixed_notes'] = _fix_notes
-                            # Downstream trim/update results were based on the pre-fix document — invalidate them
-                            for _k in ['trim_docx_bytes', 'trim_pairs', 'trim_applied_count',
-                                       'proposed_updates', 'updated_resume_bytes', 'updated_resume_name',
+                            # Downstream update results were based on the pre-fix document — invalidate them
+                            for _k in ['proposed_updates', 'updated_resume_bytes', 'updated_resume_name',
                                        'updated_match_pct']:
                                 st.session_state.pop(_k, None)
 
@@ -3911,75 +3909,35 @@ section.main .block-container{padding-bottom:5rem!important;}
                 "text boxes) need the document's underlying layout, which isn't inspectable in a PDF."
             )
 
-        # ── Resume Trim — always visible after analysis ───────────────────────
+        # ── Trim option — folded into Propose Resume Changes below, not a separate action ──
         st.markdown(
             '<div style="background:rgba(224,161,74,0.06);border-left:3px solid rgba(224,161,74,0.50);'
             'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.4rem;'
             'display:flex;align-items:baseline;gap:0.6rem;flex-wrap:wrap;">'
             '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
-            'text-transform:uppercase;color:#e0a14a;white-space:nowrap;">✂ Trim</span>'
+            'text-transform:uppercase;color:#e0a14a;white-space:nowrap;">✂ Length</span>'
             f'<span style="color:#9fb6a8;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;">'
-            f'{_word_count:,} words (~{_est_pages} pages) — AI removes low-impact content, condenses old roles. Facts stay intact.</span>'
+            f'{_word_count:,} words (~{_est_pages} pages)</span>'
             '</div>',
             unsafe_allow_html=True
         )
-
-        _trim_target = st.radio(
-            "Target length",
-            ["2 pages (recommended)", "1 page (very tight)"],
-            horizontal=True,
-            key="trim_target"
+        _trim_enabled = st.checkbox(
+            "Also trim to fit a target length",
+            value=(_est_pages > 2),
+            key="trim_enabled",
+            help="AI-suggested cuts and condensed old roles show up as items in the same review list below, "
+                 "next to the wording fixes — nothing is removed until you tick it and hit Apply."
         )
-        _trim_pages = 2 if "2 pages" in _trim_target else 1
-
-        col_trim = st.columns([1, 2, 1])[1]
-        with col_trim:
-            trim_btn = st.button("✂ Trim My Resume", key="trim_resume_btn", use_container_width=True)
-
-        if trim_btn:
-            with st.status("Trimming your resume...", expanded=True) as trim_status:
-                trim_status.write(f"Identifying cuts to reach {_trim_pages} pages...")
-                trim_result = trim_resume(resume_text, client, target_pages=_trim_pages)
-                if trim_result['success']:
-                    pairs = trim_result['pairs']
-                    trim_status.write(f"Applying {len(pairs)} cut(s) to your original document...")
-                    _base_bytes = st.session_state.get('ats_fixed_docx_bytes') or st.session_state.get('resume_file_bytes')
-                    if _base_bytes:
-                        _trimmed_bytes, _applied = apply_updates_to_docx(_base_bytes, pairs, resume_filename)
-                        st.session_state['trim_docx_bytes']   = _trimmed_bytes
-                        st.session_state['trim_pairs']        = pairs
-                        st.session_state['trim_applied_count'] = _applied
-                        # Clear any previous proposed changes — they were based on the untrimmed doc
-                        for _k in ['proposed_updates', 'updated_resume_bytes', 'updated_resume_name',
-                                   'updated_match_pct', 'upd_guidance', '_upd_guidance_saved']:
-                            st.session_state.pop(_k, None)
-                    trim_status.update(label=f"✓ {len(pairs)} item(s) removed — proceed to Update My Resume below", state="complete")
-                else:
-                    st.error(f"❌ Trim failed: {trim_result['error']}")
-
-        if st.session_state.get('trim_docx_bytes'):
-            _pairs        = st.session_state.get('trim_pairs', [])
-            _applied      = st.session_state.get('trim_applied_count', 0)
-            st.markdown(
-                f'<div style="background:rgba(122,215,159,0.06);border-left:3px solid #7ad79f;'
-                f'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.5rem;">'
-                f'<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
-                f'text-transform:uppercase;color:#7ad79f;">✓ Trimmed — {_applied} item(s) removed</span>'
-                f'<span style="color:#9fb6a8;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
-                f'display:block;margin-top:0.25rem;">Scroll down to <strong style="color:#ecf4ee;">✨ Update My Resume</strong> '
-                f'to improve what remains, then download your final document.</span>'
-                f'</div>',
-                unsafe_allow_html=True
+        if _trim_enabled:
+            _trim_target = st.radio(
+                "Target length",
+                ["2 pages (recommended)", "1 page (very tight)"],
+                horizontal=True,
+                key="trim_target"
             )
-            if _pairs:
-                with st.expander(f"What was cut ({len(_pairs)} items)", expanded=False):
-                    for p in _pairs:
-                        st.markdown(f'- {p.get("description","")}: `{p.get("find","")[:80]}`')
-
-            if st.button("↩ Undo trim", key="clear_trim"):
-                for _k in ['trim_docx_bytes', 'trim_pairs', 'trim_applied_count']:
-                    st.session_state.pop(_k, None)
-                st.rerun()
+            _trim_pages = 2 if "2 pages" in _trim_target else 1
+        else:
+            _trim_pages = None
 
         st.divider()
 
@@ -4039,7 +3997,10 @@ section.main .block-container{padding-bottom:5rem!important;}
             st.markdown('<div id="resume-updater-anchor"></div>', unsafe_allow_html=True)
             col_upd = st.columns([1, 2, 1])[1]
             with col_upd:
-                improve_btn = st.button("✨ Propose Resume Changes", type="primary", key="update_resume_btn", use_container_width=True)
+                improve_btn = st.button(
+                    "✨ Propose Changes & Trim" if _trim_pages else "✨ Propose Resume Changes",
+                    type="primary", key="update_resume_btn", use_container_width=True
+                )
 
             if improve_btn:
                 upd_guidance = st.session_state.get('upd_guidance', '').strip()
@@ -4093,6 +4054,18 @@ section.main .block-container{padding-bottom:5rem!important;}
                         upd_status.write(f"✅ {len(new_removals)} unnecessary line(s) flagged for removal")
                     elif removal_result['success']:
                         upd_status.write("✅ No unnecessary content found")
+
+                    # Step 4 — trim to target length (opt-in, ticked above)
+                    if _trim_pages:
+                        upd_status.write(f"Identifying cuts to reach {_trim_pages} page(s)...")
+                        trim_result = trim_resume(resume_text, client, target_pages=_trim_pages)
+                        if trim_result['success'] and trim_result['pairs']:
+                            existing_finds = {u['find'] for u in all_updates}
+                            new_trims = [p for p in trim_result['pairs'] if p['find'] not in existing_finds]
+                            all_updates.extend(new_trims)
+                            upd_status.write(f"✅ {len(new_trims)} length cut(s) added")
+                        elif not trim_result['success']:
+                            upd_status.write(f"⚠️ Could not generate trim cuts: {trim_result['error']}")
 
                     upd_status.update(label=f"{len(all_updates)} total change(s) ready for review", state="complete")
 
@@ -4156,8 +4129,14 @@ section.main .block-container{padding-bottom:5rem!important;}
                     change_type    = change.get('type', '')
                     is_removal     = change_type == 'remove' or replace == ''
                     is_user_guided = change_type == 'user_guidance'
+                    is_trim        = change_type == 'trim'
 
-                    label_prefix = "⭐ YOUR GUIDANCE — " if is_user_guided else f"Change {i+1}: "
+                    if is_user_guided:
+                        label_prefix = "⭐ YOUR GUIDANCE — "
+                    elif is_trim:
+                        label_prefix = "✂ TRIM — "
+                    else:
+                        label_prefix = f"Change {i+1}: "
                     with st.container():
                         checked = st.checkbox(f"**{label_prefix}**{description}", value=True, key=f"chk_{i}")
 
@@ -4214,11 +4193,9 @@ section.main .block-container{padding-bottom:5rem!important;}
                     )
 
                 if apply_btn and selected:
-                    # Prefer the trimmed DOCX (which itself builds on the ATS-fixed version if that ran first),
-                    # else the ATS-fixed version directly, else the original upload
+                    # Prefer the ATS-fixed version if that ran first, else the original upload
                     _base_for_update = (
-                        st.session_state.get('trim_docx_bytes')
-                        or st.session_state.get('ats_fixed_docx_bytes')
+                        st.session_state.get('ats_fixed_docx_bytes')
                         or st.session_state['resume_file_bytes']
                     )
                     updated_bytes, applied = apply_updates_to_docx(
