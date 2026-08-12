@@ -859,31 +859,12 @@ Be conservative: partial overlap (e.g. "manage" vs "management") = IMPLIED. "Clo
 |------------|--------|-------|
 | [item] | EXACT / IMPLIED / MISSING | [note] |
 
-## CLOSING THE GAPS
-
-For every IMPLIED or MISSING item, provide either:
-- A specific, honest reword the candidate could use **only if the underlying experience genuinely applies** — do not invent experience
-- OR flag it as **"Verify with candidate"** if it cannot be determined from the resume
-
 ## RESUME SECTION REVIEW
 
 **Professional Summary:** Is it tailored? Does it open with the right strengths for this specific role?
 **Work Experience:** Score bullets against: Action Verb + Exact Skill + Quantified Impact + Business Outcome. Name specific weak bullets.
 **Skills Section:** Does it mirror the job's exact terminology? What's missing or misworded?
 **Education / Certifications:** Any required credentials absent?
-
-## SPECIFIC IMPROVEMENT RECOMMENDATIONS
-
-Provide 6–8 concrete rewrites of existing resume text. Each must:
-- Quote the EXACT current text from the resume (copy it verbatim including bullet characters)
-- Replace weak verbs, vague language, or synonym mismatches — use the job ad's exact terminology where the candidate clearly has the skill
-- Apply the formula: Action Verb + Exact Skill + Quantified Impact + Business Outcome
-- NEVER add skills, tools, or experience not already in the resume
-
-Format each as:
-**Before:** [exact current text, copied verbatim]
-**After:** [improved version — same facts, better expression]
-**Why:** [one sentence]
 
 ## ATS FORMATTING FLAGS
 
@@ -1105,9 +1086,9 @@ def parse_analysis_fields(analysis_text: str) -> dict:
 
 
 def extract_recommendations_summary(analysis_text: str) -> str:
-    """Pull the SPECIFIC IMPROVEMENT RECOMMENDATIONS section out of the analysis."""
+    """Pull the RESUME SECTION REVIEW section out of the analysis."""
     m = re.search(
-        r'##\s*SPECIFIC IMPROVEMENT RECOMMENDATIONS\s*\n(.*?)(?=\n##|\Z)',
+        r'##\s*RESUME SECTION REVIEW\s*\n(.*?)(?=\n##|\Z)',
         analysis_text, re.DOTALL | re.IGNORECASE
     )
     if m:
@@ -3703,6 +3684,15 @@ section.main .block-container{padding-bottom:5rem!important;}
 
         with st.container(key="analysis_results_body"):
             render_analysis(result['analysis'])
+
+        st.markdown(
+            '<div style="background:rgba(122,215,159,0.08);border-left:3px solid #7ad79f;'
+            'border-radius:8px;padding:0.6rem 1rem;margin:0.6rem 0 0.4rem;font-family:\'DM Sans\',sans-serif;">'
+            '<span style="color:#9fb6a8;font-size:0.82rem;">Want the exact wording fixed? Scroll to '
+            '<strong style="color:#ecf4ee;">✨ Propose Resume Changes</strong> below to review each change '
+            'before/after and apply only the ones you want.</span></div>',
+            unsafe_allow_html=True
+        )
 
         # Build shared filename parts used across all downloads
         _fn_date = datetime.now().strftime('%Y-%m-%d')
