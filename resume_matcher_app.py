@@ -2783,8 +2783,10 @@ footer{visibility:hidden!important;}
 
 # ============= TRACKER PAGE =============
 
-def show_tracker():
-    """Dedicated Applications Tracker page."""
+def show_tracker(embedded: bool = False):
+    """Applications Tracker. Renders as a standalone page by default; pass
+    embedded=True to render inline (e.g. inside a tab) without its own
+    sidebar or header-hiding CSS, since the host page already provides those."""
 
     # Handle status changes submitted via the HTML select + URL params
     _p = st.query_params
@@ -2795,65 +2797,67 @@ def show_tracker():
         st.query_params.clear()
         st.rerun()
 
-    # Hide Streamlit header
-    st.markdown("""
-    <style>
-    [data-testid="stHeader"]{display:none!important;}
-    #MainMenu{visibility:hidden!important;}
-    footer{visibility:hidden!important;}
-    </style>
-    """, unsafe_allow_html=True)
+    if not embedded:
+        # Hide Streamlit header
+        st.markdown("""
+        <style>
+        [data-testid="stHeader"]{display:none!important;}
+        #MainMenu{visibility:hidden!important;}
+        footer{visibility:hidden!important;}
+        </style>
+        """, unsafe_allow_html=True)
 
     _tracker_uid = st.session_state.get('auth_user_id')
     tracker_data = load_tracker_data(user_id=_tracker_uid)
 
-    # ── Sidebar ──────────────────────────────────────────────────────────────
-    with st.sidebar:
-        st.markdown("""
-        <div style="padding:1.5rem 1rem 0;">
-          <div style="display:flex;align-items:center;gap:11px;margin-bottom:1.6rem;">
-            <div style="width:34px;height:34px;border-radius:9px;
-                        background:linear-gradient(150deg,#7ad79f,#4fae7a);
-                        display:grid;place-items:center;
-                        font-family:'Bricolage Grotesque',system-ui,sans-serif;
-                        font-weight:800;font-size:16px;color:#06140f;
-                        box-shadow:0 4px 12px rgba(122,215,159,0.28);flex-shrink:0;">R</div>
-            <div>
-              <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;
-                          font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;line-height:1.1;">ResumeSync</div>
-              <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;
-                          text-transform:uppercase;color:#6e8a7b;margin-top:3px;">by VisualizePro</div>
+    # ── Sidebar (standalone page only — embedded mode reuses the host page's sidebar) ──
+    if not embedded:
+        with st.sidebar:
+            st.markdown("""
+            <div style="padding:1.5rem 1rem 0;">
+              <div style="display:flex;align-items:center;gap:11px;margin-bottom:1.6rem;">
+                <div style="width:34px;height:34px;border-radius:9px;
+                            background:linear-gradient(150deg,#7ad79f,#4fae7a);
+                            display:grid;place-items:center;
+                            font-family:'Bricolage Grotesque',system-ui,sans-serif;
+                            font-weight:800;font-size:16px;color:#06140f;
+                            box-shadow:0 4px 12px rgba(122,215,159,0.28);flex-shrink:0;">R</div>
+                <div>
+                  <div style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:700;
+                              font-size:17px;letter-spacing:-0.02em;color:#ecf4ee;line-height:1.1;">ResumeSync</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;
+                              text-transform:uppercase;color:#6e8a7b;margin-top:3px;">by VisualizePro</div>
+                </div>
+              </div>
+
+              <div style="border-top:1px solid rgba(159,182,168,0.12);margin-bottom:1.2rem;"></div>
+
+              <p style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.16em;
+                        text-transform:uppercase;color:#7ad79f;margin:0 0 0.8rem;">Workspace</p>
             </div>
-          </div>
+            """, unsafe_allow_html=True)
 
-          <div style="border-top:1px solid rgba(159,182,168,0.12);margin-bottom:1.2rem;"></div>
+            if st.button("✦ New Analysis", key="tracker_nav_new", use_container_width=True):
+                st.session_state['page'] = 'app'
+                st.rerun()
 
-          <p style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.16em;
-                    text-transform:uppercase;color:#7ad79f;margin:0 0 0.8rem;">Workspace</p>
-        </div>
-        """, unsafe_allow_html=True)
+            # Applications — active/current page
+            st.markdown("""
+            <div style="background:rgba(122,215,159,0.10);border:1px solid rgba(122,215,159,0.22);
+                        border-radius:6px;padding:10px 14px;margin:4px 0;
+                        font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;color:#7ad79f;">
+              📋 Applications
+            </div>
+            """, unsafe_allow_html=True)
 
-        if st.button("✦ New Analysis", key="tracker_nav_new", use_container_width=True):
-            st.session_state['page'] = 'app'
-            st.rerun()
-
-        # Applications — active/current page
-        st.markdown("""
-        <div style="background:rgba(122,215,159,0.10);border:1px solid rgba(122,215,159,0.22);
-                    border-radius:6px;padding:10px 14px;margin:4px 0;
-                    font-family:'DM Sans',sans-serif;font-size:0.875rem;font-weight:600;color:#7ad79f;">
-          📋 Applications
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div style='margin-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);padding-top:1rem;'>
-          <a href='https://madelivniekerk.github.io/Resumesync/' target='_self'
-             style='display:block;text-align:center;font-family:DM Sans,sans-serif;font-size:13px;
-                    color:#6e8a7b;text-decoration:none;padding:6px 0;'>
-            ← Back to home
-          </a>
-        </div>""", unsafe_allow_html=True)
+            st.markdown("""
+            <div style='margin-top:1.5rem;border-top:1px solid rgba(159,182,168,0.12);padding-top:1rem;'>
+              <a href='https://madelivniekerk.github.io/Resumesync/' target='_self'
+                 style='display:block;text-align:center;font-family:DM Sans,sans-serif;font-size:13px;
+                        color:#6e8a7b;text-decoration:none;padding:6px 0;'>
+                ← Back to home
+              </a>
+            </div>""", unsafe_allow_html=True)
 
     # ── Stats computation ─────────────────────────────────────────────────────
     total = len(tracker_data)
@@ -2881,11 +2885,12 @@ def show_tracker():
         </div>
         """, unsafe_allow_html=True)
     with hdr_r:
-        st.markdown("<div style='padding-top:32px;'>", unsafe_allow_html=True)
-        if st.button("New analysis →", key="tracker_hdr_new", type="primary", use_container_width=True):
-            st.session_state['page'] = 'app'
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+        if not embedded:
+            st.markdown("<div style='padding-top:32px;'>", unsafe_allow_html=True)
+            if st.button("New analysis →", key="tracker_hdr_new", type="primary", use_container_width=True):
+                st.session_state['page'] = 'app'
+                st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
 
     # ── Stats row ─────────────────────────────────────────────────────────────
     s1, s2, s3, s4 = st.columns(4)
@@ -3649,861 +3654,843 @@ section.main .block-container{padding-bottom:5rem!important;}
 
         # ── Analysis full-width ───────────────────────────────────────────────
         fields = parse_analysis_fields(result['analysis'])
-
-        st.markdown(
-            '<div style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.4rem;">'
-            '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
-            'text-transform:uppercase;color:#7ad79f;">📋 Analysis Results</span>'
-            '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        # ---- Prominent match score badge ----
-        _score_raw = fields.get('match_pct', '').replace('%', '').strip()
-        if _score_raw.isdigit():
-            _score_val = int(_score_raw)
-            if _score_val >= 80:
-                _score_color, _score_bg, _score_tier = '#7ad79f', 'rgba(122,215,159,0.10)', 'Strong fit'
-            elif _score_val >= 60:
-                _score_color, _score_bg, _score_tier = '#e0a14a', 'rgba(224,161,74,0.10)', 'Good fit'
-            else:
-                _score_color, _score_bg, _score_tier = '#e07a5f', 'rgba(224,122,95,0.10)', 'Needs work'
-            st.markdown(
-                f'<div style="background:{_score_bg};border:1px solid {_score_color};border-radius:14px;'
-                f'padding:1rem 1.2rem;margin:0 0 0.8rem;display:flex;align-items:baseline;gap:0.6rem;'
-                f'justify-content:center;">'
-                f'<span style="font-family:\'Bricolage Grotesque\',serif;font-size:3rem;font-weight:800;'
-                f'color:{_score_color};line-height:1;">{_score_val}%</span>'
-                f'<span style="font-family:\'Space Mono\',monospace;font-size:0.85rem;letter-spacing:0.05em;'
-                f'text-transform:uppercase;color:{_score_color};">{_score_tier}</span>'
-                f'</div>',
-                unsafe_allow_html=True
-            )
-
-        with st.container(key="analysis_results_body"):
-            render_analysis(result['analysis'])
-
-        st.markdown(
-            '<div style="background:rgba(122,215,159,0.08);border-left:3px solid #7ad79f;'
-            'border-radius:8px;padding:0.6rem 1rem;margin:0.6rem 0 0.4rem;font-family:\'DM Sans\',sans-serif;">'
-            '<span style="color:#9fb6a8;font-size:0.82rem;">Want the exact wording fixed? Scroll to '
-            '<strong style="color:#ecf4ee;">✨ Propose Resume Changes</strong> below to review each change '
-            'before/after and apply only the ones you want.</span></div>',
-            unsafe_allow_html=True
-        )
-
         # Build shared filename parts used across all downloads
         _fn_date = datetime.now().strftime('%Y-%m-%d')
         _fn_person = re.sub(r'[^\w\-]', '_', resume_filename.rsplit('.', 1)[0])[:25].strip('_')
         _fn_role = re.sub(r'[^\w\-]', '_', fields.get('job_title', 'Role').replace(' ', '_'))[:25].strip('_')
 
-        # ---- ATS Detection panel ----
-        _ats = st.session_state.get('detected_ats')
-        if _ats:
-            _tips_html = ''.join(
-                f'<li style="color:#ecf4ee;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
-                f'line-height:1.5;margin-bottom:0.1rem;">{t}</li>'
-                for t in _ats['tips']
-            )
-            st.markdown(
-                f'<div style="background:rgba(255,255,255,0.02);border-left:3px solid {_ats["color"]};'
-                f'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.4rem;">'
-                f'<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
-                f'text-transform:uppercase;color:{_ats["color"]};">'
-                f'{_ats["icon"]} {_ats["name"]} — {_ats["summary"]}</span>'
-                f'<ul style="margin:0.3rem 0 0;padding-left:1.1rem;">{_tips_html}</ul>'
-                f'</div>',
-                unsafe_allow_html=True
-            )
+        tab_analysis, tab_update, tab_cover, tab_tracker = st.tabs(
+            ["📋 Analysis", "✨ Resume Update", "✍️ Cover Letter", "📊 Job Tracker"]
+        )
 
-        # ---- Quick ATS pre-flight checks ----
-        _ats_warnings = []
-        _resume_name_lower = resume_filename.lower()
-        if _resume_name_lower.endswith('.pdf'):
-            _ats_warnings.append(
-                '📄 <strong>File format:</strong> You uploaded a PDF. '
-                'Many ATS systems parse Word documents more reliably — '
-                'submit as <strong>.docx</strong> when the job application allows it.'
-            )
-        _word_count = len(resume_text.split())
-        _est_pages  = estimate_pages(_word_count)
-        if _word_count < 250:
-            _ats_warnings.append(
-                f'📏 <strong>Resume length:</strong> Only ~{_word_count:,} words extracted — your resume may look thin, '
-                'or the file may be image-based (try uploading as .docx). '
-                'Expand bullet points with context and measurable outcomes.'
-            )
-        if _ats_warnings:
-            st.markdown(
-                '<div style="background:rgba(224,161,74,0.08);border-left:3px solid #e0a14a;'
-                'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.5rem;">'
-                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
-                'text-transform:uppercase;color:#e0a14a;">⚠ ATS &nbsp;</span>'
-                + ''.join(
-                    f'<span style="color:#ecf4ee;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;">{w}&nbsp; </span>'
-                    for w in _ats_warnings
-                )
-                + '</div>',
-                unsafe_allow_html=True
-            )
-
-        # ---- ATS Parse Preview — what the robot actually sees ----
-        if _resume_name_lower.endswith('.docx'):
-            try:
-                _ats_struct = analyze_docx_ats_structure(st.session_state.get('resume_file_bytes'))
-            except Exception:
-                _ats_struct = None
-
-            if _ats_struct:
-                _struct_warnings = []
-                if _ats_struct['has_tables']:
-                    _struct_warnings.append(
-                        f"🔲 <strong>{_ats_struct['table_count']} table(s) detected</strong> — strict ATS platforms "
-                        "(Taleo, Workday) often drop table content entirely or scramble its reading order."
-                    )
-                if _ats_struct['has_multicolumn']:
-                    _struct_warnings.append(
-                        "▥ <strong>Multi-column layout detected</strong> — many ATS read left-to-right across the "
-                        "whole line, interleaving your columns into garbled text."
-                    )
-                if _ats_struct['has_textboxes']:
-                    _struct_warnings.append(
-                        "🔳 <strong>Text box(es) detected</strong> — most ATS cannot read text inside text boxes at all; "
-                        "that content is effectively invisible to the parser."
-                    )
-                if _ats_struct['has_contact_in_header_footer']:
-                    _struct_warnings.append(
-                        "📵 <strong>Contact info found in the header/footer</strong> — most ATS ignore headers and "
-                        "footers completely, meaning your email or phone number may never reach the parsed profile."
-                    )
-                if not _ats_struct['has_skills_section']:
-                    _struct_warnings.append(
-                        "🏷️ <strong>No dedicated Skills section found</strong> — ATS platforms scan a Skills/Core "
-                        "Competencies heading separately from your work history; add one if you don't have it."
-                    )
-
+        with tab_analysis:
+            # ---- Prominent match score badge ----
+            _score_raw = fields.get('match_pct', '').replace('%', '').strip()
+            if _score_raw.isdigit():
+                _score_val = int(_score_raw)
+                if _score_val >= 80:
+                    _score_color, _score_bg, _score_tier = '#7ad79f', 'rgba(122,215,159,0.10)', 'Strong fit'
+                elif _score_val >= 60:
+                    _score_color, _score_bg, _score_tier = '#e0a14a', 'rgba(224,161,74,0.10)', 'Good fit'
+                else:
+                    _score_color, _score_bg, _score_tier = '#e07a5f', 'rgba(224,122,95,0.10)', 'Needs work'
                 st.markdown(
-                    '<div style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.4rem;">'
-                    '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
-                    'text-transform:uppercase;color:#7ad79f;">🔬 ATS Parse Preview</span>'
-                    '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
-                    '</div>',
+                    f'<div style="background:{_score_bg};border:1px solid {_score_color};border-radius:14px;'
+                    f'padding:1rem 1.2rem;margin:0 0 0.8rem;display:flex;align-items:baseline;gap:0.6rem;'
+                    f'justify-content:center;">'
+                    f'<span style="font-family:\'Bricolage Grotesque\',serif;font-size:3rem;font-weight:800;'
+                    f'color:{_score_color};line-height:1;">{_score_val}%</span>'
+                    f'<span style="font-family:\'Space Mono\',monospace;font-size:0.85rem;letter-spacing:0.05em;'
+                    f'text-transform:uppercase;color:{_score_color};">{_score_tier}</span>'
+                    f'</div>',
                     unsafe_allow_html=True
                 )
 
-                if _struct_warnings:
-                    st.markdown(
-                        '<div style="background:rgba(224,122,95,0.08);border-left:3px solid #e07a5f;'
-                        'border-radius:8px;padding:0.5rem 0.9rem;margin:0 0 0.4rem;">'
-                        + ''.join(
-                            f'<p style="color:#ecf4ee;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;'
-                            f'margin:0.15rem 0;">{w}</p>'
-                            for w in _struct_warnings
-                        )
-                        + '</div>',
-                        unsafe_allow_html=True
+            with st.container(key="analysis_results_body"):
+                render_analysis(result['analysis'])
+
+            st.markdown(
+                '<div style="background:rgba(122,215,159,0.08);border-left:3px solid #7ad79f;'
+                'border-radius:8px;padding:0.6rem 1rem;margin:0.6rem 0 0.4rem;font-family:\'DM Sans\',sans-serif;">'
+                '<span style="color:#9fb6a8;font-size:0.82rem;">Want the exact wording fixed? Switch to the '
+                '<strong style="color:#ecf4ee;">✨ Resume Update</strong> tab to review each change '
+                'before/after and apply only the ones you want.</span></div>',
+                unsafe_allow_html=True
+            )
+
+            # ---- ATS Detection panel ----
+            _ats = st.session_state.get('detected_ats')
+            if _ats:
+                _tips_html = ''.join(
+                    f'<li style="color:#ecf4ee;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
+                    f'line-height:1.5;margin-bottom:0.1rem;">{t}</li>'
+                    for t in _ats['tips']
+                )
+                st.markdown(
+                    f'<div style="background:rgba(255,255,255,0.02);border-left:3px solid {_ats["color"]};'
+                    f'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.4rem;">'
+                    f'<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+                    f'text-transform:uppercase;color:{_ats["color"]};">'
+                    f'{_ats["icon"]} {_ats["name"]} — {_ats["summary"]}</span>'
+                    f'<ul style="margin:0.3rem 0 0;padding-left:1.1rem;">{_tips_html}</ul>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
+            # ---- Quick ATS pre-flight checks ----
+            _ats_warnings = []
+            _resume_name_lower = resume_filename.lower()
+            if _resume_name_lower.endswith('.pdf'):
+                _ats_warnings.append(
+                    '📄 <strong>File format:</strong> You uploaded a PDF. '
+                    'Many ATS systems parse Word documents more reliably — '
+                    'submit as <strong>.docx</strong> when the job application allows it.'
+                )
+            _word_count = len(resume_text.split())
+            _est_pages  = estimate_pages(_word_count)
+            if _word_count < 250:
+                _ats_warnings.append(
+                    f'📏 <strong>Resume length:</strong> Only ~{_word_count:,} words extracted — your resume may look thin, '
+                    'or the file may be image-based (try uploading as .docx). '
+                    'Expand bullet points with context and measurable outcomes.'
+                )
+            if _ats_warnings:
+                st.markdown(
+                    '<div style="background:rgba(224,161,74,0.08);border-left:3px solid #e0a14a;'
+                    'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.5rem;">'
+                    '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+                    'text-transform:uppercase;color:#e0a14a;">⚠ ATS &nbsp;</span>'
+                    + ''.join(
+                        f'<span style="color:#ecf4ee;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;">{w}&nbsp; </span>'
+                        for w in _ats_warnings
                     )
-                    if _ats_struct['at_risk_pct'] > 0:
-                        st.markdown(
-                            f'<p style="color:#9fb6a8;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
-                            f'margin:0.3rem 0 0.5rem;">~<strong style="color:#e07a5f;">{_ats_struct["at_risk_pct"]}%</strong> '
-                            f'of your extracted content lives in tables/headers/footers — the parts most at risk of '
-                            f'being dropped by a strict ATS.</p>',
-                            unsafe_allow_html=True
+                    + '</div>',
+                    unsafe_allow_html=True
+                )
+
+            # ---- ATS Parse Preview — what the robot actually sees ----
+            if _resume_name_lower.endswith('.docx'):
+                try:
+                    _ats_struct = analyze_docx_ats_structure(st.session_state.get('resume_file_bytes'))
+                except Exception:
+                    _ats_struct = None
+
+                if _ats_struct:
+                    _struct_warnings = []
+                    if _ats_struct['has_tables']:
+                        _struct_warnings.append(
+                            f"🔲 <strong>{_ats_struct['table_count']} table(s) detected</strong> — strict ATS platforms "
+                            "(Taleo, Workday) often drop table content entirely or scramble its reading order."
+                        )
+                    if _ats_struct['has_multicolumn']:
+                        _struct_warnings.append(
+                            "▥ <strong>Multi-column layout detected</strong> — many ATS read left-to-right across the "
+                            "whole line, interleaving your columns into garbled text."
+                        )
+                    if _ats_struct['has_textboxes']:
+                        _struct_warnings.append(
+                            "🔳 <strong>Text box(es) detected</strong> — most ATS cannot read text inside text boxes at all; "
+                            "that content is effectively invisible to the parser."
+                        )
+                    if _ats_struct['has_contact_in_header_footer']:
+                        _struct_warnings.append(
+                            "📵 <strong>Contact info found in the header/footer</strong> — most ATS ignore headers and "
+                            "footers completely, meaning your email or phone number may never reach the parsed profile."
+                        )
+                    if not _ats_struct['has_skills_section']:
+                        _struct_warnings.append(
+                            "🏷️ <strong>No dedicated Skills section found</strong> — ATS platforms scan a Skills/Core "
+                            "Competencies heading separately from your work history; add one if you don't have it."
                         )
 
-                    _fixable = _ats_struct['has_tables'] or _ats_struct['has_contact_in_header_footer']
-                    if _fixable:
-                        if _ats_struct['has_multicolumn'] or _ats_struct['has_textboxes']:
-                            st.markdown(
-                                '<p style="color:#9fb6a8;font-size:0.76rem;font-family:\'DM Sans\',sans-serif;'
-                                'margin:0 0 0.4rem;">Multi-column layout and text boxes can\'t be safely auto-fixed — '
-                                'they need re-formatting in Word. The table/header issues below can be fixed automatically.</p>',
-                                unsafe_allow_html=True
-                            )
-                        col_fix = st.columns([1, 2, 1])[1]
-                        with col_fix:
-                            _fix_btn = st.button(
-                                "🔧 Fix ATS-risk content",
-                                key="fix_ats_risk_btn",
-                                use_container_width=True,
-                                type="primary",
-                            )
-                        if _fix_btn:
-                            _fixed_bytes, _fix_notes = build_ats_safe_docx(
-                                st.session_state.get('resume_file_bytes'), _ats_struct
-                            )
-                            st.session_state['ats_fixed_docx_bytes'] = _fixed_bytes
-                            st.session_state['ats_fixed_notes'] = _fix_notes
-                            # Downstream update results were based on the pre-fix document — invalidate them
-                            for _k in ['proposed_updates', 'updated_resume_bytes', 'updated_resume_name',
-                                       'updated_match_pct']:
-                                st.session_state.pop(_k, None)
-
-                        if st.session_state.get('ats_fixed_docx_bytes'):
-                            st.markdown(
-                                '<div style="background:rgba(122,215,159,0.06);border-left:3px solid #7ad79f;'
-                                'border-radius:8px;padding:0.5rem 0.9rem;margin:0.4rem 0;">'
-                                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
-                                'text-transform:uppercase;color:#7ad79f;">✓ Fixed — nothing removed, only added</span>'
-                                + ''.join(
-                                    f'<p style="color:#ecf4ee;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
-                                    f'margin:0.3rem 0 0;">{html.escape(n)}</p>'
-                                    for n in st.session_state.get('ats_fixed_notes', [])
-                                )
-                                + '<p style="color:#9fb6a8;font-size:0.76rem;font-family:\'DM Sans\',sans-serif;'
-                                + 'margin:0.4rem 0 0;">This version is now the base for Trim and Update My Resume below, '
-                                + 'so your final download includes these fixes too.</p>'
-                                + '</div>',
-                                unsafe_allow_html=True
-                            )
-                            st.download_button(
-                                label="💾 Download ATS-Safe Version (.docx)",
-                                data=st.session_state['ats_fixed_docx_bytes'],
-                                file_name=f"ATSSafe_{_fn_person}_{_fn_date}.docx",
-                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                key="download_ats_safe",
-                                use_container_width=True
-                            )
-                else:
                     st.markdown(
-                        '<div style="background:rgba(122,215,159,0.06);border-left:3px solid #7ad79f;'
-                        'border-radius:8px;padding:0.5rem 0.9rem;margin:0 0 0.4rem;">'
-                        '<p style="color:#ecf4ee;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;margin:0;">'
-                        '✅ Clean structure — no tables, columns, text boxes, or header-only contact info detected. '
-                        'This resume should parse consistently across ATS platforms.</p>'
+                        '<div style="display:flex;align-items:center;gap:8px;margin:0.6rem 0 0.4rem;">'
+                        '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
+                        'text-transform:uppercase;color:#7ad79f;">🔬 ATS Parse Preview</span>'
+                        '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
                         '</div>',
                         unsafe_allow_html=True
                     )
 
-                with st.expander("👁 See exactly what a strict ATS extracts from your file"):
-                    st.caption(
-                        "This is your resume with formatting stripped — paragraphs only, no tables, no "
-                        "headers/footers. It's the closest approximation of what Taleo/Workday-style parsers read."
-                    )
-                    st.markdown(
-                        '<pre style="background:#0d1f16;color:#ecf4ee;border:1px solid rgba(159,182,168,0.25);'
-                        'border-radius:8px;padding:0.75rem 0.9rem;max-height:260px;overflow-y:auto;'
-                        'white-space:pre-wrap;word-break:break-word;font-family:\'DM Sans\',sans-serif;'
-                        'font-size:0.74rem;line-height:1.5;margin:0 0 0.6rem;">'
-                        + html.escape(_ats_struct['strict_text'] or "(no plain-paragraph text found)")
-                        + '</pre>',
-                        unsafe_allow_html=True
-                    )
-                    if _ats_struct['table_text'] or _ats_struct['header_footer_text']:
-                        st.caption("Content found only in tables/headers/footers (at risk of being dropped):")
-                        _dropped = "\n".join(filter(None, [_ats_struct['table_text'], _ats_struct['header_footer_text']]))
+                    if _struct_warnings:
                         st.markdown(
-                            '<pre style="background:#0d1f16;color:#e0a14a;border:1px solid rgba(224,161,74,0.35);'
-                            'border-radius:8px;padding:0.75rem 0.9rem;max-height:140px;overflow-y:auto;'
+                            '<div style="background:rgba(224,122,95,0.08);border-left:3px solid #e07a5f;'
+                            'border-radius:8px;padding:0.5rem 0.9rem;margin:0 0 0.4rem;">'
+                            + ''.join(
+                                f'<p style="color:#ecf4ee;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;'
+                                f'margin:0.15rem 0;">{w}</p>'
+                                for w in _struct_warnings
+                            )
+                            + '</div>',
+                            unsafe_allow_html=True
+                        )
+                        if _ats_struct['at_risk_pct'] > 0:
+                            st.markdown(
+                                f'<p style="color:#9fb6a8;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
+                                f'margin:0.3rem 0 0.5rem;">~<strong style="color:#e07a5f;">{_ats_struct["at_risk_pct"]}%</strong> '
+                                f'of your extracted content lives in tables/headers/footers — the parts most at risk of '
+                                f'being dropped by a strict ATS.</p>',
+                                unsafe_allow_html=True
+                            )
+
+                        _fixable = _ats_struct['has_tables'] or _ats_struct['has_contact_in_header_footer']
+                        if _fixable:
+                            if _ats_struct['has_multicolumn'] or _ats_struct['has_textboxes']:
+                                st.markdown(
+                                    '<p style="color:#9fb6a8;font-size:0.76rem;font-family:\'DM Sans\',sans-serif;'
+                                    'margin:0 0 0.4rem;">Multi-column layout and text boxes can\'t be safely auto-fixed — '
+                                    'they need re-formatting in Word. The table/header issues below can be fixed automatically.</p>',
+                                    unsafe_allow_html=True
+                                )
+                            col_fix = st.columns([1, 2, 1])[1]
+                            with col_fix:
+                                _fix_btn = st.button(
+                                    "🔧 Fix ATS-risk content",
+                                    key="fix_ats_risk_btn",
+                                    use_container_width=True,
+                                    type="primary",
+                                )
+                            if _fix_btn:
+                                _fixed_bytes, _fix_notes = build_ats_safe_docx(
+                                    st.session_state.get('resume_file_bytes'), _ats_struct
+                                )
+                                st.session_state['ats_fixed_docx_bytes'] = _fixed_bytes
+                                st.session_state['ats_fixed_notes'] = _fix_notes
+                                # Downstream update results were based on the pre-fix document — invalidate them
+                                for _k in ['proposed_updates', 'updated_resume_bytes', 'updated_resume_name',
+                                           'updated_match_pct']:
+                                    st.session_state.pop(_k, None)
+
+                            if st.session_state.get('ats_fixed_docx_bytes'):
+                                st.markdown(
+                                    '<div style="background:rgba(122,215,159,0.06);border-left:3px solid #7ad79f;'
+                                    'border-radius:8px;padding:0.5rem 0.9rem;margin:0.4rem 0;">'
+                                    '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+                                    'text-transform:uppercase;color:#7ad79f;">✓ Fixed — nothing removed, only added</span>'
+                                    + ''.join(
+                                        f'<p style="color:#ecf4ee;font-size:0.78rem;font-family:\'DM Sans\',sans-serif;'
+                                        f'margin:0.3rem 0 0;">{html.escape(n)}</p>'
+                                        for n in st.session_state.get('ats_fixed_notes', [])
+                                    )
+                                    + '<p style="color:#9fb6a8;font-size:0.76rem;font-family:\'DM Sans\',sans-serif;'
+                                    + 'margin:0.4rem 0 0;">This version is now the base for Trim and Update My Resume below, '
+                                    + 'so your final download includes these fixes too.</p>'
+                                    + '</div>',
+                                    unsafe_allow_html=True
+                                )
+                                st.download_button(
+                                    label="💾 Download ATS-Safe Version (.docx)",
+                                    data=st.session_state['ats_fixed_docx_bytes'],
+                                    file_name=f"ATSSafe_{_fn_person}_{_fn_date}.docx",
+                                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                    key="download_ats_safe",
+                                    use_container_width=True
+                                )
+                    else:
+                        st.markdown(
+                            '<div style="background:rgba(122,215,159,0.06);border-left:3px solid #7ad79f;'
+                            'border-radius:8px;padding:0.5rem 0.9rem;margin:0 0 0.4rem;">'
+                            '<p style="color:#ecf4ee;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;margin:0;">'
+                            '✅ Clean structure — no tables, columns, text boxes, or header-only contact info detected. '
+                            'This resume should parse consistently across ATS platforms.</p>'
+                            '</div>',
+                            unsafe_allow_html=True
+                        )
+
+                    with st.expander("👁 See exactly what a strict ATS extracts from your file"):
+                        st.caption(
+                            "This is your resume with formatting stripped — paragraphs only, no tables, no "
+                            "headers/footers. It's the closest approximation of what Taleo/Workday-style parsers read."
+                        )
+                        st.markdown(
+                            '<pre style="background:#0d1f16;color:#ecf4ee;border:1px solid rgba(159,182,168,0.25);'
+                            'border-radius:8px;padding:0.75rem 0.9rem;max-height:260px;overflow-y:auto;'
                             'white-space:pre-wrap;word-break:break-word;font-family:\'DM Sans\',sans-serif;'
-                            'font-size:0.74rem;line-height:1.5;margin:0;">'
-                            + html.escape(_dropped)
+                            'font-size:0.74rem;line-height:1.5;margin:0 0 0.6rem;">'
+                            + html.escape(_ats_struct['strict_text'] or "(no plain-paragraph text found)")
                             + '</pre>',
                             unsafe_allow_html=True
                         )
-        elif _resume_name_lower.endswith('.pdf'):
-            st.caption(
-                "🔬 ATS Parse Preview is available for .docx uploads — structural checks (tables, columns, "
-                "text boxes) need the document's underlying layout, which isn't inspectable in a PDF."
-            )
-
-        # ── Trim option — folded into Propose Resume Changes below, not a separate action ──
-        st.markdown(
-            '<div style="background:rgba(224,161,74,0.06);border-left:3px solid rgba(224,161,74,0.50);'
-            'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.4rem;'
-            'display:flex;align-items:baseline;gap:0.6rem;flex-wrap:wrap;">'
-            '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
-            'text-transform:uppercase;color:#e0a14a;white-space:nowrap;">✂ Length</span>'
-            f'<span style="color:#9fb6a8;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;">'
-            f'{_word_count:,} words (~{_est_pages} pages)</span>'
-            '</div>',
-            unsafe_allow_html=True
-        )
-        _trim_enabled = st.checkbox(
-            "Also trim to fit a target length",
-            value=(_est_pages > 2),
-            key="trim_enabled",
-            help="AI-suggested cuts and condensed old roles show up as items in the same review list below, "
-                 "next to the wording fixes — nothing is removed until you tick it and hit Apply."
-        )
-        if _trim_enabled:
-            _trim_target = st.radio(
-                "Target length",
-                ["2 pages (recommended)", "1 page (very tight)"],
-                horizontal=True,
-                key="trim_target"
-            )
-            _trim_pages = 2 if "2 pages" in _trim_target else 1
-        else:
-            _trim_pages = None
-
-        st.divider()
-
-        # ============= RESUME UPDATER =============
-        st.markdown(
-            '<div style="display:flex;align-items:center;gap:8px;margin:0.8rem 0 0.4rem;">'
-            '<span style="font-family:\'Space Mono\',monospace;font-size:9.5px;letter-spacing:0.18em;'
-            'text-transform:uppercase;color:#7ad79f;">✨ Update My Resume</span>'
-            '<span style="flex:1;height:1px;background:rgba(159,182,168,0.15);"></span>'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        if st.session_state.get('resume_is_docx'):
-            st.markdown(
-                '<div style="background:rgba(122,215,159,0.06);padding:0.55rem 0.9rem;border-radius:10px;'
-                'border-left:3px solid #7ad79f;margin-bottom:0.6rem;">'
-                '<p style="color:#9fb6a8;font-size:0.82rem;margin:0;font-family:\'DM Sans\',sans-serif;line-height:1.5;">'
-                'Stronger verbs, clearer outcomes — <strong style="color:#ecf4ee;">never adds skills you don\'t have.</strong> '
-                'Review and approve every change before it\'s applied.</p>'
-                '</div>',
-                unsafe_allow_html=True
-            )
-
-            st.markdown(
-                '<div style="background:rgba(111,177,224,0.08);padding:0.55rem 0.9rem;border-radius:10px;'
-                'border-left:3px solid #6fb1e0;margin-bottom:0.6rem;">'
-                '<p style="color:#6fb1e0;font-family:\'Space Mono\',monospace;font-size:9px;'
-                'letter-spacing:0.14em;text-transform:uppercase;margin:0 0 0.3rem;">Tip — quantified impact</p>'
-                '<p style="color:#ecf4ee;font-size:0.81rem;margin:0;font-family:\'DM Sans\',sans-serif;line-height:1.6;">'
-                '📊 <b>%</b> &nbsp;·&nbsp; ⏱ <b>time saved</b> &nbsp;·&nbsp; 💰 <b>revenue / cost</b> &nbsp;·&nbsp; ⚡ <b>efficiency</b> &nbsp;·&nbsp; 📈 <b>scale</b><br>'
-                '<span style="color:#6e8a7b;font-size:0.82rem;">'
-                'e.g. "reduced processing time by 35%" &nbsp;·&nbsp; "increased accuracy by 20%" &nbsp;·&nbsp; "supported 5M+ records daily"'
-                '</span></p>'
-                '</div>',
-                unsafe_allow_html=True
-            )
-
-            _guidance_val = st.session_state.get('upd_guidance', '').strip()
-            if _guidance_val:
-                c1, c2 = st.columns([10, 1])
-                with c1:
-                    st.markdown(
-                        f'<div style="background:rgba(111,177,224,0.08);border-left:3px solid #6fb1e0;'
-                        f'padding:0.4rem 0.9rem;border-radius:6px;margin-bottom:0.6rem;font-family:\'DM Sans\',sans-serif;">'
-                        f'<span style="color:#6fb1e0;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                        f'text-transform:uppercase;letter-spacing:0.1em;">Guidance: </span>'
-                        f'<span style="color:#ecf4ee;font-size:0.82rem;">{_guidance_val}</span>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-                with c2:
-                    if st.button("✕", key="clear_guidance", help="Clear guidance"):
-                        st.session_state.pop('upd_guidance', None)
-                        st.rerun()
-
-            st.markdown('<div id="resume-updater-anchor"></div>', unsafe_allow_html=True)
-            col_upd = st.columns([1, 2, 1])[1]
-            with col_upd:
-                improve_btn = st.button(
-                    "✨ Propose Changes & Trim" if _trim_pages else "✨ Propose Resume Changes",
-                    type="primary", key="update_resume_btn", use_container_width=True
-                )
-
-            if improve_btn:
-                upd_guidance = st.session_state.get('upd_guidance', '').strip()
-                st.session_state['_upd_guidance_saved'] = upd_guidance
-                all_updates = []
-                guidance_finds = set()
-                boost_implied_count = 0
-
-                with st.status("Improving your resume...", expanded=True) as upd_status:
-                    # Step 0 — user guidance (locked, highest priority)
-                    if upd_guidance:
-                        upd_status.write("Applying your guidance first...")
-                        guidance_result = generate_guidance_updates(resume_text, upd_guidance, client)
-                        if guidance_result['success'] and guidance_result['updates']:
-                            all_updates.extend(guidance_result['updates'])
-                            guidance_finds = {u['find'] for u in guidance_result['updates']}
-                            upd_status.write(f"✅ {len(guidance_result['updates'])} guidance change(s) locked in")
-                        elif not guidance_result['success']:
-                            upd_status.write(f"⚠️ Could not apply guidance: {guidance_result['error']}")
-
-                    # Step 1 — general expression improvements (skip any bullet already touched by guidance)
-                    upd_status.write("Analysing general improvements...")
-                    upd_result = generate_resume_updates(resume_text, result['analysis'], client)
-                    if upd_result['success']:
-                        new_general = [u for u in upd_result['updates'] if u['find'] not in guidance_finds]
-                        all_updates.extend(new_general)
-                        upd_status.write(f"✅ {len(new_general)} expression improvement(s) found")
-                    else:
-                        upd_status.write(f"⚠️ Could not generate general changes: {upd_result['error']}")
-
-                    # Step 2 — implied → exact terminology boost
-                    upd_status.write("Converting implied keyword matches to exact terminology...")
-                    boost_result = generate_implied_to_exact_updates(resume_text, result['analysis'], client)
-                    if boost_result['success'] and boost_result['updates']:
-                        boost_implied_count = boost_result.get('implied_count', len(boost_result['updates']))
-                        boost_finds = {u['find'] for u in boost_result['updates']}
-                        # Boost takes priority over general but not over user guidance
-                        all_updates = [u for u in all_updates if u.get('type') == 'user_guidance' or u['find'] not in boost_finds]
-                        all_updates.extend(boost_result['updates'])
-                        upd_status.write(f"✅ {len(boost_result['updates'])} implied→exact terminology fix(es) added")
-                    elif boost_result['success']:
-                        upd_status.write("✅ No implied matches to convert — all keywords already exact")
-
-                    # Step 3 — removal suggestions (unnecessary content)
-                    upd_status.write("Checking for unnecessary content to remove...")
-                    removal_result = generate_removal_suggestions(resume_text, client)
-                    if removal_result['success'] and removal_result['updates']:
-                        existing_finds = {u['find'] for u in all_updates}
-                        new_removals = [u for u in removal_result['updates'] if u['find'] not in existing_finds]
-                        all_updates.extend(new_removals)
-                        upd_status.write(f"✅ {len(new_removals)} unnecessary line(s) flagged for removal")
-                    elif removal_result['success']:
-                        upd_status.write("✅ No unnecessary content found")
-
-                    # Step 4 — trim to target length (opt-in, ticked above)
-                    if _trim_pages:
-                        upd_status.write(f"Identifying cuts to reach {_trim_pages} page(s)...")
-                        trim_result = trim_resume(resume_text, client, target_pages=_trim_pages)
-                        if trim_result['success'] and trim_result['pairs']:
-                            existing_finds = {u['find'] for u in all_updates}
-                            new_trims = [p for p in trim_result['pairs'] if p['find'] not in existing_finds]
-                            all_updates.extend(new_trims)
-                            upd_status.write(f"✅ {len(new_trims)} length cut(s) added")
-                        elif not trim_result['success']:
-                            upd_status.write(f"⚠️ Could not generate trim cuts: {trim_result['error']}")
-
-                    upd_status.update(label=f"{len(all_updates)} total change(s) ready for review", state="complete")
-
-                if all_updates:
-                    st.session_state['proposed_updates'] = all_updates
-                    st.session_state['update_source'] = 'boost' if boost_implied_count else 'regular'
-                    st.session_state['_boost_implied_count'] = boost_implied_count
-                    st.session_state.pop('updated_resume_bytes', None)
-                else:
-                    st.error("❌ Could not generate any changes.")
-
-                _components.html(
-                    '<script>'
-                    'window.parent.document.getElementById("resume-updater-anchor")'
-                    '.scrollIntoView({behavior:"smooth",block:"start"});'
-                    '</script>',
-                    height=0,
-                )
-
-            # ── Review step ────────────────────────────────────────────────
-            if 'proposed_updates' in st.session_state and st.session_state['proposed_updates']:
-                proposed = st.session_state['proposed_updates']
-
-                _saved_guidance = st.session_state.get('_upd_guidance_saved', '').strip()
-                _current_guidance = st.session_state.get('upd_guidance', '').strip()
-                if _current_guidance and _current_guidance != _saved_guidance:
-                    st.markdown(
-                        '<div style="background:rgba(224,161,74,0.10);border-left:3px solid #e0a14a;'
-                        'padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.8rem;font-family:\'DM Sans\',sans-serif;">'
-                        '<span style="color:#e0a14a;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                        'text-transform:uppercase;letter-spacing:0.1em;">⚠ Guidance updated</span>'
-                        '<span style="color:#9fb6a8;font-size:0.85rem;display:block;margin-top:0.3rem;">'
-                        'Your additional guidance changed after these proposals were generated. '
-                        'Click <strong style="color:#ecf4ee;">✨ Propose Resume Changes</strong> again to include it.'
-                        '</span></div>',
-                        unsafe_allow_html=True
-                    )
-                elif _saved_guidance:
-                    st.markdown(
-                        f'<div style="background:rgba(111,177,224,0.08);border-left:3px solid #6fb1e0;'
-                        f'padding:0.5rem 0.9rem;border-radius:6px;margin-bottom:0.8rem;font-family:\'DM Sans\',sans-serif;">'
-                        f'<span style="color:#6fb1e0;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                        f'text-transform:uppercase;letter-spacing:0.1em;">✓ Guidance included: </span>'
-                        f'<span style="color:#9fb6a8;font-size:0.82rem;">{_saved_guidance}</span>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-
-                st.markdown(
-                    '<p style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
-                    'text-transform:uppercase;color:#7ad79f;margin:0.6rem 0 0.4rem;">'
-                    'Review changes — untick any you want to skip:</p>',
-                    unsafe_allow_html=True
-                )
-
-                selected = []
-                for i, change in enumerate(proposed):
-                    find           = change.get('find', '')
-                    replace        = change.get('replace', '')
-                    description    = change.get('description', 'Improve phrasing')
-                    change_type    = change.get('type', '')
-                    is_removal     = change_type == 'remove' or replace == ''
-                    is_user_guided = change_type == 'user_guidance'
-                    is_trim        = change_type == 'trim'
-
-                    if is_user_guided:
-                        label_prefix = "⭐ YOUR GUIDANCE — "
-                    elif is_trim:
-                        label_prefix = "✂ TRIM — "
-                    else:
-                        label_prefix = f"Change {i+1}: "
-                    with st.container():
-                        checked = st.checkbox(f"**{label_prefix}**{description}", value=True, key=f"chk_{i}")
-
-                        if is_removal:
+                        if _ats_struct['table_text'] or _ats_struct['header_footer_text']:
+                            st.caption("Content found only in tables/headers/footers (at risk of being dropped):")
+                            _dropped = "\n".join(filter(None, [_ats_struct['table_text'], _ats_struct['header_footer_text']]))
                             st.markdown(
-                                f'<div style="background:rgba(224,80,70,0.08);border-left:3px solid #e05046;'
-                                f'padding:0.7rem 0.9rem;border-radius:10px;font-size:0.82rem;'
-                                f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;margin-bottom:0.8rem;">'
-                                f'<strong style="color:#e05046;font-size:0.72rem;font-family:\'Space Mono\',monospace;'
-                                f'letter-spacing:0.1em;text-transform:uppercase;">✂ Remove this line</strong><br>'
-                                f'<span style="text-decoration:line-through;opacity:0.65;">{find}</span></div>',
+                                '<pre style="background:#0d1f16;color:#e0a14a;border:1px solid rgba(224,161,74,0.35);'
+                                'border-radius:8px;padding:0.75rem 0.9rem;max-height:140px;overflow-y:auto;'
+                                'white-space:pre-wrap;word-break:break-word;font-family:\'DM Sans\',sans-serif;'
+                                'font-size:0.74rem;line-height:1.5;margin:0;">'
+                                + html.escape(_dropped)
+                                + '</pre>',
                                 unsafe_allow_html=True
                             )
-                            edited_replace = ''
-                        else:
-                            before_border = '#e0a14a' if is_user_guided else '#e07a5f'
-                            before_bg     = 'rgba(224,161,74,0.08)' if is_user_guided else 'rgba(224,122,95,0.08)'
-                            # Size both blocks off the same estimate so Before/After match exactly
-                            _content_len = max(len(find), len(replace))
-                            _line_breaks = find.count('\n') + replace.count('\n')
-                            _est_lines = max(2, min(16, (_content_len // 62) + _line_breaks + 1))
-                            _box_h = max(70, _est_lines * 19 + 14)
+            elif _resume_name_lower.endswith('.pdf'):
+                st.caption(
+                    "🔬 ATS Parse Preview is available for .docx uploads — structural checks (tables, columns, "
+                    "text boxes) need the document's underlying layout, which isn't inspectable in a PDF."
+                )
 
-                            col_b, col_a = st.columns(2)
-                            with col_b:
-                                st.markdown(
-                                    f'<div style="background:{before_bg};border-left:3px solid {before_border};'
-                                    f'padding:0.6rem 0.8rem;border-radius:10px;font-size:0.82rem;'
-                                    f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;'
-                                    f'height:{_box_h}px;overflow-y:auto;box-sizing:border-box;">'
-                                    f'<strong style="color:{before_border};font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                                    f'letter-spacing:0.1em;text-transform:uppercase;">{"⭐ Your guidance — before" if is_user_guided else "Before"}</strong><br>{find}</div>',
-                                    unsafe_allow_html=True
-                                )
-                            with col_a:
-                                st.markdown(
-                                    f'<p style="margin:0 0 0.3rem;">'
-                                    f'<span style="color:#7ad79f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                                    f'letter-spacing:0.1em;text-transform:uppercase;">After</span>'
-                                    f'<span style="color:#6e8a7b;font-size:0.68rem;font-family:\'DM Sans\',sans-serif;'
-                                    f'font-style:italic;"> — edit if needed</span></p>',
-                                    unsafe_allow_html=True
-                                )
-                                edited_replace = st.text_area(
-                                    f"After {i+1}",
-                                    value=replace,
-                                    height=_box_h,
-                                    key=f"edit_replace_{i}",
-                                    label_visibility="collapsed"
-                                )
-                            st.markdown("<div style='margin-bottom:0.8rem'></div>", unsafe_allow_html=True)
-
-                        if checked:
-                            selected.append({**change, 'replace': edited_replace})
-
-                n_selected = len(selected)
-                col_apply = st.columns([1, 2, 1])[1]
-                with col_apply:
-                    apply_btn = st.button(
-                        "✅ Apply " + str(n_selected) + " Selected Change" + ("s" if n_selected != 1 else ""),
-                        type="primary",
-                        key="apply_selected_btn",
-                        disabled=n_selected == 0
-                    )
-
-                if apply_btn and selected:
-                    # Prefer the ATS-fixed version if that ran first, else the original upload
-                    _base_for_update = (
-                        st.session_state.get('ats_fixed_docx_bytes')
-                        or st.session_state['resume_file_bytes']
-                    )
-                    updated_bytes, applied = apply_updates_to_docx(
-                        _base_for_update,
-                        selected,
-                        resume_filename
-                    )
-                    new_filename = f"{_fn_person}_Updated_{_fn_role}_{_fn_date}.docx"
-                    st.session_state['updated_resume_bytes'] = updated_bytes
-                    st.session_state['updated_resume_name'] = new_filename
-                    st.success(f"✅ {applied} change(s) applied to your resume.")
-                    # Score improvement — method depends on change type
-                    is_boost = st.session_state.get('update_source') == 'boost'
-                    with st.spinner("Calculating updated compatibility score..."):
-                        if is_boost:
-                            # Analytical: promote `applied` implied items to exact using
-                            # the original keyword tables — consistent with the analysis methodology
-                            _orig_pct = fields.get('match_pct', '')
-                            if not _orig_pct:
-                                _m = re.search(r'COMPATIBILITY SCORE[^0-9]*(\d+)%', result.get('analysis', ''), re.IGNORECASE)
-                                if _m:
-                                    _orig_pct = _m.group(1) + '%'
-                            _orig_num = int(re.search(r'\d+', _orig_pct).group()) if re.search(r'\d+', _orig_pct) else None
-                            _tables = parse_keyword_tables(result.get('analysis', ''))
-                            _before = compute_score_analytically(_tables, n_promote=0)
-                            _after  = compute_score_analytically(_tables, n_promote=applied)
-                            if _before is not None and _after is not None and _orig_num is not None:
-                                _delta = _after - _before
-                                new_score = min(100, _orig_num + _delta)
-                            else:
-                                new_score = _after  # fallback: raw analytical score
-                        else:
-                            # LLM re-score for general expression improvements
-                            _upd_doc = Document(io.BytesIO(updated_bytes))
-                            _upd_paras = list(_upd_doc.paragraphs)
-                            for _t in _upd_doc.tables:
-                                for _r in _t.rows:
-                                    for _c in _r.cells:
-                                        _upd_paras.extend(_c.paragraphs)
-                            updated_text = "\n".join(p.text for p in _upd_paras if p.text.strip())
-                            _orig_pct = fields.get('match_pct', '')
-                            _orig_num = int(re.search(r'\d+', _orig_pct).group()) if re.search(r'\d+', _orig_pct) else None
-                            new_score = re_score_resume(updated_text, job_content, client,
-                                                        orig_score=_orig_num, changes=selected)
-                        if new_score is not None:
-                            st.session_state['updated_match_pct'] = f"{new_score}%"
-
-            if 'updated_resume_bytes' in st.session_state:
-                new_filename = st.session_state.get('updated_resume_name', f"{_fn_person}_Updated_{_fn_role}_{_fn_date}.docx")
-                # Show score lift if re-score is available
-                updated_pct = st.session_state.get('updated_match_pct')
-                if updated_pct:
-                    orig_pct = fields.get('match_pct', '')
-                    # Also try scanning the raw analysis text directly as a fallback
-                    if not orig_pct:
-                        _m = re.search(r'COMPATIBILITY SCORE[^0-9]*(\d+)%', result.get('analysis', ''), re.IGNORECASE)
-                        if _m:
-                            orig_pct = _m.group(1) + '%'
-                    orig_num = int(re.search(r'\d+', orig_pct).group()) if re.search(r'\d+', orig_pct) else None
-                    new_num  = int(re.search(r'\d+', updated_pct).group()) if re.search(r'\d+', updated_pct) else None
-
-                    if orig_num is not None and new_num is not None and orig_num != new_num:
-                        # Full before → after with delta badge
-                        delta = new_num - orig_num
-                        delta_str = f"+{delta}" if delta > 0 else str(delta)
-                        delta_color = "#7ad79f" if delta > 0 else "#ef4444"
-                        st.markdown(
-                            f'<div style="text-align:center;margin:8px 0 4px;">'
-                            f'<span style="font-family:\'Space Mono\',monospace;font-size:12px;color:#9fb6a8;">Compatibility: </span>'
-                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#9fb6a8;text-decoration:line-through;">{orig_pct}</span>'
-                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:17px;color:#6e8a7b;margin:0 6px;">→</span>'
-                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#ecf4ee;">{updated_pct}</span>'
-                            f'<span style="font-family:\'Space Mono\',monospace;font-size:11px;color:{delta_color};'
-                            f'background:{"rgba(122,215,159,0.12)" if delta > 0 else "rgba(239,68,68,0.10)"};'
-                            f'padding:2px 7px;border-radius:5px;margin-left:8px;">{delta_str} pts</span>'
-                            f'</div>',
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        # Show updated score on its own (no delta or delta = 0)
-                        st.markdown(
-                            f'<div style="text-align:center;margin:8px 0 4px;">'
-                            f'<span style="font-family:\'Space Mono\',monospace;font-size:12px;color:#9fb6a8;">Updated compatibility: </span>'
-                            f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#ecf4ee;">{updated_pct}</span>'
-                            f'</div>',
-                            unsafe_allow_html=True
-                        )
-                col_dl_upd = st.columns([1, 2, 1])[1]
-                with col_dl_upd:
-                    st.download_button(
-                        label="📥 Download Updated Resume",
-                        data=st.session_state['updated_resume_bytes'],
-                        file_name=new_filename,
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        key="download_updated_resume"
-                    )
-        else:
+            # ── Trim option — folded into Propose Resume Changes below, not a separate action ──
             st.markdown(
-                '<div style="background:rgba(122,215,159,0.04);border:1px solid rgba(159,182,168,0.12);'
-                'border-radius:10px;padding:0.75rem 1rem;">'
-                '<p style="color:#6e8a7b;font-size:0.85rem;margin:0;font-family:\'DM Sans\',sans-serif;">'
-                '💡 Upload a Word document (.docx) to enable automatic resume updating.</p>'
+                '<div style="background:rgba(224,161,74,0.06);border-left:3px solid rgba(224,161,74,0.50);'
+                'border-radius:8px;padding:0.5rem 0.9rem;margin:0.3rem 0 0.4rem;'
+                'display:flex;align-items:baseline;gap:0.6rem;flex-wrap:wrap;">'
+                '<span style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+                'text-transform:uppercase;color:#e0a14a;white-space:nowrap;">✂ Length</span>'
+                f'<span style="color:#9fb6a8;font-size:0.80rem;font-family:\'DM Sans\',sans-serif;">'
+                f'{_word_count:,} words (~{_est_pages} pages)</span>'
                 '</div>',
                 unsafe_allow_html=True
             )
-
-        st.divider()
-
-        # ============= COVER LETTER =============
-        st.markdown('<h2 style="color:#ecf4ee; font-size:1.8rem; font-weight:700; text-align:center; margin:2rem 0; font-family:Bricolage Grotesque,serif; letter-spacing:-0.02em;">✍️ Generate Cover Letter</h2>', unsafe_allow_html=True)
-        st.markdown(
-            '<div style="background:rgba(109,193,138,0.06); padding:1.2rem 1.5rem; border-radius:8px; border-left:4px solid #7ad79f; margin-bottom:2rem;">'
-            '<p style="color:#9fb6a8; font-size:0.95rem; margin:0; font-family:DM Sans,sans-serif;">🎯 Create a personalised cover letter tailored to this job based on your match analysis</p>'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        cl_col1, cl_col2, cl_col3 = st.columns(3)
-        with cl_col1:
-            cl_tone = st.selectbox(
-                "Tone",
-                ["Professional", "Conversational", "Enthusiastic", "Formal", "Confident & Direct"],
-                key="cl_tone"
+            _trim_enabled = st.checkbox(
+                "Also trim to fit a target length",
+                value=(_est_pages > 2),
+                key="trim_enabled",
+                help="AI-suggested cuts and condensed old roles show up as items in the same review list below, "
+                     "next to the wording fixes — nothing is removed until you tick it and hit Apply."
             )
-        with cl_col2:
-            cl_length = st.selectbox(
-                "Length",
-                ["Brief (≈200 words)", "Standard (300–350 words)", "Detailed (≈450 words)"],
-                index=1,
-                key="cl_length"
-            )
-        with cl_col3:
-            cl_incorporate = st.checkbox(
-                "Incorporate improvement recommendations",
-                value=True,
-                key="cl_incorporate",
-                help="Weaves 1–2 specific recommendations from the analysis into the letter"
-            )
+            if _trim_enabled:
+                _trim_target = st.radio(
+                    "Target length",
+                    ["2 pages (recommended)", "1 page (very tight)"],
+                    horizontal=True,
+                    key="trim_target"
+                )
+                _trim_pages = 2 if "2 pages" in _trim_target else 1
+            else:
+                _trim_pages = None
 
-        cl_guidance = st.text_area(
-            "Additional guidance *(optional)*",
-            placeholder="e.g. Mention my leadership of the 2023 digital transformation project. Emphasise my Python skills. Keep it humble but confident.",
-            height=90,
-            key="cl_guidance"
-        )
+            st.divider()
 
-        col_gen = st.columns([1, 2, 1])[1]
-        with col_gen:
-            generate_cl_button = st.button("🚀 Generate Cover Letter", type="primary", key="generate_cover_letter", use_container_width=True)
-
-        if generate_cl_button:
-            with st.spinner("✍️ Writing your personalised cover letter..."):
-                with st.status("Generating cover letter...", expanded=True) as status:
-                    cl_result = generate_cover_letter(
-                        resume_text, job_content, job_url, result['analysis'], client,
-                        tone=cl_tone, length=cl_length, incorporate_recs=cl_incorporate,
-                        user_guidance=cl_guidance
-                    )
-                    if not cl_result['success']:
-                        st.error(f"❌ Cover letter generation failed: {cl_result['error']}")
-                    else:
-                        st.write("✅ Cover letter generated!")
-                        status.update(label="Cover letter ready!", state="complete")
-                        st.session_state['cover_letter'] = cl_result['cover_letter']
-
-        if 'cover_letter' in st.session_state:
-            st.markdown("---")
-            st.markdown(
-                '<p style="font-family:\'DM Sans\',sans-serif;font-size:0.8rem;color:#9fb6a8;'
-                'margin:0 0 0.3rem;">Edit directly below — your changes are reflected in the download.</p>',
-                unsafe_allow_html=True
-            )
-            cl_edited = st.text_area(
-                "Cover letter",
-                value=st.session_state['cover_letter'],
-                height=420,
-                key="cl_edit_area",
-                label_visibility="collapsed"
-            )
-
-            # ── Regenerate section ─────────────────────────────────────────
-            st.markdown(
-                '<p style="color:#9fb6a8; font-size:0.85rem; font-family:DM Sans,sans-serif; '
-                'margin:0.5rem 0 0.3rem;">Want changes? Describe what to adjust and regenerate.</p>',
-                unsafe_allow_html=True
-            )
-            cl_changes = st.text_area(
-                "Proposed changes",
-                placeholder="e.g. Make the opening more confident. Mention my Tableau experience earlier. Shorten the second paragraph. Use a more conversational tone in the closing.",
-                height=100,
-                key="cl_changes",
-                label_visibility="collapsed"
-            )
-
-            regen_col, dl_col = st.columns([1, 1])
-            with regen_col:
-                regen_btn = st.button("🔄 Regenerate Cover Letter", key="regen_cover_letter", use_container_width=True)
-            with dl_col:
+            # Download full report
+            col_download = st.columns([1, 2, 1])[1]
+            with col_download:
                 st.download_button(
-                    label="💾 Download Cover Letter (.docx)",
-                    data=create_cover_letter_docx(cl_edited),
-                    file_name=f"CoverLetter_{_fn_person}_{_fn_role}_{_fn_date}.docx",
+                    label="💾 Download Analysis Report (.docx)",
+                    data=create_analysis_docx(result['analysis'], job_url, resume_filename, job_content),
+                    file_name=f"ResumeAnalysis_{_fn_person}_{_fn_role}_{_fn_date}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    key="download_cl",
+                    key="download_analysis",
                     use_container_width=True
                 )
 
-            if regen_btn:
-                with st.spinner("✍️ Rewriting your cover letter..."):
-                    with st.status("Applying your changes...", expanded=True) as regen_status:
+        with tab_update:
+            if st.session_state.get('resume_is_docx'):
+                st.markdown(
+                    '<div style="background:rgba(122,215,159,0.06);padding:0.55rem 0.9rem;border-radius:10px;'
+                    'border-left:3px solid #7ad79f;margin-bottom:0.6rem;">'
+                    '<p style="color:#9fb6a8;font-size:0.82rem;margin:0;font-family:\'DM Sans\',sans-serif;line-height:1.5;">'
+                    'Stronger verbs, clearer outcomes — <strong style="color:#ecf4ee;">never adds skills you don\'t have.</strong> '
+                    'Review and approve every change before it\'s applied.</p>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+
+                st.markdown(
+                    '<div style="background:rgba(111,177,224,0.08);padding:0.55rem 0.9rem;border-radius:10px;'
+                    'border-left:3px solid #6fb1e0;margin-bottom:0.6rem;">'
+                    '<p style="color:#6fb1e0;font-family:\'Space Mono\',monospace;font-size:9px;'
+                    'letter-spacing:0.14em;text-transform:uppercase;margin:0 0 0.3rem;">Tip — quantified impact</p>'
+                    '<p style="color:#ecf4ee;font-size:0.81rem;margin:0;font-family:\'DM Sans\',sans-serif;line-height:1.6;">'
+                    '📊 <b>%</b> &nbsp;·&nbsp; ⏱ <b>time saved</b> &nbsp;·&nbsp; 💰 <b>revenue / cost</b> &nbsp;·&nbsp; ⚡ <b>efficiency</b> &nbsp;·&nbsp; 📈 <b>scale</b><br>'
+                    '<span style="color:#6e8a7b;font-size:0.82rem;">'
+                    'e.g. "reduced processing time by 35%" &nbsp;·&nbsp; "increased accuracy by 20%" &nbsp;·&nbsp; "supported 5M+ records daily"'
+                    '</span></p>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+
+                _guidance_val = st.session_state.get('upd_guidance', '').strip()
+                if _guidance_val:
+                    c1, c2 = st.columns([10, 1])
+                    with c1:
+                        st.markdown(
+                            f'<div style="background:rgba(111,177,224,0.08);border-left:3px solid #6fb1e0;'
+                            f'padding:0.4rem 0.9rem;border-radius:6px;margin-bottom:0.6rem;font-family:\'DM Sans\',sans-serif;">'
+                            f'<span style="color:#6fb1e0;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                            f'text-transform:uppercase;letter-spacing:0.1em;">Guidance: </span>'
+                            f'<span style="color:#ecf4ee;font-size:0.82rem;">{_guidance_val}</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+                    with c2:
+                        if st.button("✕", key="clear_guidance", help="Clear guidance"):
+                            st.session_state.pop('upd_guidance', None)
+                            st.rerun()
+
+                st.markdown('<div id="resume-updater-anchor"></div>', unsafe_allow_html=True)
+                col_upd = st.columns([1, 2, 1])[1]
+                with col_upd:
+                    improve_btn = st.button(
+                        "✨ Propose Changes & Trim" if _trim_pages else "✨ Propose Resume Changes",
+                        type="primary", key="update_resume_btn", use_container_width=True
+                    )
+
+                if improve_btn:
+                    upd_guidance = st.session_state.get('upd_guidance', '').strip()
+                    st.session_state['_upd_guidance_saved'] = upd_guidance
+                    all_updates = []
+                    guidance_finds = set()
+                    boost_implied_count = 0
+
+                    with st.status("Improving your resume...", expanded=True) as upd_status:
+                        # Step 0 — user guidance (locked, highest priority)
+                        if upd_guidance:
+                            upd_status.write("Applying your guidance first...")
+                            guidance_result = generate_guidance_updates(resume_text, upd_guidance, client)
+                            if guidance_result['success'] and guidance_result['updates']:
+                                all_updates.extend(guidance_result['updates'])
+                                guidance_finds = {u['find'] for u in guidance_result['updates']}
+                                upd_status.write(f"✅ {len(guidance_result['updates'])} guidance change(s) locked in")
+                            elif not guidance_result['success']:
+                                upd_status.write(f"⚠️ Could not apply guidance: {guidance_result['error']}")
+
+                        # Step 1 — general expression improvements (skip any bullet already touched by guidance)
+                        upd_status.write("Analysing general improvements...")
+                        upd_result = generate_resume_updates(resume_text, result['analysis'], client)
+                        if upd_result['success']:
+                            new_general = [u for u in upd_result['updates'] if u['find'] not in guidance_finds]
+                            all_updates.extend(new_general)
+                            upd_status.write(f"✅ {len(new_general)} expression improvement(s) found")
+                        else:
+                            upd_status.write(f"⚠️ Could not generate general changes: {upd_result['error']}")
+
+                        # Step 2 — implied → exact terminology boost
+                        upd_status.write("Converting implied keyword matches to exact terminology...")
+                        boost_result = generate_implied_to_exact_updates(resume_text, result['analysis'], client)
+                        if boost_result['success'] and boost_result['updates']:
+                            boost_implied_count = boost_result.get('implied_count', len(boost_result['updates']))
+                            boost_finds = {u['find'] for u in boost_result['updates']}
+                            # Boost takes priority over general but not over user guidance
+                            all_updates = [u for u in all_updates if u.get('type') == 'user_guidance' or u['find'] not in boost_finds]
+                            all_updates.extend(boost_result['updates'])
+                            upd_status.write(f"✅ {len(boost_result['updates'])} implied→exact terminology fix(es) added")
+                        elif boost_result['success']:
+                            upd_status.write("✅ No implied matches to convert — all keywords already exact")
+
+                        # Step 3 — removal suggestions (unnecessary content)
+                        upd_status.write("Checking for unnecessary content to remove...")
+                        removal_result = generate_removal_suggestions(resume_text, client)
+                        if removal_result['success'] and removal_result['updates']:
+                            existing_finds = {u['find'] for u in all_updates}
+                            new_removals = [u for u in removal_result['updates'] if u['find'] not in existing_finds]
+                            all_updates.extend(new_removals)
+                            upd_status.write(f"✅ {len(new_removals)} unnecessary line(s) flagged for removal")
+                        elif removal_result['success']:
+                            upd_status.write("✅ No unnecessary content found")
+
+                        # Step 4 — trim to target length (opt-in, ticked above)
+                        if _trim_pages:
+                            upd_status.write(f"Identifying cuts to reach {_trim_pages} page(s)...")
+                            trim_result = trim_resume(resume_text, client, target_pages=_trim_pages)
+                            if trim_result['success'] and trim_result['pairs']:
+                                existing_finds = {u['find'] for u in all_updates}
+                                new_trims = [p for p in trim_result['pairs'] if p['find'] not in existing_finds]
+                                all_updates.extend(new_trims)
+                                upd_status.write(f"✅ {len(new_trims)} length cut(s) added")
+                            elif not trim_result['success']:
+                                upd_status.write(f"⚠️ Could not generate trim cuts: {trim_result['error']}")
+
+                        upd_status.update(label=f"{len(all_updates)} total change(s) ready for review", state="complete")
+
+                    if all_updates:
+                        st.session_state['proposed_updates'] = all_updates
+                        st.session_state['update_source'] = 'boost' if boost_implied_count else 'regular'
+                        st.session_state['_boost_implied_count'] = boost_implied_count
+                        st.session_state.pop('updated_resume_bytes', None)
+                    else:
+                        st.error("❌ Could not generate any changes.")
+
+                    _components.html(
+                        '<script>'
+                        'window.parent.document.getElementById("resume-updater-anchor")'
+                        '.scrollIntoView({behavior:"smooth",block:"start"});'
+                        '</script>',
+                        height=0,
+                    )
+
+                # ── Review step ────────────────────────────────────────────────
+                if 'proposed_updates' in st.session_state and st.session_state['proposed_updates']:
+                    proposed = st.session_state['proposed_updates']
+
+                    _saved_guidance = st.session_state.get('_upd_guidance_saved', '').strip()
+                    _current_guidance = st.session_state.get('upd_guidance', '').strip()
+                    if _current_guidance and _current_guidance != _saved_guidance:
+                        st.markdown(
+                            '<div style="background:rgba(224,161,74,0.10);border-left:3px solid #e0a14a;'
+                            'padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.8rem;font-family:\'DM Sans\',sans-serif;">'
+                            '<span style="color:#e0a14a;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                            'text-transform:uppercase;letter-spacing:0.1em;">⚠ Guidance updated</span>'
+                            '<span style="color:#9fb6a8;font-size:0.85rem;display:block;margin-top:0.3rem;">'
+                            'Your additional guidance changed after these proposals were generated. '
+                            'Click <strong style="color:#ecf4ee;">✨ Propose Resume Changes</strong> again to include it.'
+                            '</span></div>',
+                            unsafe_allow_html=True
+                        )
+                    elif _saved_guidance:
+                        st.markdown(
+                            f'<div style="background:rgba(111,177,224,0.08);border-left:3px solid #6fb1e0;'
+                            f'padding:0.5rem 0.9rem;border-radius:6px;margin-bottom:0.8rem;font-family:\'DM Sans\',sans-serif;">'
+                            f'<span style="color:#6fb1e0;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                            f'text-transform:uppercase;letter-spacing:0.1em;">✓ Guidance included: </span>'
+                            f'<span style="color:#9fb6a8;font-size:0.82rem;">{_saved_guidance}</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+
+                    st.markdown(
+                        '<p style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.14em;'
+                        'text-transform:uppercase;color:#7ad79f;margin:0.6rem 0 0.4rem;">'
+                        'Review changes — untick any you want to skip:</p>',
+                        unsafe_allow_html=True
+                    )
+
+                    selected = []
+                    for i, change in enumerate(proposed):
+                        find           = change.get('find', '')
+                        replace        = change.get('replace', '')
+                        description    = change.get('description', 'Improve phrasing')
+                        change_type    = change.get('type', '')
+                        is_removal     = change_type == 'remove' or replace == ''
+                        is_user_guided = change_type == 'user_guidance'
+                        is_trim        = change_type == 'trim'
+
+                        if is_user_guided:
+                            label_prefix = "⭐ YOUR GUIDANCE — "
+                        elif is_trim:
+                            label_prefix = "✂ TRIM — "
+                        else:
+                            label_prefix = f"Change {i+1}: "
+                        with st.container():
+                            checked = st.checkbox(f"**{label_prefix}**{description}", value=True, key=f"chk_{i}")
+
+                            if is_removal:
+                                st.markdown(
+                                    f'<div style="background:rgba(224,80,70,0.08);border-left:3px solid #e05046;'
+                                    f'padding:0.7rem 0.9rem;border-radius:10px;font-size:0.82rem;'
+                                    f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;margin-bottom:0.8rem;">'
+                                    f'<strong style="color:#e05046;font-size:0.72rem;font-family:\'Space Mono\',monospace;'
+                                    f'letter-spacing:0.1em;text-transform:uppercase;">✂ Remove this line</strong><br>'
+                                    f'<span style="text-decoration:line-through;opacity:0.65;">{find}</span></div>',
+                                    unsafe_allow_html=True
+                                )
+                                edited_replace = ''
+                            else:
+                                before_border = '#e0a14a' if is_user_guided else '#e07a5f'
+                                before_bg     = 'rgba(224,161,74,0.08)' if is_user_guided else 'rgba(224,122,95,0.08)'
+                                # Size both blocks off the same estimate so Before/After match exactly
+                                _content_len = max(len(find), len(replace))
+                                _line_breaks = find.count('\n') + replace.count('\n')
+                                _est_lines = max(2, min(16, (_content_len // 62) + _line_breaks + 1))
+                                _box_h = max(70, _est_lines * 19 + 14)
+
+                                col_b, col_a = st.columns(2)
+                                with col_b:
+                                    st.markdown(
+                                        f'<div style="background:{before_bg};border-left:3px solid {before_border};'
+                                        f'padding:0.6rem 0.8rem;border-radius:10px;font-size:0.82rem;'
+                                        f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;'
+                                        f'height:{_box_h}px;overflow-y:auto;box-sizing:border-box;">'
+                                        f'<strong style="color:{before_border};font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                                        f'letter-spacing:0.1em;text-transform:uppercase;">{"⭐ Your guidance — before" if is_user_guided else "Before"}</strong><br>{find}</div>',
+                                        unsafe_allow_html=True
+                                    )
+                                with col_a:
+                                    st.markdown(
+                                        f'<p style="margin:0 0 0.3rem;">'
+                                        f'<span style="color:#7ad79f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
+                                        f'letter-spacing:0.1em;text-transform:uppercase;">After</span>'
+                                        f'<span style="color:#6e8a7b;font-size:0.68rem;font-family:\'DM Sans\',sans-serif;'
+                                        f'font-style:italic;"> — edit if needed</span></p>',
+                                        unsafe_allow_html=True
+                                    )
+                                    edited_replace = st.text_area(
+                                        f"After {i+1}",
+                                        value=replace,
+                                        height=_box_h,
+                                        key=f"edit_replace_{i}",
+                                        label_visibility="collapsed"
+                                    )
+                                st.markdown("<div style='margin-bottom:0.8rem'></div>", unsafe_allow_html=True)
+
+                            if checked:
+                                selected.append({**change, 'replace': edited_replace})
+
+                    n_selected = len(selected)
+                    col_apply = st.columns([1, 2, 1])[1]
+                    with col_apply:
+                        apply_btn = st.button(
+                            "✅ Apply " + str(n_selected) + " Selected Change" + ("s" if n_selected != 1 else ""),
+                            type="primary",
+                            key="apply_selected_btn",
+                            disabled=n_selected == 0
+                        )
+
+                    if apply_btn and selected:
+                        # Prefer the ATS-fixed version if that ran first, else the original upload
+                        _base_for_update = (
+                            st.session_state.get('ats_fixed_docx_bytes')
+                            or st.session_state['resume_file_bytes']
+                        )
+                        updated_bytes, applied = apply_updates_to_docx(
+                            _base_for_update,
+                            selected,
+                            resume_filename
+                        )
+                        new_filename = f"{_fn_person}_Updated_{_fn_role}_{_fn_date}.docx"
+                        st.session_state['updated_resume_bytes'] = updated_bytes
+                        st.session_state['updated_resume_name'] = new_filename
+                        st.success(f"✅ {applied} change(s) applied to your resume.")
+                        # Score improvement — method depends on change type
+                        is_boost = st.session_state.get('update_source') == 'boost'
+                        with st.spinner("Calculating updated compatibility score..."):
+                            if is_boost:
+                                # Analytical: promote `applied` implied items to exact using
+                                # the original keyword tables — consistent with the analysis methodology
+                                _orig_pct = fields.get('match_pct', '')
+                                if not _orig_pct:
+                                    _m = re.search(r'COMPATIBILITY SCORE[^0-9]*(\d+)%', result.get('analysis', ''), re.IGNORECASE)
+                                    if _m:
+                                        _orig_pct = _m.group(1) + '%'
+                                _orig_num = int(re.search(r'\d+', _orig_pct).group()) if re.search(r'\d+', _orig_pct) else None
+                                _tables = parse_keyword_tables(result.get('analysis', ''))
+                                _before = compute_score_analytically(_tables, n_promote=0)
+                                _after  = compute_score_analytically(_tables, n_promote=applied)
+                                if _before is not None and _after is not None and _orig_num is not None:
+                                    _delta = _after - _before
+                                    new_score = min(100, _orig_num + _delta)
+                                else:
+                                    new_score = _after  # fallback: raw analytical score
+                            else:
+                                # LLM re-score for general expression improvements
+                                _upd_doc = Document(io.BytesIO(updated_bytes))
+                                _upd_paras = list(_upd_doc.paragraphs)
+                                for _t in _upd_doc.tables:
+                                    for _r in _t.rows:
+                                        for _c in _r.cells:
+                                            _upd_paras.extend(_c.paragraphs)
+                                updated_text = "\n".join(p.text for p in _upd_paras if p.text.strip())
+                                _orig_pct = fields.get('match_pct', '')
+                                _orig_num = int(re.search(r'\d+', _orig_pct).group()) if re.search(r'\d+', _orig_pct) else None
+                                new_score = re_score_resume(updated_text, job_content, client,
+                                                            orig_score=_orig_num, changes=selected)
+                            if new_score is not None:
+                                st.session_state['updated_match_pct'] = f"{new_score}%"
+
+                if 'updated_resume_bytes' in st.session_state:
+                    new_filename = st.session_state.get('updated_resume_name', f"{_fn_person}_Updated_{_fn_role}_{_fn_date}.docx")
+                    # Show score lift if re-score is available
+                    updated_pct = st.session_state.get('updated_match_pct')
+                    if updated_pct:
+                        orig_pct = fields.get('match_pct', '')
+                        # Also try scanning the raw analysis text directly as a fallback
+                        if not orig_pct:
+                            _m = re.search(r'COMPATIBILITY SCORE[^0-9]*(\d+)%', result.get('analysis', ''), re.IGNORECASE)
+                            if _m:
+                                orig_pct = _m.group(1) + '%'
+                        orig_num = int(re.search(r'\d+', orig_pct).group()) if re.search(r'\d+', orig_pct) else None
+                        new_num  = int(re.search(r'\d+', updated_pct).group()) if re.search(r'\d+', updated_pct) else None
+
+                        if orig_num is not None and new_num is not None and orig_num != new_num:
+                            # Full before → after with delta badge
+                            delta = new_num - orig_num
+                            delta_str = f"+{delta}" if delta > 0 else str(delta)
+                            delta_color = "#7ad79f" if delta > 0 else "#ef4444"
+                            st.markdown(
+                                f'<div style="text-align:center;margin:8px 0 4px;">'
+                                f'<span style="font-family:\'Space Mono\',monospace;font-size:12px;color:#9fb6a8;">Compatibility: </span>'
+                                f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#9fb6a8;text-decoration:line-through;">{orig_pct}</span>'
+                                f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:17px;color:#6e8a7b;margin:0 6px;">→</span>'
+                                f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#ecf4ee;">{updated_pct}</span>'
+                                f'<span style="font-family:\'Space Mono\',monospace;font-size:11px;color:{delta_color};'
+                                f'background:{"rgba(122,215,159,0.12)" if delta > 0 else "rgba(239,68,68,0.10)"};'
+                                f'padding:2px 7px;border-radius:5px;margin-left:8px;">{delta_str} pts</span>'
+                                f'</div>',
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            # Show updated score on its own (no delta or delta = 0)
+                            st.markdown(
+                                f'<div style="text-align:center;margin:8px 0 4px;">'
+                                f'<span style="font-family:\'Space Mono\',monospace;font-size:12px;color:#9fb6a8;">Updated compatibility: </span>'
+                                f'<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-weight:800;font-size:17px;color:#ecf4ee;">{updated_pct}</span>'
+                                f'</div>',
+                                unsafe_allow_html=True
+                            )
+                    col_dl_upd = st.columns([1, 2, 1])[1]
+                    with col_dl_upd:
+                        st.download_button(
+                            label="📥 Download Updated Resume",
+                            data=st.session_state['updated_resume_bytes'],
+                            file_name=new_filename,
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            key="download_updated_resume"
+                        )
+            else:
+                st.markdown(
+                    '<div style="background:rgba(122,215,159,0.04);border:1px solid rgba(159,182,168,0.12);'
+                    'border-radius:10px;padding:0.75rem 1rem;">'
+                    '<p style="color:#6e8a7b;font-size:0.85rem;margin:0;font-family:\'DM Sans\',sans-serif;">'
+                    '💡 Upload a Word document (.docx) to enable automatic resume updating.</p>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+
+
+        with tab_cover:
+            # ============= COVER LETTER =============
+            st.markdown(
+                '<div style="background:rgba(109,193,138,0.06); padding:1.2rem 1.5rem; border-radius:8px; border-left:4px solid #7ad79f; margin-bottom:2rem;">'
+                '<p style="color:#9fb6a8; font-size:0.95rem; margin:0; font-family:DM Sans,sans-serif;">🎯 Create a personalised cover letter tailored to this job based on your match analysis</p>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+            cl_col1, cl_col2, cl_col3 = st.columns(3)
+            with cl_col1:
+                cl_tone = st.selectbox(
+                    "Tone",
+                    ["Professional", "Conversational", "Enthusiastic", "Formal", "Confident & Direct"],
+                    key="cl_tone"
+                )
+            with cl_col2:
+                cl_length = st.selectbox(
+                    "Length",
+                    ["Brief (≈200 words)", "Standard (300–350 words)", "Detailed (≈450 words)"],
+                    index=1,
+                    key="cl_length"
+                )
+            with cl_col3:
+                cl_incorporate = st.checkbox(
+                    "Incorporate improvement recommendations",
+                    value=True,
+                    key="cl_incorporate",
+                    help="Weaves 1–2 specific recommendations from the analysis into the letter"
+                )
+
+            cl_guidance = st.text_area(
+                "Additional guidance *(optional)*",
+                placeholder="e.g. Mention my leadership of the 2023 digital transformation project. Emphasise my Python skills. Keep it humble but confident.",
+                height=90,
+                key="cl_guidance"
+            )
+
+            col_gen = st.columns([1, 2, 1])[1]
+            with col_gen:
+                generate_cl_button = st.button("🚀 Generate Cover Letter", type="primary", key="generate_cover_letter", use_container_width=True)
+
+            if generate_cl_button:
+                with st.spinner("✍️ Writing your personalised cover letter..."):
+                    with st.status("Generating cover letter...", expanded=True) as status:
                         cl_result = generate_cover_letter(
                             resume_text, job_content, job_url, result['analysis'], client,
                             tone=cl_tone, length=cl_length, incorporate_recs=cl_incorporate,
-                            prior_letter=cl_edited,
-                            change_instructions=cl_changes if cl_changes.strip() else None,
                             user_guidance=cl_guidance
                         )
                         if not cl_result['success']:
-                            st.error(f"❌ Regeneration failed: {cl_result['error']}")
+                            st.error(f"❌ Cover letter generation failed: {cl_result['error']}")
                         else:
-                            st.write("✅ Cover letter updated!")
-                            regen_status.update(label="Done!", state="complete")
+                            st.write("✅ Cover letter generated!")
+                            status.update(label="Cover letter ready!", state="complete")
                             st.session_state['cover_letter'] = cl_result['cover_letter']
-                            st.session_state['cl_edit_area'] = cl_result['cover_letter']
-                            st.rerun()
 
-        st.divider()
-
-        # ============= JOB TRACKER =============
-        st.markdown('<h2 style="color:#ecf4ee; font-size:1.8rem; font-weight:700; text-align:center; margin:2rem 0; font-family:Bricolage Grotesque,serif; letter-spacing:-0.02em;">📊 Save to Job Tracker</h2>', unsafe_allow_html=True)
-
-        t1, t2, t3 = st.columns(3)
-        with t1:
-            job_title_input = st.text_input("Job Title", value=fields['job_title'], key="tracker_title")
-        with t2:
-            company_input = st.text_input("Company", value=fields['company'], key="tracker_company")
-        with t3:
-            location_input = st.text_input("Location", value=fields['location'], key="tracker_location")
-
-        col_save = st.columns([1, 2, 1])[1]
-        with col_save:
-            if st.session_state.get('tracker_saved'):
-                st.success("✅ Saved to tracker!")
-                if st.button("📋 View Applications →", key="goto_tracker_after_save", use_container_width=True):
-                    st.session_state.page = 'tracker'
-                    st.rerun()
-            else:
-                if st.button("💾 Save to Job Tracker", key="save_tracker", use_container_width=True):
-                    try:
-                        # Use edited cover letter text if available (from cl_edit_area widget)
-                        cover_letter_text = (
-                            st.session_state.get('cl_edit_area')
-                            or st.session_state.get('cover_letter', '')
-                        )
-                        save_to_tracker(
-                            job_title=job_title_input,
-                            company=company_input,
-                            location=location_input,
-                            resume_filename=resume_filename,
-                            match_pct=st.session_state.get('updated_match_pct') or fields['match_pct'],
-                            job_url=job_url,
-                            cover_letter=cover_letter_text,
-                            cover_letter_path='',
-                            notes=extract_recommendations_summary(result['analysis']),
-                            updated_resume_file=st.session_state.get('updated_resume_name', ''),
-                            user_id=st.session_state.get('auth_user_id'),
-                        )
-                        load_tracker_data.clear()
-                        st.session_state['tracker_saved'] = True
-                        st.rerun()
-                    except Exception as _save_err:
-                        st.error(f"❌ Could not save to tracker: {_save_err}")
-
-        tracker_data = load_tracker_data()
-        if tracker_data:
-            with st.expander(f"📋 View Job Tracker ({len(tracker_data)} roles)", expanded=False):
-                st.dataframe(tracker_data, use_container_width=True)
-                st.download_button(
-                    label="📥 Download Tracker (Excel)",
-                    data=generate_tracker_excel(tracker_data),
-                    file_name="job_applications.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    key="download_tracker"
+            if 'cover_letter' in st.session_state:
+                st.markdown("---")
+                st.markdown(
+                    '<p style="font-family:\'DM Sans\',sans-serif;font-size:0.8rem;color:#9fb6a8;'
+                    'margin:0 0 0.3rem;">Edit directly below — your changes are reflected in the download.</p>',
+                    unsafe_allow_html=True
+                )
+                cl_edited = st.text_area(
+                    "Cover letter",
+                    value=st.session_state['cover_letter'],
+                    height=420,
+                    key="cl_edit_area",
+                    label_visibility="collapsed"
                 )
 
-        st.divider()
+                # ── Regenerate section ─────────────────────────────────────────
+                st.markdown(
+                    '<p style="color:#9fb6a8; font-size:0.85rem; font-family:DM Sans,sans-serif; '
+                    'margin:0.5rem 0 0.3rem;">Want changes? Describe what to adjust and regenerate.</p>',
+                    unsafe_allow_html=True
+                )
+                cl_changes = st.text_area(
+                    "Proposed changes",
+                    placeholder="e.g. Make the opening more confident. Mention my Tableau experience earlier. Shorten the second paragraph. Use a more conversational tone in the closing.",
+                    height=100,
+                    key="cl_changes",
+                    label_visibility="collapsed"
+                )
 
-        # Download full report
-        col_download = st.columns([1, 2, 1])[1]
-        with col_download:
-            st.download_button(
-                label="💾 Download Analysis Report (.docx)",
-                data=create_analysis_docx(result['analysis'], job_url, resume_filename, job_content),
-                file_name=f"ResumeAnalysis_{_fn_person}_{_fn_role}_{_fn_date}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                key="download_analysis",
-                use_container_width=True
-            )
+                regen_col, dl_col = st.columns([1, 1])
+                with regen_col:
+                    regen_btn = st.button("🔄 Regenerate Cover Letter", key="regen_cover_letter", use_container_width=True)
+                with dl_col:
+                    st.download_button(
+                        label="💾 Download Cover Letter (.docx)",
+                        data=create_cover_letter_docx(cl_edited),
+                        file_name=f"CoverLetter_{_fn_person}_{_fn_role}_{_fn_date}.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        key="download_cl",
+                        use_container_width=True
+                    )
+
+                if regen_btn:
+                    with st.spinner("✍️ Rewriting your cover letter..."):
+                        with st.status("Applying your changes...", expanded=True) as regen_status:
+                            cl_result = generate_cover_letter(
+                                resume_text, job_content, job_url, result['analysis'], client,
+                                tone=cl_tone, length=cl_length, incorporate_recs=cl_incorporate,
+                                prior_letter=cl_edited,
+                                change_instructions=cl_changes if cl_changes.strip() else None,
+                                user_guidance=cl_guidance
+                            )
+                            if not cl_result['success']:
+                                st.error(f"❌ Regeneration failed: {cl_result['error']}")
+                            else:
+                                st.write("✅ Cover letter updated!")
+                                regen_status.update(label="Done!", state="complete")
+                                st.session_state['cover_letter'] = cl_result['cover_letter']
+                                st.session_state['cl_edit_area'] = cl_result['cover_letter']
+                                st.rerun()
+
+
+        with tab_tracker:
+            # ============= JOB TRACKER =============
+
+            t1, t2, t3 = st.columns(3)
+            with t1:
+                job_title_input = st.text_input("Job Title", value=fields['job_title'], key="tracker_title")
+            with t2:
+                company_input = st.text_input("Company", value=fields['company'], key="tracker_company")
+            with t3:
+                location_input = st.text_input("Location", value=fields['location'], key="tracker_location")
+
+            col_save = st.columns([1, 2, 1])[1]
+            with col_save:
+                if st.session_state.get('tracker_saved'):
+                    st.success("✅ Saved to tracker! See it below.")
+                else:
+                    if st.button("💾 Save to Job Tracker", key="save_tracker", use_container_width=True):
+                        try:
+                            # Use edited cover letter text if available (from cl_edit_area widget)
+                            cover_letter_text = (
+                                st.session_state.get('cl_edit_area')
+                                or st.session_state.get('cover_letter', '')
+                            )
+                            save_to_tracker(
+                                job_title=job_title_input,
+                                company=company_input,
+                                location=location_input,
+                                resume_filename=resume_filename,
+                                match_pct=st.session_state.get('updated_match_pct') or fields['match_pct'],
+                                job_url=job_url,
+                                cover_letter=cover_letter_text,
+                                cover_letter_path='',
+                                notes=extract_recommendations_summary(result['analysis']),
+                                updated_resume_file=st.session_state.get('updated_resume_name', ''),
+                                user_id=st.session_state.get('auth_user_id'),
+                            )
+                            load_tracker_data.clear()
+                            st.session_state['tracker_saved'] = True
+                            st.rerun()
+                        except Exception as _save_err:
+                            st.error(f"❌ Could not save to tracker: {_save_err}")
+
+            tracker_data = load_tracker_data()
+            if tracker_data:
+                with st.expander(f"📋 View Job Tracker ({len(tracker_data)} roles)", expanded=False):
+                    st.dataframe(tracker_data, use_container_width=True)
+                    st.download_button(
+                        label="📥 Download Tracker (Excel)",
+                        data=generate_tracker_excel(tracker_data),
+                        file_name="job_applications.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key="download_tracker"
+                    )
+
+            st.divider()
+            show_tracker(embedded=True)
 
     # Footer
     st.divider()
