@@ -3659,11 +3659,33 @@ section.main .block-container{padding-bottom:5rem!important;}
         _fn_person = re.sub(r'[^\w\-]', '_', resume_filename.rsplit('.', 1)[0])[:25].strip('_')
         _fn_role = re.sub(r'[^\w\-]', '_', fields.get('job_title', 'Role').replace(' ', '_'))[:25].strip('_')
 
-        tab_analysis, tab_update, tab_cover, tab_tracker = st.tabs(
-            ["📋 Analysis", "✨ Resume Update", "✍️ Cover Letter", "📊 Job Tracker"]
+        # st.tabs() forgets the active tab on any rerun triggered by a widget inside a
+        # non-first tab (e.g. clicking "Propose Resume Changes") — it always snaps back
+        # to the first tab. A session_state-backed radio persists correctly instead.
+        _RESULT_TABS = ["📋 Analysis", "✨ Resume Update", "✍️ Cover Letter", "📊 Job Tracker"]
+        if 'active_results_tab' not in st.session_state:
+            st.session_state['active_results_tab'] = _RESULT_TABS[0]
+        st.markdown(
+            '<style>'
+            'div[data-testid="stRadio"] > div{gap:0.4rem;}'
+            'div[data-testid="stRadio"] label{'
+            'background:rgba(159,182,168,0.06);border:1px solid rgba(159,182,168,0.15);'
+            'border-radius:8px 8px 0 0;padding:0.5rem 1rem;margin:0!important;}'
+            'div[data-testid="stRadio"] label:has(input:checked){'
+            'background:rgba(122,215,159,0.10);border-color:#7ad79f;border-bottom:2px solid #7ad79f;}'
+            '</style>',
+            unsafe_allow_html=True
         )
+        active_tab = st.radio(
+            "View",
+            _RESULT_TABS,
+            key='active_results_tab',
+            horizontal=True,
+            label_visibility="collapsed"
+        )
+        st.markdown("<div style='margin-bottom:0.6rem;'></div>", unsafe_allow_html=True)
 
-        with tab_analysis:
+        if active_tab == "📋 Analysis":
             # ---- Prominent match score badge ----
             _score_raw = fields.get('match_pct', '').replace('%', '').strip()
             if _score_raw.isdigit():
@@ -3953,7 +3975,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                     use_container_width=True
                 )
 
-        with tab_update:
+        if active_tab == "✨ Resume Update":
             if st.session_state.get('resume_is_docx'):
                 st.markdown(
                     '<div style="background:rgba(122,215,159,0.06);padding:0.55rem 0.9rem;border-radius:10px;'
@@ -4316,7 +4338,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                 )
 
 
-        with tab_cover:
+        if active_tab == "✍️ Cover Letter":
             # ============= COVER LETTER =============
             st.markdown(
                 '<div style="background:rgba(109,193,138,0.06); padding:1.2rem 1.5rem; border-radius:8px; border-left:4px solid #7ad79f; margin-bottom:2rem;">'
@@ -4435,7 +4457,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                                 st.rerun()
 
 
-        with tab_tracker:
+        if active_tab == "📊 Job Tracker":
             # ============= JOB TRACKER =============
 
             t1, t2, t3 = st.columns(3)
