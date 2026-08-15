@@ -1003,7 +1003,7 @@ You previously wrote the cover letter below. The user has requested changes. App
 
 **REQUESTED CHANGES:**
 {effective_instructions}
-
+{f"{chr(10)}**ADDITIONAL GUIDANCE (still applies — make sure it is reflected):**{chr(10)}{user_guidance}{chr(10)}" if user_guidance and user_guidance.strip() else ""}
 **CONTEXT — MY RESUME:**
 {resume_text}
 
