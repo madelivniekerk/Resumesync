@@ -3685,6 +3685,17 @@ section.main .block-container{padding-bottom:5rem!important;}
         )
         st.markdown("<div style='margin-bottom:0.6rem;'></div>", unsafe_allow_html=True)
 
+        # Trim state is set by widgets inside the Analysis branch below, but Resume
+        # Update's button depends on it too. Since only the active branch runs each
+        # script pass (unlike st.tabs(), which always ran every section), compute it
+        # here from session_state so it's defined no matter which tab is selected.
+        _trim_est_pages = estimate_pages(len(resume_text.split()))
+        if st.session_state.get('trim_enabled', _trim_est_pages > 2):
+            _trim_target_val = st.session_state.get('trim_target', "2 pages (recommended)")
+            _trim_pages = 2 if "2 pages" in _trim_target_val else 1
+        else:
+            _trim_pages = None
+
         if active_tab == "📋 Analysis":
             # ---- Prominent match score badge ----
             _score_raw = fields.get('match_pct', '').replace('%', '').strip()
@@ -3951,15 +3962,12 @@ section.main .block-container{padding-bottom:5rem!important;}
                      "next to the wording fixes — nothing is removed until you tick it and hit Apply."
             )
             if _trim_enabled:
-                _trim_target = st.radio(
+                st.radio(
                     "Target length",
                     ["2 pages (recommended)", "1 page (very tight)"],
                     horizontal=True,
                     key="trim_target"
                 )
-                _trim_pages = 2 if "2 pages" in _trim_target else 1
-            else:
-                _trim_pages = None
 
             st.divider()
 
