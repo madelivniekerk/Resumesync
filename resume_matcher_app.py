@@ -3632,7 +3632,19 @@ section.main .block-container{padding-bottom:5rem!important;}
                 '  var el = window.parent.document.getElementById("analysis-results-anchor");'
                 '  if (el) el.scrollIntoView({behavior:"smooth",block:"start"});'
                 '}'
-                '[200, 600, 1200, 2000].forEach(function(ms){ setTimeout(_scrollToResults, ms); });'
+                # Streamlit auto-scrolls the page to the bottom on rerun whenever
+                # st.chat_input is present (chat-app behaviour) — it keeps re-firing
+                # for a couple of seconds after the rerun settles, so a few one-off
+                # setTimeout calls lose the race. Keep re-asserting scroll-to-top on
+                # an interval for several seconds instead of just a handful of tries.
+                '(function(){'
+                '  var tries = 0;'
+                '  var iv = window.parent.setInterval(function(){'
+                '    _scrollToResults();'
+                '    tries++;'
+                '    if (tries > 20) window.parent.clearInterval(iv);'
+                '  }, 300);'
+                '})();'
                 '</script>',
                 height=0,
             )
