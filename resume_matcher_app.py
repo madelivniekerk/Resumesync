@@ -3592,7 +3592,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                 status.update(label="Analysis complete!", state="complete")
 
         # Clear previous comparison results before storing new ones
-        for _k in ['cover_letter', 'proposed_updates', 'updated_resume_bytes',
+        for _k in ['cover_letter', 'cl_edit_area', 'cl_edit_area_version', 'proposed_updates', 'updated_resume_bytes',
                    'updated_resume_name', 'updated_match_pct', 'tracker_saved',
                    '_confirm_leave_tracker', 'upd_guidance', '_upd_guidance_saved',
                    'analysis_chat', 'ats_fixed_docx_bytes', 'ats_fixed_notes']:
@@ -3656,7 +3656,7 @@ section.main .block-container{padding-bottom:5rem!important;}
             if st.button("🔄 New Analysis", key="new_analysis"):
                 for key in ['analysis_result', 'resume_text', 'job_content', 'job_url',
                             'resume_filename', 'resume_file_bytes', 'resume_is_docx',
-                            'cover_letter', 'tracker_saved', 'proposed_updates',
+                            'cover_letter', 'cl_edit_area', 'cl_edit_area_version', 'tracker_saved', 'proposed_updates',
                             'updated_resume_bytes', 'updated_resume_name', 'updated_match_pct',
                             'upd_guidance', '_upd_guidance_saved',
                             'trimmed_resume_text', 'trimmed_resume_cuts', 'analysis_chat',
@@ -4422,13 +4422,15 @@ section.main .block-container{padding-bottom:5rem!important;}
                     'margin:0 0 0.3rem;">Edit directly below — your changes are reflected in the download.</p>',
                     unsafe_allow_html=True
                 )
+                cl_version = st.session_state.get('cl_edit_area_version', 0)
                 cl_edited = st.text_area(
                     "Cover letter",
                     value=st.session_state['cover_letter'],
                     height=420,
-                    key="cl_edit_area",
+                    key=f"cl_edit_area_v{cl_version}",
                     label_visibility="collapsed"
                 )
+                st.session_state['cl_edit_area'] = cl_edited
 
                 # ── Regenerate section ─────────────────────────────────────────
                 st.markdown(
@@ -4473,8 +4475,7 @@ section.main .block-container{padding-bottom:5rem!important;}
                                 st.write("✅ Cover letter updated!")
                                 regen_status.update(label="Done!", state="complete")
                                 st.session_state['cover_letter'] = cl_result['cover_letter']
-                                if 'cl_edit_area' in st.session_state:
-                                    del st.session_state['cl_edit_area']
+                                st.session_state['cl_edit_area_version'] = cl_version + 1
                                 st.rerun()
 
 
