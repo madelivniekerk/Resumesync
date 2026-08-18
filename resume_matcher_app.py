@@ -1742,118 +1742,6 @@ def render_analysis(analysis_text: str):
         i += 1
 
 
-def parse_keyword_tables(analysis_text: str) -> dict:
-    """
-    Parse the four EXACT/IMPLIED/MISSING keyword tables from the analysis into
-    structured data: {'hard': [...], 'core': [...], 'preferred': [...], 'soft': [...]}
-    Each item: {'term': str, 'status': 'exact'|'implied'|'missing'}
-    """
-    CATEGORIES = [
-        ('hard',      re.compile(r'###\s*Hard\s+Req',    re.I)),
-        ('core',      re.compile(r'###\s*Core\s+Skill',  re.I)),
-        ('preferred', re.compile(r'###\s*Preferred',     re.I)),
-        ('soft',      re.compile(r'###\s*Soft\s+Skill',  re.I)),
-    ]
-    SKIP_HEADERS = {'requirement', 'skill / tool', 'skill/tool', 'qualification', 'competency', 'skill', 'competencies'}
-
-    result = {k: [] for k in ('hard', 'core', 'preferred', 'soft')}
-
-    sub_pat = re.compile(r'^###\s+.+$', re.MULTILINE)
-    headings = sub_pat.findall(analysis_text)
-    sections = sub_pat.split(analysis_text)
-
-    for heading, content in zip(headings, sections[1:]):
-        cat = next((k for k, p in CATEGORIES if p.search(heading)), None)
-        if cat is None:
-            continue
-        for line in content.splitlines():
-            line = line.strip()
-            if not line.startswith('|') or re.match(r'^\|[-| ]+\|$', line):
-                continue
-            cells = [c.strip() for c in line.strip('|').split('|')]
-            if len(cells) < 2 or cells[0].lower() in SKIP_HEADERS:
-                continue
-            term = cells[0]
-            raw_status = cells[1].lower() if len(cells) > 1 else ''
-            if 'exact' in raw_status:
-                status = 'exact'
-            elif 'implied' in raw_status:
-                status = 'implied'
-            elif 'missing' in raw_status:
-                status = 'missing'
-            else:
-                continue
-            result[cat].append({'term': term, 'status': status})
-
-    return result
-
-
-def compute_score_analytically(table_data: dict, n_promote: int = 0) -> int | None:
-    """
-    Compute weighted compatibility score from keyword table data.
-    EXACT=1.0, IMPLIED=0.5, MISSING=0.0
-    n_promote: treat this many IMPLIED items as EXACT (applied by boost).
-    Promoted items are taken from the most-weighted categories first.
-    """
-    WEIGHTS = {'hard': 0.50, 'core': 0.30, 'preferred': 0.15, 'soft': 0.05}
-    POINTS  = {'exact': 1.0, 'implied': 0.5, 'missing': 0.0}
-    CAT_ORDER = ['hard', 'core', 'preferred', 'soft']
-
-    # Build a mutable copy with promotion applied
-    promoted_left = n_promote
-    promoted = {cat: [] for cat in CAT_ORDER}
-    for cat in CAT_ORDER:
-        for item in table_data.get(cat, []):
-            if item['status'] == 'implied' and promoted_left > 0:
-                promoted[cat].append('exact')
-                promoted_left -= 1
-            else:
-                promoted[cat].append(item['status'])
-
-    total_score = 0.0
-    has_data = False
-    for cat in CAT_ORDER:
-        items = promoted[cat]
-        if not items:
-            continue
-        has_data = True
-        cat_score = sum(POINTS.get(s, 0.0) for s in items) / len(items)
-        total_score += WEIGHTS[cat] * cat_score
-
-    return round(total_score * 100) if has_data else None
-
-
-def re_score_resume(updated_text: str, job_content: str, client,
-                    orig_score: int = None, changes: list = None) -> int | None:
-    """LLM re-score for general resume improvements. Returns integer % or None."""
-    context = ""
-    if orig_score is not None:
-        context = f"The previous compatibility score was {orig_score}%. Calibrate relative to that.\n\n"
-    if changes:
-        descs = [c.get('description', '') for c in changes[:8] if c.get('description')]
-        if descs:
-            context += "Changes made to the resume:\n" + "\n".join(f"- {d}" for d in descs) + "\n\n"
-    try:
-        message = client.messages.create(
-            model=MODEL_NAME,
-            max_tokens=10,
-            messages=[{"role": "user", "content":
-                f"{context}"
-                f"Re-score this updated resume against the job posting using this exact weighting:\n"
-                f"- Hard requirements (degree, certs, years exp, 'required'/'must have'): 50%\n"
-                f"- Core skills and tools explicitly named: 30%\n"
-                f"- Preferred/nice-to-have qualifications: 15%\n"
-                f"- Soft skills and culture fit: 5%\n"
-                f"EXACT keyword matches score higher than IMPLIED. "
-                f"Return ONLY a single integer 0-100. No other text.\n\n"
-                f"RESUME:\n{updated_text[:4000]}\n\nJOB POSTING:\n{job_content[:4000]}"}]
-        )
-        val = re.search(r'\d+', message.content[0].text.strip())
-        return min(int(val.group()), 100) if val else None
-    except Exception:
-        return None
-
-
 def apply_updates_to_docx(file_bytes: bytes, updates: list, original_filename: str) -> bytes:
     """
     Apply find→replace pairs to the original DOCX, preserving all formatting.
@@ -4116,8 +4004,6 @@ section.main .block-container{padding-bottom:5rem!important;}
 
                     if all_updates:
                         st.session_state['proposed_updates'] = all_updates
-                        st.session_state['update_source'] = 'boost' if boost_implied_count else 'regular'
-                        st.session_state['_boost_implied_count'] = boost_implied_count
                         st.session_state.pop('updated_resume_bytes', None)
                     else:
                         st.error("❌ Could not generate any changes.")
@@ -4262,41 +4148,23 @@ section.main .block-container{padding-bottom:5rem!important;}
                         st.session_state['updated_resume_bytes'] = updated_bytes
                         st.session_state['updated_resume_name'] = new_filename
                         st.success(f"✅ {applied} change(s) applied to your resume.")
-                        # Score improvement — method depends on change type
-                        is_boost = st.session_state.get('update_source') == 'boost'
+                        # Re-run the same full, independent analysis used on fresh uploads so the
+                        # displayed score is judged by the exact same rubric — no inflated estimate.
                         with st.spinner("Calculating updated compatibility score..."):
-                            if is_boost:
-                                # Analytical: promote `applied` implied items to exact using
-                                # the original keyword tables — consistent with the analysis methodology
-                                _orig_pct = fields.get('match_pct', '')
-                                if not _orig_pct:
-                                    _m = re.search(r'COMPATIBILITY SCORE[^0-9]*(\d+)%', result.get('analysis', ''), re.IGNORECASE)
-                                    if _m:
-                                        _orig_pct = _m.group(1) + '%'
-                                _orig_num = int(re.search(r'\d+', _orig_pct).group()) if re.search(r'\d+', _orig_pct) else None
-                                _tables = parse_keyword_tables(result.get('analysis', ''))
-                                _before = compute_score_analytically(_tables, n_promote=0)
-                                _after  = compute_score_analytically(_tables, n_promote=applied)
-                                if _before is not None and _after is not None and _orig_num is not None:
-                                    _delta = _after - _before
-                                    new_score = min(100, _orig_num + _delta)
-                                else:
-                                    new_score = _after  # fallback: raw analytical score
+                            _upd_doc = Document(io.BytesIO(updated_bytes))
+                            _upd_paras = list(_upd_doc.paragraphs)
+                            for _t in _upd_doc.tables:
+                                for _r in _t.rows:
+                                    for _c in _r.cells:
+                                        _upd_paras.extend(_c.paragraphs)
+                            updated_text = "\n".join(p.text for p in _upd_paras if p.text.strip())
+                            _rescore_result = analyze_resume_vs_job(updated_text, job_content, job_url, client)
+                            if _rescore_result['success']:
+                                _m = re.search(r'COMPATIBILITY SCORE[^0-9]*(\d+)%', _rescore_result['analysis'], re.IGNORECASE)
+                                if _m:
+                                    st.session_state['updated_match_pct'] = f"{_m.group(1)}%"
                             else:
-                                # LLM re-score for general expression improvements
-                                _upd_doc = Document(io.BytesIO(updated_bytes))
-                                _upd_paras = list(_upd_doc.paragraphs)
-                                for _t in _upd_doc.tables:
-                                    for _r in _t.rows:
-                                        for _c in _r.cells:
-                                            _upd_paras.extend(_c.paragraphs)
-                                updated_text = "\n".join(p.text for p in _upd_paras if p.text.strip())
-                                _orig_pct = fields.get('match_pct', '')
-                                _orig_num = int(re.search(r'\d+', _orig_pct).group()) if re.search(r'\d+', _orig_pct) else None
-                                new_score = re_score_resume(updated_text, job_content, client,
-                                                            orig_score=_orig_num, changes=selected)
-                            if new_score is not None:
-                                st.session_state['updated_match_pct'] = f"{new_score}%"
+                                st.warning(f"⚠️ Could not recalculate the compatibility score: {_rescore_result['error']}")
 
                 if 'updated_resume_bytes' in st.session_state:
                     new_filename = st.session_state.get('updated_resume_name', f"{_fn_person}_Updated_{_fn_role}_{_fn_date}.docx")
