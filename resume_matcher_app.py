@@ -1395,7 +1395,19 @@ Return only the JSON array, no other text."""
         json_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', response_text)
         json_str = json_match.group(1) if json_match else response_text
         updates = json.loads(json_str)
-        return {'success': True, 'updates': updates, 'implied_count': len(implied_items)}
+
+        # Verify each fix actually inserts the exact term it claims to — the model can
+        # drift into a paraphrase instead of the literal ATS wording, so don't trust the
+        # "IMPLIED → EXACT" label without checking the replacement text contains it.
+        verified_updates = []
+        for u in updates:
+            desc = u.get('description', '') or ''
+            replace_text = u.get('replace', '') or ''
+            term_match = re.search(r"'([^']+)'\s*$", desc)
+            if term_match and term_match.group(1).strip().lower() in replace_text.lower():
+                verified_updates.append(u)
+
+        return {'success': True, 'updates': verified_updates, 'implied_count': len(implied_items)}
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
@@ -3925,7 +3937,6 @@ section.main .block-container{padding-bottom:5rem!important;}
                     st.session_state['_upd_guidance_saved'] = upd_guidance
                     all_updates = []
                     guidance_finds = set()
-                    boost_implied_count = 0
 
                     with st.status("Improving your resume...", expanded=True) as upd_status:
                         # Step 0 — user guidance (locked, highest priority)
@@ -3953,12 +3964,13 @@ section.main .block-container{padding-bottom:5rem!important;}
                         upd_status.write("Converting implied keyword matches to exact terminology...")
                         boost_result = generate_implied_to_exact_updates(resume_text, result['analysis'], client)
                         if boost_result['success'] and boost_result['updates']:
-                            boost_implied_count = boost_result.get('implied_count', len(boost_result['updates']))
                             boost_finds = {u['find'] for u in boost_result['updates']}
                             # Boost takes priority over general but not over user guidance
                             all_updates = [u for u in all_updates if u.get('type') == 'user_guidance' or u['find'] not in boost_finds]
                             all_updates.extend(boost_result['updates'])
                             upd_status.write(f"✅ {len(boost_result['updates'])} implied→exact terminology fix(es) added")
+                        elif boost_result['success'] and boost_result.get('implied_count', 0):
+                            upd_status.write("⚠️ Found implied matches, but couldn't verify a reliable exact-wording fix for any of them")
                         elif boost_result['success']:
                             upd_status.write("✅ No implied matches to convert — all keywords already exact")
 
