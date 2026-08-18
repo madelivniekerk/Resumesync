@@ -2676,15 +2676,6 @@ def show_tracker(embedded: bool = False):
     embedded=True to render inline (e.g. inside a tab) without its own
     sidebar or header-hiding CSS, since the host page already provides those."""
 
-    # Handle status changes submitted via the HTML select + URL params
-    _p = st.query_params
-    _rid = _p.get('rid', '')
-    _sc  = _p.get('sc', '')
-    if _rid and _sc in ['Applied', 'Interview', 'Offer', 'Declined', 'Rejected', 'Draft']:
-        update_application_status(_rid, _sc)
-        st.query_params.clear()
-        st.rerun()
-
     if not embedded:
         # Hide Streamlit header
         st.markdown("""
@@ -2910,37 +2901,31 @@ def show_tracker(embedded: bool = False):
                 )
 
             with col_status:
-                # Native HTML <select> — full color control, no Base Web conflicts
-                opts_html = ''.join(
-                    f'<option value="{o}" {"selected" if o == status else ""}>{o}</option>'
-                    for o in STATUS_OPTIONS
-                )
-                _components.html(f"""
-                <html><head><style>
-                html,body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
-                select{{
-                    font-family:'Bricolage Grotesque',system-ui,sans-serif;
-                    font-weight:800;font-size:12px;
-                    color:{cfg['color']};
-                    background:{cfg['bg']};
-                    border:1px solid {cfg['border']};
-                    border-radius:20px;
-                    padding:4px 8px 4px 12px;
-                    cursor:pointer;outline:none;
-                    width:100%;max-width:150px;
-                    margin-top:5px;
-                }}
-                </style></head><body>
-                <select onchange="try{{
-                    var u=new URL(window.parent.location.href);
-                    u.searchParams.set('sc',this.value);
-                    u.searchParams.set('rid','{record_id}');
-                    window.parent.location.href=u.href;
-                }}catch(e){{}}">
-                    {opts_html}
-                </select>
-                </body></html>
-                """, height=38)
+                # Native st.selectbox with an on_change callback — the previous approach
+                # (an HTML <select> that navigated the parent window via a URL query param)
+                # silently failed whenever the browser blocked that cross-frame navigation,
+                # so status edits looked like they worked but were never actually saved.
+                dot_col, sel_col = st.columns([0.15, 0.85])
+                with dot_col:
+                    st.markdown(
+                        f'<div style="width:9px;height:9px;border-radius:50%;'
+                        f'background:{cfg["color"]};margin-top:14px;"></div>',
+                        unsafe_allow_html=True
+                    )
+                with sel_col:
+                    status_key = f"tracker_status_{record_id}"
+
+                    def _on_status_change(_record_id=record_id, _key=status_key):
+                        update_application_status(_record_id, st.session_state[_key])
+
+                    st.selectbox(
+                        "Status",
+                        options=STATUS_OPTIONS,
+                        index=STATUS_OPTIONS.index(status) if status in STATUS_OPTIONS else STATUS_OPTIONS.index('Draft'),
+                        key=status_key,
+                        on_change=_on_status_change,
+                        label_visibility="collapsed",
+                    )
 
             with col_date:
                 st.markdown(
