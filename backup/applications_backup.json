@@ -334,5 +334,21 @@
     "created_at": "2026-06-23T11:36:42.643504+00:00",
     "updated_resume_file": "Madeli_van_Niekerk_-_Resu_Updated_Senior_Manager__Insights_2026-06-23.docx",
     "user_id": "1836cee0-80cc-4b24-bf3b-3b4fe253ed0f"
+  },
+  {
+    "id": "42d76da7-2af5-459f-bcf1-3e598ffab5c6",
+    "date": "2026-08-18",
+    "job_title": "Business Intelligence Delivery Lead",
+    "company": "Pickles Auctions",
+    "location": "Sydney, NSW (Hybrid — 4 days WFH)",
+    "resume_file": "Madeli_van_Niekerk_Resume_Developer_FINAL_v2.docx",
+    "match_pct": "87%",
+    "job_url": "",
+    "status": "Applied",
+    "notes": "### Professional Summary\n**Assessment: Partially tailored — strong foundation but wrong emphasis for this specific role.**\n\nThe summary is well-written and credible, but it leads with ETL pipelines, Snowflake, and Alteryx — none of which appear in this job posting. For a role that is explicitly a Power BI delivery and team leadership position, the summary should open with Power BI leadership and coaching, not data engineering tools. The AI/Streamlit content, while impressive, takes up disproportionate space for a role that lists AI as a nice-to-have. The absence of the words \"DAX,\" \"data storytelling,\" \"report lifecycle,\" or \"self-service reporting\" is a meaningful ATS risk given those are core to the job.\n\n**Recommended reframe:** Lead with Power BI delivery leadership + team coaching + stakeholder translation, then layer in AI as a differentiator. Snowflake and Alteryx can remain in the skills section but should not headline the summary.\n\n---",
+    "cover_letter": "Dear Hiring Manager,\n\nWhen a BI function supports hundreds of internal users every day, the difference between a reporting library and a genuine decision-making asset comes down to one thing: a lead who owns the full lifecycle — from scoping and design through to adoption and continuous improvement. That is exactly the work I have spent the last decade building expertise in, and it is precisely what Pickles is looking for in this Business Intelligence Delivery Lead.\n\nAt Foxtel, I directed the delivery of 30+ enterprise Power BI and Tableau dashboards, migrated legacy reporting to Power BI Service with Row-Level Security governance, and led the evaluation and deployment of ThoughtSpot as part of Foxtel's broader self-service analytics capability. Critically, I also ensured those reports were actually used. I designed and ran Foxtel's Data Champion Program, embedding analytics capability across business units and measurably reducing central-team reporting dependency. Translating that model to Pickles' growing user base, where BI adoption and self-service reporting are clearly strategic priorities, is a challenge I am well positioned to lead.\n\nBeyond delivery, I bring the coaching and stakeholder translation skills this role demands. I directly manage a team of five analytics and visualisation professionals, and have previously trained 300+ users across enterprise and government environments. I understand that lifting a BI team's output is not just about technical standards — it requires building analyst confidence in problem framing, prioritisation and data storytelling so that every report released earns trust with its audience.\n\nI also bring a genuine interest in using AI and automation to improve BI delivery quality and reporting adoption — an area I have applied practically at Foxtel through a Gen AI pilot that accelerated insight turnaround for senior stakeholders. At Pickles, I see real opportunity to apply that mindset to streamline how BI products are scoped, built and continuously improved.\n\nI would welcome the opportunity to discuss how my experience leading BI delivery and analyst teams can support Pickles' next phase of data transformation.\n\nKind regards,\n\nMADELI VAN NIEKERK\n0424 998 470",
+    "created_at": "2026-08-18T10:56:18.632388+00:00",
+    "updated_resume_file": "Madeli_van_Niekerk_Resume_Updated_Business_Intelligence_Del_2026-08-18.docx",
+    "user_id": "1836cee0-80cc-4b24-bf3b-3b4fe253ed0f"
   }
 ]
