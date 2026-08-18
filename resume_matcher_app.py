@@ -4473,7 +4473,8 @@ section.main .block-container{padding-bottom:5rem!important;}
                                 st.write("✅ Cover letter updated!")
                                 regen_status.update(label="Done!", state="complete")
                                 st.session_state['cover_letter'] = cl_result['cover_letter']
-                                st.session_state['cl_edit_area'] = cl_result['cover_letter']
+                                if 'cl_edit_area' in st.session_state:
+                                    del st.session_state['cl_edit_area']
                                 st.rerun()
 
 
