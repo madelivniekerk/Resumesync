@@ -31,6 +31,8 @@ try:
     from docx.shared import Pt, RGBColor, Inches
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml.ns import qn
+    from docx.text.paragraph import Paragraph
+    from copy import deepcopy
     import pypdf
     import io
     import base64
@@ -1189,7 +1191,7 @@ def generate_guidance_updates(resume_text: str, user_guidance: str, client):
     These are treated as ground truth — not suggestions — and run before any AI improvements.
     """
     prompt = f"""You are a resume editor. The candidate has provided SPECIFIC facts or instructions below.
-These are truths they are vouching for — your ONLY job is to weave them into the most relevant bullets.
+These are truths they are vouching for — your job is to get every one of them into the resume.
 
 CANDIDATE INSTRUCTIONS (must be applied exactly):
 {user_guidance.strip()}
@@ -1197,24 +1199,38 @@ CANDIDATE INSTRUCTIONS (must be applied exactly):
 RESUME TEXT:
 {resume_text}
 
-Rules:
-- Find the single most relevant existing bullet point for each instruction and incorporate it naturally
-- Do NOT add new bullets; modify an existing one
-- Do NOT fabricate anything beyond what the candidate stated
-- "find" must be copied verbatim from the resume (including bullet prefix characters)
-- Keep the same format/prefix as the original bullet
-- Return ONLY a JSON array — no other text
+For EACH instruction, first try to weave it into the single most relevant EXISTING bullet point.
+Only if no existing bullet is a reasonable fit for that specific instruction, add it as a brand new
+bullet instead — anchored immediately after the closest related existing bullet, matching that
+bullet's tone and prefix style so it reads as a native part of the resume.
+
+Do NOT fabricate anything beyond what the candidate stated. Do NOT skip an instruction just because
+it doesn't fit an existing bullet — use the new-bullet fallback for those instead.
+
+Return ONLY a JSON array — no other text. Use "type": "user_guidance" when modifying an existing
+bullet, or "type": "insert" when adding a brand new one:
 
 ```json
 [
   {{
-    "find": "exact text verbatim from resume",
+    "find": "exact existing bullet text verbatim from resume",
     "replace": "improved version incorporating the candidate's stated fact",
     "description": "Applied candidate guidance: [their instruction]",
     "type": "user_guidance"
+  }},
+  {{
+    "find": "exact text of the closest related existing bullet, verbatim — insert the new bullet immediately after this one",
+    "replace": "the brand new bullet text, matching the resume's existing bullet style/prefix",
+    "description": "Added new bullet for candidate guidance: [their instruction]",
+    "type": "insert"
   }}
 ]
-```"""
+```
+
+Rules:
+- "find" MUST be copied verbatim from the resume (including bullet prefix characters) — for "insert"
+  items this is the anchor bullet the new one goes after, not the guidance instruction itself
+- Keep the same format/prefix as the surrounding bullets"""
 
     try:
         resp = client.messages.create(
@@ -1228,7 +1244,8 @@ Rules:
             raw = re.sub(r'```(?:json)?\s*', '', raw).strip().rstrip('`').strip()
         updates = json.loads(raw)
         for u in updates:
-            u['type'] = 'user_guidance'
+            if u.get('type') != 'insert':
+                u['type'] = 'user_guidance'
         return {'success': True, 'updates': updates}
     except Exception as e:
         return {'success': False, 'updates': [], 'error': str(e)}
@@ -1810,15 +1827,35 @@ def apply_updates_to_docx(file_bytes: bytes, updates: list, original_filename: s
                 run.text = ''
         return True
 
+    def _insert_after_para(anchor_para, text):
+        # Clone the anchor's XML wholesale so the new bullet inherits its exact
+        # formatting (list numbering, indentation, run styles) instead of guessing at it.
+        new_p = deepcopy(anchor_para._element)
+        anchor_para._element.addnext(new_p)
+        new_para = Paragraph(new_p, anchor_para._parent)
+        if new_para.runs:
+            new_para.runs[0].text = text
+            for run in new_para.runs[1:]:
+                run.text = ''
+        else:
+            new_para.add_run(text)
+
     for update in updates:
         find_text    = update.get('find', '').strip()
         replace_text = update.get('replace', '').strip()
-        if not find_text:
+        is_insert    = update.get('type') == 'insert'
+        if not find_text or (is_insert and not replace_text):
             continue
 
         for para in _all_paragraphs(doc):
             if find_text in para.text:
-                if replace_text == '':
+                if is_insert:
+                    try:
+                        _insert_after_para(para, replace_text)
+                        applied += 1
+                    except Exception:
+                        pass
+                elif replace_text == '':
                     # Deletion — remove the entire paragraph element
                     try:
                         p_elem = para._element
@@ -3946,9 +3983,18 @@ section.main .block-container{padding-bottom:5rem!important;}
                             if guidance_result['success'] and guidance_result['updates']:
                                 all_updates.extend(guidance_result['updates'])
                                 guidance_finds = {u['find'] for u in guidance_result['updates']}
-                                upd_status.write(f"✅ {len(guidance_result['updates'])} guidance change(s) locked in")
+                                n_insert = sum(1 for u in guidance_result['updates'] if u.get('type') == 'insert')
+                                n_edit = len(guidance_result['updates']) - n_insert
+                                _parts = []
+                                if n_edit:
+                                    _parts.append(f"{n_edit} existing bullet(s) updated")
+                                if n_insert:
+                                    _parts.append(f"{n_insert} new bullet(s) added")
+                                upd_status.write(f"✅ Guidance applied — {', '.join(_parts)}")
                             elif not guidance_result['success']:
                                 upd_status.write(f"⚠️ Could not apply guidance: {guidance_result['error']}")
+                            else:
+                                upd_status.write("⚠️ Could not fit your guidance anywhere in the resume — try rephrasing it")
 
                         # Step 1 — general expression improvements (skip any bullet already touched by guidance)
                         upd_status.write("Analysing general improvements...")
@@ -4058,8 +4104,11 @@ section.main .block-container{padding-bottom:5rem!important;}
                         is_removal     = change_type == 'remove' or replace == ''
                         is_user_guided = change_type == 'user_guidance'
                         is_trim        = change_type == 'trim'
+                        is_insert      = change_type == 'insert'
 
-                        if is_user_guided:
+                        if is_insert:
+                            label_prefix = "＋ NEW BULLET — "
+                        elif is_user_guided:
                             label_prefix = "⭐ YOUR GUIDANCE — "
                         elif is_trim:
                             label_prefix = "✂ TRIM — "
@@ -4080,8 +4129,13 @@ section.main .block-container{padding-bottom:5rem!important;}
                                 )
                                 edited_replace = ''
                             else:
-                                before_border = '#e0a14a' if is_user_guided else '#e07a5f'
-                                before_bg     = 'rgba(224,161,74,0.08)' if is_user_guided else 'rgba(224,122,95,0.08)'
+                                before_border = '#7ad79f' if is_insert else ('#e0a14a' if is_user_guided else '#e07a5f')
+                                before_bg     = 'rgba(122,215,159,0.08)' if is_insert else ('rgba(224,161,74,0.08)' if is_user_guided else 'rgba(224,122,95,0.08)')
+                                before_label  = (
+                                    "＋ Will be inserted after this bullet" if is_insert else
+                                    ("⭐ Your guidance — before" if is_user_guided else "Before")
+                                )
+                                after_label = "New bullet" if is_insert else "After"
                                 # Size both blocks off the same estimate so Before/After match exactly
                                 _content_len = max(len(find), len(replace))
                                 _line_breaks = find.count('\n') + replace.count('\n')
@@ -4096,14 +4150,14 @@ section.main .block-container{padding-bottom:5rem!important;}
                                         f'font-family:\'DM Sans\',sans-serif;color:#9fb6a8;'
                                         f'height:{_box_h}px;overflow-y:auto;box-sizing:border-box;">'
                                         f'<strong style="color:{before_border};font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                                        f'letter-spacing:0.1em;text-transform:uppercase;">{"⭐ Your guidance — before" if is_user_guided else "Before"}</strong><br>{find}</div>',
+                                        f'letter-spacing:0.1em;text-transform:uppercase;">{before_label}</strong><br>{find}</div>',
                                         unsafe_allow_html=True
                                     )
                                 with col_a:
                                     st.markdown(
                                         f'<p style="margin:0 0 0.3rem;">'
                                         f'<span style="color:#7ad79f;font-size:0.75rem;font-family:\'Space Mono\',monospace;'
-                                        f'letter-spacing:0.1em;text-transform:uppercase;">After</span>'
+                                        f'letter-spacing:0.1em;text-transform:uppercase;">{after_label}</span>'
                                         f'<span style="color:#6e8a7b;font-size:0.68rem;font-family:\'DM Sans\',sans-serif;'
                                         f'font-style:italic;"> — edit if needed</span></p>',
                                         unsafe_allow_html=True
